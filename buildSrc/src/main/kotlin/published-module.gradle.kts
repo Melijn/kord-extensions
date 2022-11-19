@@ -10,17 +10,17 @@ val javadocJar: Task by tasks.getting
 publishing {
     repositories {
         maven {
-            name = "KotDis"
+            name = "Melijn"
 
             url = if (project.version.toString().contains("SNAPSHOT")) {
-                uri("https://maven.kotlindiscord.com/repository/maven-snapshots/")
+                uri("https://reposilite.melijn.com/snapshots/")
             } else {
-                uri("https://maven.kotlindiscord.com/repository/maven-releases/")
+                uri("https://reposilite.melijn.com/releases/")
             }
 
             credentials {
-                username = project.findProperty("kotdis.user") as String? ?: System.getenv("KOTLIN_DISCORD_USER")
-                password = project.findProperty("kotdis.password") as String?
+                username = project.findProperty("melijnReposilitePub") as String? ?: System.getenv("KOTLIN_DISCORD_USER")
+                password = project.findProperty("melijnReposilitePassword") as String?
                     ?: System.getenv("KOTLIN_DISCORD_PASSWORD")
             }
 

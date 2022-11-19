@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 buildscript {
     repositories {
         maven {
-            name = "KotDis"
-            url = uri("https://maven.kotlindiscord.com/repository/maven-public/")
+            name = "MelijnRepo"
+            url = uri("https://reposilite.melijn.com/releases/")
         }
     }
 }
