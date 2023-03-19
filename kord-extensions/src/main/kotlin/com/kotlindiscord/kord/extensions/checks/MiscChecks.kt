@@ -8,7 +8,7 @@ package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import dev.kord.core.behavior.channel.threads.ThreadChannelBehavior
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import mu.KotlinLogging
 
 /**

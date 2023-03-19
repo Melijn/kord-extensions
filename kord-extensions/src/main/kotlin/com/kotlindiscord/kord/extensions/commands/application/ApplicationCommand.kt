@@ -16,23 +16,22 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.SlashCommand
 import com.kotlindiscord.kord.extensions.commands.events.ApplicationCommandInvocationEvent
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
+import com.kotlindiscord.kord.extensions.types.Snowflake
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import com.kotlindiscord.kord.extensions.utils.getLocale
-import dev.kord.common.entity.ApplicationCommandType
-import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Permissions
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.event.interaction.InteractionCreateEvent
+import net.dv8tion.jda.api.interactions.commands.Command.Type as ApplicationCommandType
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.events.interaction.GenericInteractionCreateEvent
 import org.koin.core.component.inject
-import dev.kord.common.Locale as KLocale
+import java.util.*
+import net.dv8tion.jda.api.interactions.DiscordLocale as KLocale
 
 /**
  * Abstract class representing an application command - extend this for actual implementations.
  *
  * @param extension Extension this application command belongs to.
  */
-public abstract class ApplicationCommand<E : InteractionCreateEvent>(
+public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
     extension: Extension
 ) : Command(extension), KordExKoinComponent {
     /** Translations provider, for retrieving translations. **/
@@ -61,7 +60,7 @@ public abstract class ApplicationCommand<E : InteractionCreateEvent>(
             defaultMemberPermissions = if (value) {
                 null
             } else {
-                Permissions()
+                EnumSet.noneOf(Permission::class.java)
             }
         }
 
@@ -70,7 +69,7 @@ public abstract class ApplicationCommand<E : InteractionCreateEvent>(
      *
      * **Not enforced, read [requirePermission] for more information**
      */
-    public open var defaultMemberPermissions: Permissions? = null
+    public open var defaultMemberPermissions: EnumSet<Permission>? = null
 
     /**
      * Enables or disables the command in DMs.
@@ -123,14 +122,15 @@ public abstract class ApplicationCommand<E : InteractionCreateEvent>(
 
         val translations = bot.settings.i18nBuilder.applicationCommandLocales
             .associateWith { locale ->
+                val javaLocale = Locale(locale.locale)
                 val result = translationsProvider.translate(
                     key,
                     this.resolvedBundle,
-                    locale.asJavaLocale()
+                    javaLocale
                 )
 
                 if (lowerCase) {
-                    result.lowercase(locale.asJavaLocale())
+                    result.lowercase(javaLocale)
                 } else {
                     result
                 }
@@ -155,8 +155,8 @@ public abstract class ApplicationCommand<E : InteractionCreateEvent>(
     }
 
     /** Specify a specific guild for this application command to be locked to. **/
-    public open fun guild(guild: GuildBehavior) {
-        this.guildId = guild.id
+    public open fun guild(guild: Guild) {
+        this.guildId = Snowflake(guild.id)
     }
 
     /**
@@ -193,7 +193,7 @@ public abstract class ApplicationCommand<E : InteractionCreateEvent>(
     /** Runs standard checks that can be handled in a generic way, without worrying about subclass-specific checks. **/
     @Throws(DiscordRelayedException::class)
     public open suspend fun runStandardChecks(event: E, cache: MutableStringKeyedMap<Any>): Boolean {
-        val locale = event.getLocale()
+        val locale = Locale(event.userLocale.locale)
 
         checkList.forEach { check ->
             val context = CheckContextWithCache(event, locale, cache)

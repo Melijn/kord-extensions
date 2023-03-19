@@ -22,10 +22,10 @@ import com.kotlindiscord.kord.extensions.commands.chat.ChatCommandRegistry
 import com.kotlindiscord.kord.extensions.events.EventHandler
 import com.kotlindiscord.kord.extensions.events.ExtensionStateEvent
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import dev.kord.core.Kord
-import dev.kord.core.event.Event
-import dev.kord.gateway.Intent
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.Event
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 
 private val logger = KotlinLogging.logger {}
@@ -42,7 +42,7 @@ public abstract class Extension : KordExKoinComponent {
     public open val bot: ExtensibleBot by inject()
 
     /** Current Kord instance powering the bot. **/
-    public open val kord: Kord by inject()
+    public open val shardManager: ShardManager by inject()
 
     /** Message command registry. **/
     public open val chatCommandRegistry: ChatCommandRegistry by inject()
@@ -145,7 +145,7 @@ public abstract class Extension : KordExKoinComponent {
     public open val bundle: String? = null
 
     /** Set of intents required by this extension's event handlers and commands. **/
-    public open val intents: MutableSet<Intent> = mutableSetOf()
+    public open val intents: MutableSet<GatewayIntent> = mutableSetOf()
 
     /**
      * Override this in your subclass and use it to register your commands and event

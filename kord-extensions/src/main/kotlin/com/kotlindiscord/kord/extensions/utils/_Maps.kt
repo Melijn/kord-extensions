@@ -7,7 +7,7 @@
 package com.kotlindiscord.kord.extensions.utils
 
 import dev.kord.common.annotation.KordPreview
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 
 internal typealias StringKeyedMap<T> = Map<String, T & Any>
 

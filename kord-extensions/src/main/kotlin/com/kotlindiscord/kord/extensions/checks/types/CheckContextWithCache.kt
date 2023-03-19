@@ -7,7 +7,7 @@
 package com.kotlindiscord.kord.extensions.checks.types
 
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import java.util.*
 
 /**

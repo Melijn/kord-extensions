@@ -18,7 +18,6 @@ include("kord-extensions")
 include("extra-modules:extra-mappings")
 include("extra-modules:extra-mappings")
 include("extra-modules:extra-phishing")
-include("extra-modules:extra-pluralkit")
 
 include("modules:java-time")
 include("modules:time4j")

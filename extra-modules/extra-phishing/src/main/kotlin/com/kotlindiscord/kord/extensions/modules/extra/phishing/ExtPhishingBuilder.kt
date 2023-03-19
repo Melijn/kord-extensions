@@ -11,7 +11,7 @@ package com.kotlindiscord.kord.extensions.modules.extra.phishing
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckWithCache
 import dev.kord.common.entity.Permission
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 

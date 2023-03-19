@@ -9,7 +9,7 @@ package com.kotlindiscord.kord.extensions.checks.types
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import org.koin.core.component.inject
 import java.util.*
 

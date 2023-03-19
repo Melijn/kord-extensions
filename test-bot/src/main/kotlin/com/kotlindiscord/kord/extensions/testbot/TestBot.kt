@@ -9,23 +9,16 @@ package com.kotlindiscord.kord.extensions.testbot
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.extPhishing
-import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.extPluralKit
 import com.kotlindiscord.kord.extensions.testbot.extensions.ArgumentTestExtension
 import com.kotlindiscord.kord.extensions.testbot.extensions.I18nTestExtension
-import com.kotlindiscord.kord.extensions.testbot.extensions.PKTestExtension
 import com.kotlindiscord.kord.extensions.testbot.extensions.PaginatorTestExtension
 import com.kotlindiscord.kord.extensions.testbot.utils.LogLevel
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.envOrNull
-import dev.kord.common.Locale
-import dev.kord.common.entity.Snowflake
-import dev.kord.gateway.Intents
-import dev.kord.gateway.PrivilegedIntent
 import org.koin.core.logger.Level
 
 public val TEST_SERVER_ID: Snowflake = Snowflake(env("TEST_SERVER"))
 
-@OptIn(PrivilegedIntent::class)
 public suspend fun main() {
     LogLevel.enabledLevel = LogLevel.fromString(envOrNull("LOG_LEVEL") ?: "INFO") ?: LogLevel.INFO
 

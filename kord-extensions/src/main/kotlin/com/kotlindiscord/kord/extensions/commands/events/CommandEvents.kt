@@ -9,7 +9,7 @@ package com.kotlindiscord.kord.extensions.commands.events
 import com.kotlindiscord.kord.extensions.ArgumentParsingException
 import com.kotlindiscord.kord.extensions.commands.Command
 import com.kotlindiscord.kord.extensions.events.KordExEvent
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 
 /**
  * Sealed interface representing a basic command event.

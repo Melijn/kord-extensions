@@ -9,7 +9,7 @@
 package com.kotlindiscord.kord.extensions.checks
 
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import mu.KLogger
 
 /** Convenience wrapper for a "failing check" log message. **/

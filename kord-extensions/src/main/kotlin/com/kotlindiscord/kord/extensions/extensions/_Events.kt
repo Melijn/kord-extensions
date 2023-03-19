@@ -10,7 +10,7 @@ import com.kotlindiscord.kord.extensions.EventHandlerRegistrationException
 import com.kotlindiscord.kord.extensions.InvalidEventHandlerException
 import com.kotlindiscord.kord.extensions.events.EventHandler
 import dev.kord.core.enableEvent
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import dev.kord.gateway.Intents
 import mu.KotlinLogging
 

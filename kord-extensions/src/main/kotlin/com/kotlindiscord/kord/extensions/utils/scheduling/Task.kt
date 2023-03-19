@@ -14,7 +14,6 @@ import com.kotlindiscord.kord.extensions.sentry.SentryAdapter
 import com.kotlindiscord.kord.extensions.sentry.SentryContext
 import com.kotlindiscord.kord.extensions.sentry.tag
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.Kord
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone

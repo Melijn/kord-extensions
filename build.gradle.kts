@@ -45,6 +45,10 @@ repositories {
         name = "Kotlin Discord"
         url = uri("https://maven.kotlindiscord.com/repository/maven-public/")
     }
+
+    maven {
+        url = uri("https://reposilite.melijn.com/shitpack")
+    }
 }
 
 subprojects {

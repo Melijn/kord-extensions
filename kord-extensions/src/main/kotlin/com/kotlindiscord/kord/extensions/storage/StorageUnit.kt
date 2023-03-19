@@ -17,7 +17,7 @@ import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.channel.DmChannel
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer

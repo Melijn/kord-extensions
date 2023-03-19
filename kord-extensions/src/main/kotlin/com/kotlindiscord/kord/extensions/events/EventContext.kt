@@ -14,7 +14,7 @@ import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.sentry.SentryContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import org.koin.core.component.inject
 import java.util.*
 

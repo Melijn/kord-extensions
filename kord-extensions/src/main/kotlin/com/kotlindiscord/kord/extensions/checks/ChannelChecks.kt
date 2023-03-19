@@ -13,7 +13,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.CategoryBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.channel.Category
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import kotlinx.coroutines.flow.toList
 import mu.KotlinLogging
 

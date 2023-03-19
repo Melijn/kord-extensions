@@ -11,7 +11,7 @@ package com.kotlindiscord.kord.extensions.checks
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import mu.KotlinLogging
 
 /**

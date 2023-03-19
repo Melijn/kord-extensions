@@ -9,7 +9,7 @@ package com.kotlindiscord.kord.extensions.utils
 import dev.kord.common.annotation.KordPreview
 import dev.kord.core.Kord
 import dev.kord.core.entity.User
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import dev.kord.core.live.LiveKordEntity
 import dev.kord.core.supplier.EntitySupplyStrategy
 import kotlinx.coroutines.flow.Flow

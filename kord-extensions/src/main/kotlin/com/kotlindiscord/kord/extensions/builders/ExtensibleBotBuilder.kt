@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:OptIn(PrivilegedIntent::class)
-
 package com.kotlindiscord.kord.extensions.builders
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
@@ -28,6 +26,7 @@ import com.kotlindiscord.kord.extensions.sentry.SentryAdapter
 import com.kotlindiscord.kord.extensions.storage.DataAdapter
 import com.kotlindiscord.kord.extensions.storage.toml.TomlDataAdapter
 import com.kotlindiscord.kord.extensions.types.FailureReason
+import com.kotlindiscord.kord.extensions.types.Snowflake
 import com.kotlindiscord.kord.extensions.usagelimits.*
 import com.kotlindiscord.kord.extensions.usagelimits.cooldowns.CooldownHandler
 import com.kotlindiscord.kord.extensions.usagelimits.cooldowns.CooldownType
@@ -35,52 +34,43 @@ import com.kotlindiscord.kord.extensions.usagelimits.cooldowns.DefaultCooldownHa
 import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.*
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.loadModule
-import dev.kord.cache.api.DataCache
-import dev.kord.common.Color
-import dev.kord.common.entity.PresenceStatus
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.ClientResources
-import dev.kord.core.Kord
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.ChannelBehavior
-import dev.kord.core.builder.kord.KordBuilder
-import dev.kord.core.cache.KordCacheBuilder
-import dev.kord.core.entity.interaction.Interaction
-import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.supplier.EntitySupplier
-import dev.kord.core.supplier.EntitySupplyStrategy
-import dev.kord.gateway.Intent
-import dev.kord.gateway.Intents
-import dev.kord.gateway.PrivilegedIntent
-import dev.kord.gateway.builder.PresenceBuilder
-import dev.kord.gateway.builder.Shards
-import dev.kord.rest.builder.message.create.MessageCreateBuilder
-import dev.kord.rest.builder.message.create.allowedMentions
-import io.ktor.utils.io.*
+import dev.minn.jda.ktx.messages.InlineMessage
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.Activity
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.ISnowflake
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.Channel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.DiscordLocale
+import net.dv8tion.jda.api.interactions.Interaction
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
+import net.dv8tion.jda.internal.utils.config.sharding.PresenceProviderConfig
 import org.koin.core.logger.Level
 import org.koin.dsl.bind
 import org.koin.fileProperties
 import org.koin.logger.slf4jLogger
+import java.awt.Color
 import java.io.File
 import java.nio.file.Path
 import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.div
 import kotlin.time.Duration
-import dev.kord.common.Locale as KLocale
 
 internal typealias LocaleResolver = suspend (
-    guild: GuildBehavior?,
-    channel: ChannelBehavior?,
-    user: UserBehavior?,
+    guild: Guild?,
+    channel: Channel?,
+    user: User?,
     interaction: Interaction?
 ) -> Locale?
 
 internal typealias FailureResponseBuilder =
-    suspend (MessageCreateBuilder).(message: String, type: FailureReason<*>) -> Unit
+    suspend (InlineMessage<MessageCreateData>).(message: String, type: FailureReason<*>) -> Unit
 
 /**
  * Builder class used for configuring and creating an [ExtensibleBot].
@@ -105,8 +95,7 @@ public open class ExtensibleBotBuilder {
      * @suppress Builder that shouldn't be set directly by the user.
      */
     public var failureResponseBuilder: FailureResponseBuilder = { message, _ ->
-        allowedMentions { }
-
+        mentions {}
         content = message
     }
 
@@ -127,16 +116,15 @@ public open class ExtensibleBotBuilder {
     public val pluginBuilder: PluginBuilder = PluginBuilder(this)
 
     /** @suppress Builder that shouldn't be set directly by the user. **/
-    public var intentsBuilder: (Intents.IntentsBuilder.() -> Unit)? = {
-        +Intents.nonPrivileged
+    public var intentsBuilder: (MutableList<GatewayIntent>.() -> Unit)? = {
 
         if (chatCommandsBuilder.enabled) {
-            +Intent.MessageContent
+            this.add(GatewayIntent.MESSAGE_CONTENT)
         }
 
         getKoin().get<ExtensibleBot>().extensions.values.forEach { extension ->
             extension.intents.forEach {
-                +it
+                this.add(it)
             }
         }
     }
@@ -148,20 +136,20 @@ public open class ExtensibleBotBuilder {
     public val chatCommandsBuilder: ChatCommandsBuilder = ChatCommandsBuilder()
 
     /** @suppress Builder that shouldn't be set directly by the user. **/
-    public var presenceBuilder: PresenceBuilder.() -> Unit = { status = PresenceStatus.Online }
+    public var presenceBuilder: () -> Activity = { Activity.of(Activity.ActivityType.PLAYING, "5") }
 
     /** @suppress Builder that shouldn't be set directly by the user. **/
-    public var shardingBuilder: ((recommended: Int) -> Shards)? = null
+//    public var shardingBuilder: ((recommended: Int) -> Shards)? = null
 
     /** @suppress Builder that shouldn't be set directly by the user. **/
     public val applicationCommandsBuilder: ApplicationCommandsBuilder = ApplicationCommandsBuilder()
 
     /** @suppress List of Kord builders, shouldn't be set directly by the user. **/
-    public val kordHooks: MutableList<suspend KordBuilder.() -> Unit> = mutableListOf()
+    public val kordHooks: MutableList<suspend DefaultShardManagerBuilder.() -> Unit> = mutableListOf()
 
     /** @suppress Kord builder, creates a Kord instance. **/
-    public var kordBuilder: suspend (String, suspend KordBuilder.() -> Unit) -> Kord = { token, builder ->
-        Kord(token) { builder() }
+    public var kordBuilder: suspend (String, suspend DefaultShardManagerBuilder.() -> Unit) -> ShardManager = { token, builder ->
+        DefaultShardManagerBuilder.createLight(token).apply { builder() }.build(false)
     }
 
     /** Logging level Koin should use, defaulting to ERROR. **/
@@ -236,7 +224,7 @@ public open class ExtensibleBotBuilder {
      * @see KordBuilder
      */
     @BotBuilderDSL
-    public fun kord(builder: suspend KordBuilder.() -> Unit) {
+    public fun kord(builder: suspend DefaultShardManagerBuilder.() -> Unit) {
         kordHooks.add(builder)
     }
 
@@ -248,7 +236,7 @@ public open class ExtensibleBotBuilder {
      * @see Kord
      */
     @BotBuilderDSL
-    public fun customKordBuilder(builder: suspend (String, suspend KordBuilder.() -> Unit) -> Kord) {
+    public fun customKordBuilder(builder: suspend (String, suspend DefaultShardManagerBuilder.() -> Unit) -> ShardManager) {
         kordBuilder = builder
     }
 
@@ -292,26 +280,25 @@ public open class ExtensibleBotBuilder {
      *
      * @see Intents.IntentsBuilder
      */
-    @OptIn(PrivilegedIntent::class)
     @BotBuilderDSL
     public fun intents(
         addDefaultIntents: Boolean = true,
         addExtensionIntents: Boolean = true,
-        builder: Intents.IntentsBuilder.() -> Unit
+        builder: MutableList<GatewayIntent>.() -> Unit
     ) {
         this.intentsBuilder = {
             if (addDefaultIntents) {
-                +Intents.nonPrivileged
+                this.addAll(GatewayIntent.getIntents(GatewayIntent.DEFAULT))
 
                 if (chatCommandsBuilder.enabled) {
-                    +Intent.MessageContent
+                    this.add(GatewayIntent.MESSAGE_CONTENT)
                 }
             }
 
             if (addExtensionIntents) {
                 getKoin().get<ExtensibleBot>().extensions.values.forEach { extension ->
                     extension.intents.forEach {
-                        +it
+                        this.add(it)
                     }
                 }
             }
@@ -346,7 +333,7 @@ public open class ExtensibleBotBuilder {
      * @see PresenceBuilder
      */
     @BotBuilderDSL
-    public fun presence(builder: PresenceBuilder.() -> Unit) {
+    public fun presence(builder: PresenceProviderConfig.() -> Unit) {
         this.presenceBuilder = builder
     }
 
@@ -580,7 +567,7 @@ public open class ExtensibleBotBuilder {
         }
 
         /** @suppress Builder that shouldn't be set directly by the user. **/
-        public var dataCacheBuilder: suspend Kord.(cache: DataCache) -> Unit = {}
+        public var dataCacheBuilder: suspend ShardManager.(cache: DataCache) -> Unit = {}
 
         /** DSL function allowing you to customize Kord's cache. **/
         public fun kord(builder: KordCacheBuilder.(resources: ClientResources) -> Unit) {
@@ -594,7 +581,7 @@ public open class ExtensibleBotBuilder {
         }
 
         /** DSL function allowing you to interact with Kord's [DataCache] before it connects to Discord. **/
-        public fun transformCache(builder: suspend Kord.(cache: DataCache) -> Unit) {
+        public fun transformCache(builder: suspend ShardManager.(cache: DataCache) -> Unit) {
             this.dataCacheBuilder = builder
         }
     }
@@ -758,15 +745,15 @@ public open class ExtensibleBotBuilder {
             public val checkList: MutableList<ChatCommandCheck> = mutableListOf()
 
             /** For custom help embed colours. Only one may be defined. **/
-            public var colourGetter: suspend MessageCreateEvent.() -> Color = { DISCORD_BLURPLE }
+            public var colourGetter: suspend MessageReceivedEvent.() -> Color = { DISCORD_BLURPLE }
 
             /** Define a callback that returns a [Color] to use for help embed colours. Feel free to mix it up! **/
-            public fun colour(builder: suspend MessageCreateEvent.() -> Color) {
+            public fun colour(builder: suspend MessageReceivedEvent.() -> Color) {
                 colourGetter = builder
             }
 
             /** Like [colour], but American. **/
-            public fun color(builder: suspend MessageCreateEvent.() -> Color): Unit = colour(builder)
+            public fun color(builder: suspend MessageReceivedEvent.() -> Color): Unit = colour(builder)
 
             /**
              * Define a check which must pass for help commands to be executed. This check will be applied to all
@@ -1014,7 +1001,7 @@ public open class ExtensibleBotBuilder {
         /**
          * List of [locales][KLocale] which are used for application command names (without [defaultLocale]).
          */
-        public var applicationCommandLocales: MutableList<KLocale> = mutableListOf()
+        public var applicationCommandLocales: MutableList<DiscordLocale> = mutableListOf()
 
         /**
          * Callables used to resolve a Locale object for the given guild, channel and user.
@@ -1041,7 +1028,7 @@ public open class ExtensibleBotBuilder {
          *
          * **Do not register [defaultLocale]**
          */
-        public fun applicationCommandLocale(vararg locale: KLocale) {
+        public fun applicationCommandLocale(vararg locale: DiscordLocale) {
             applicationCommandLocales.addAll(locale.toList())
         }
 
@@ -1050,7 +1037,7 @@ public open class ExtensibleBotBuilder {
          */
         public fun interactionUserLocaleResolver(): Unit =
             localeResolver { _, _, _, interaction ->
-                interaction?.locale?.asJavaLocale()
+                interaction?.userLocale?.locale?.let { Locale(it) }
             }
 
         /**
@@ -1058,7 +1045,7 @@ public open class ExtensibleBotBuilder {
          */
         public fun interactionGuildLocaleResolver(): Unit =
             localeResolver { _, _, _, interaction ->
-                interaction?.guildLocale?.asJavaLocale()
+                interaction?.guildLocale?.locale?.let { Locale(it) }
             }
     }
 
@@ -1098,7 +1085,7 @@ public open class ExtensibleBotBuilder {
          * Requires the `GUILD_MEMBERS` privileged intent. Make sure you've enabled it for your bot!
          */
         @JvmName("fillLongs")  // These are the same for the JVM
-        public fun fill(ids: Collection<ULong>): Boolean? =
+        public fun fill(ids: Collection<Long>): Boolean? =
             guildsToFill?.addAll(ids.map { Snowflake(it) })
 
         /**
@@ -1164,7 +1151,7 @@ public open class ExtensibleBotBuilder {
         public var enabled: Boolean = false
 
         /** @suppress Builder that shouldn't be set directly by the user. **/
-        public var prefixCallback: suspend (MessageCreateEvent).(String) -> String = { defaultPrefix }
+        public var prefixCallback: suspend (MessageReceivedEvent).(String) -> String = { defaultPrefix }
 
         /** @suppress Builder that shouldn't be set directly by the user. **/
         public var registryBuilder: () -> ChatCommandRegistry = { ChatCommandRegistry() }
@@ -1196,7 +1183,7 @@ public open class ExtensibleBotBuilder {
          * This is intended to allow for different chat command prefixes in different contexts - for example,
          * guild-specific prefixes.
          */
-        public fun prefix(builder: suspend (MessageCreateEvent).(String) -> String) {
+        public fun prefix(builder: suspend (MessageReceivedEvent).(String) -> String) {
             prefixCallback = builder
         }
 

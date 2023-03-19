@@ -8,7 +8,7 @@ package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.Check
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 
 /**
  * Convenience function allowing you to pass this check context, if the checks provided in the body pass - even if the

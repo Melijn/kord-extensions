@@ -8,7 +8,7 @@ package com.kotlindiscord.kord.extensions.utils
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import dev.kord.core.entity.channel.GuildChannel
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import java.util.*

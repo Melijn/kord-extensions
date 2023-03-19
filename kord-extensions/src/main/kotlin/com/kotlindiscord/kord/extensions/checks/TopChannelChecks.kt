@@ -12,7 +12,7 @@ import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.entity.channel.thread.ThreadChannel
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import mu.KotlinLogging
 
 // region: Entity DSL versions

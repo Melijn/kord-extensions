@@ -76,5 +76,10 @@
       <option name="name" value="Sonatype Snapshots" />
       <option name="url" value="https://oss.sonatype.org/content/repositories/snapshots" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven" />
+      <option name="name" value="maven" />
+      <option name="url" value="https://reposilite.melijn.com/shitpack" />
+    </remote-repository>
   </component>
 </project>

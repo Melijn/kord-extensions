@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:OptIn(PrivilegedIntent::class, KordPreview::class)
-
 package com.kotlindiscord.kord.extensions
 
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
@@ -21,25 +19,17 @@ import com.kotlindiscord.kord.extensions.koin.KordExContext
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.types.Lockable
 import com.kotlindiscord.kord.extensions.utils.loadModule
-import dev.kord.common.annotation.KordPreview
-import dev.kord.core.Kord
-import dev.kord.core.behavior.requestMembers
-import dev.kord.core.event.Event
-import dev.kord.core.event.gateway.DisconnectEvent
-import dev.kord.core.event.gateway.ReadyEvent
-import dev.kord.core.event.guild.GuildCreateEvent
-import dev.kord.core.event.interaction.*
-import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.gateway.handler.DefaultGatewayEventInterceptor
-import dev.kord.core.on
-import dev.kord.gateway.Intents
-import dev.kord.gateway.PrivilegedIntent
+import dev.minn.jda.ktx.events.listener
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.Event
+import net.dv8tion.jda.api.events.guild.GuildReadyEvent
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import org.koin.dsl.bind
 
@@ -64,7 +54,7 @@ public open class ExtensibleBot(
     override var locking: Boolean = settings.membersBuilder.lockMemberRequests
 
     /** @suppress Meant for internal use by public inline function. **/
-    public val kordRef: Kord by inject()
+    public val shardManager: ShardManager by inject()
 
     /**
      * A list of all registered event handlers.
@@ -90,36 +80,19 @@ public open class ExtensibleBot(
 
     /** @suppress Function that sets up the bot early on, called by the builder. **/
     public open suspend fun setup() {
-        val kord = settings.kordBuilder(token) {
-            cache {
-                settings.cacheBuilder.builder.invoke(this, it)
-            }
-
-            defaultStrategy = settings.cacheBuilder.defaultStrategy
-
-            if (settings.shardingBuilder != null) {
-                sharding(settings.shardingBuilder!!)
-            }
-
-            enableShutdownHook = settings.hooksBuilder.kordShutdownHook
-
-            settings.kordHooks.forEach { it() }
-
-            gatewayEventInterceptor = DefaultGatewayEventInterceptor(
-                customContextCreator = { _, _ ->
-                    mutableMapOf<String, Any>()
-                }
-            )
+        val builder = settings.kordBuilder(token) {
+            val intents = mutableListOf<GatewayIntent>()
+            settings.intentsBuilder?.invoke(intents)
+//            settings.kordHooks.forEach { it() }
+            setEnabledIntents(intents)
         }
 
-        loadModule { single { kord } bind Kord::class }
+        loadModule { single { builder } bind ShardManager::class }
 
-        settings.cacheBuilder.dataCacheBuilder.invoke(kord, kord.cache)
+//        settings.cacheBuilder.dataCacheBuilder.invoke(kord, kord.cache)
 
-        kord.on<Event> {
-            kord.launch {
-                send(this@on)
-            }
+        builder.listener<Event> {
+            send(it)
         }
 
         addDefaultExtensions()
@@ -131,10 +104,11 @@ public open class ExtensibleBot(
 
         if (!initialized) registerListeners()
 
-        getKoin().get<Kord>().login {
-            this.presence(settings.presenceBuilder)
-            this.intents = Intents(settings.intentsBuilder!!)
-        }
+        val shardManager = getKoin().get<ShardManager>()
+        shardManager.login()
+
+        val (status, activity) = settings.presenceBuilder
+        shardManager.setPresenceProvider(status, activity)
     }
 
     /**
@@ -145,7 +119,7 @@ public open class ExtensibleBot(
      * @see close
      **/
     public open suspend fun stop() {
-        getKoin().get<Kord>().logout()
+        getKoin().get<ShardManager>().setIdle(true)
     }
 
     /**
@@ -161,31 +135,22 @@ public open class ExtensibleBot(
      * @see stop
      **/
     public open suspend fun close() {
-        getKoin().get<Kord>().shutdown()
+        getKoin().get<ShardManager>().shutdown()
         KordExContext.stopKoin()
     }
 
-    /** Start up the bot and log into Discord, but launched via Kord's coroutine scope. **/
-    public open suspend fun startAsync(): Job =
-        getKoin().get<Kord>().launch {
-            start()
-        }
-
     /** This function sets up all of the bot's default event listeners. **/
-    @OptIn(PrivilegedIntent::class)
     public open suspend fun registerListeners() {
-        on<GuildCreateEvent> {
+        shardManager.listener<GuildReadyEvent> {
             withLock {  // If configured, this won't be concurrent, saving larger bots from spammy rate limits
+                val guild = it.guild
                 if (
                     settings.membersBuilder.guildsToFill == null ||
-                    settings.membersBuilder.guildsToFill!!.contains(guild.id)
+                    settings.membersBuilder.guildsToFill!!.contains(guild)
                 ) {
                     logger.debug { "Requesting members for guild: ${guild.name}" }
 
-                    guild.requestMembers {
-                        presences = settings.membersBuilder.fillPresences
-                        requestAllMembers()
-                    }.collect()
+                    guild.loadMembers()
                 }
             }
         }
@@ -274,14 +239,14 @@ public open class ExtensibleBot(
      */
     public inline fun <reified T : Event> on(
         launch: Boolean = true,
-        scope: CoroutineScope = this.getKoin().get<Kord>(),
+        scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
         noinline consumer: suspend T.() -> Unit
     ): Job =
         events.buffer(Channel.UNLIMITED)
             .filterIsInstance<T>()
             .onEach {
                 runCatching {
-                    if (launch) kordRef.launch { consumer(it) } else consumer(it)
+                    consumer(it)
                 }.onFailure { logger.catching(it) }
             }.catch { logger.catching(it) }
             .launchIn(scope)

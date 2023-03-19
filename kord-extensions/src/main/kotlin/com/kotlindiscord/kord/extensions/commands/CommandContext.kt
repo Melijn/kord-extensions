@@ -20,7 +20,7 @@ import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import org.koin.core.component.inject
 import java.util.*
 import kotlin.collections.HashMap

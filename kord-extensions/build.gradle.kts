@@ -24,14 +24,14 @@ dependencies {
     api(libs.koin.core)
     api(libs.koin.logger)
 
-    api(libs.kord) {
-        capabilities {
-            requireCapability(libs.kord.voice.get().toString())
-        }
-    }
+    // jda api
+    api(libs.jda.lib)
+    api(libs.jda.ktx)
 
     api(libs.logging) // Basic logging setup
     api(libs.kx.ser)
+    api(libs.kx.cor)
+    api(libs.kx.date)
     api(libs.sentry)  // Needs to be transitive or bots will start breaking
     api(libs.toml)
     api(libs.pf4j)

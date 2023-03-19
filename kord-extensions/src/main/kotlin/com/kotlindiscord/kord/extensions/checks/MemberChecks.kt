@@ -14,7 +14,7 @@ import com.kotlindiscord.kord.extensions.utils.permissionsForMember
 import com.kotlindiscord.kord.extensions.utils.translate
 import dev.kord.common.entity.Permission
 import dev.kord.core.entity.channel.GuildChannel
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import mu.KotlinLogging
 
 /**

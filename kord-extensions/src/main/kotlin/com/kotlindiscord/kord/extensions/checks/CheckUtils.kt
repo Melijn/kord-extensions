@@ -21,7 +21,7 @@ import dev.kord.core.cache.data.toData
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.interaction.GuildApplicationCommandInteraction
 import dev.kord.core.entity.interaction.Interaction
-import dev.kord.core.event.Event
+import net.dv8tion.jda.api.events.Event
 import dev.kord.core.event.channel.*
 import dev.kord.core.event.channel.thread.*
 import dev.kord.core.event.guild.*

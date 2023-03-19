@@ -54,7 +54,6 @@ dependencies {
 
     implementation(project(":extra-modules:extra-mappings"))
     implementation(project(":extra-modules:extra-phishing"))
-    implementation(project(":extra-modules:extra-pluralkit"))
 
     implementation(project(":modules:java-time"))
     implementation(project(":modules:time4j"))
