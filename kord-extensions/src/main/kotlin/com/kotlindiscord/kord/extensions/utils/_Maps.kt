@@ -6,17 +6,10 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import net.dv8tion.jda.api.events.Event
-
 internal typealias StringKeyedMap<T> = Map<String, T & Any>
 
 /** Type alias representing a mutable string keyed map. **/
 public typealias MutableStringKeyedMap<T> = MutableMap<String, T & Any>
-
-/** Provides direct access to the map KordEx registers for [Event.customContext]. **/
-@Suppress("UNCHECKED_CAST")
-public val Event.extraData: MutableStringKeyedMap<Any> get() =
-    customContext as MutableStringKeyedMap<Any>
 
 /**
  * Utility function for getting a key from the given String-keyed map, attempting to cast it to the given generic

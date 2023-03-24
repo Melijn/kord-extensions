@@ -7,16 +7,16 @@
 package com.kotlindiscord.kord.extensions.utils
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
-import dev.kord.core.entity.channel.GuildChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import net.dv8tion.jda.api.events.Event
-import dev.kord.core.event.interaction.InteractionCreateEvent
-import dev.kord.core.event.message.MessageCreateEvent
+import net.dv8tion.jda.api.events.interaction.GenericInteractionCreateEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.util.*
 
 internal val localeCache: WeakHashMap<Event, Locale> = WeakHashMap()
 
 /** Attempt to resolve the locale for the given [MessageCreateEvent] object. **/
-public suspend fun MessageCreateEvent.getLocale(): Locale {
+public suspend fun MessageReceivedEvent.getLocale(): Locale {
     val existing = localeCache[this]
 
     if (existing != null) {
@@ -41,7 +41,7 @@ public suspend fun MessageCreateEvent.getLocale(): Locale {
 }
 
 /** Attempt to resolve the locale for the given [InteractionCreateEvent] object. **/
-public suspend fun InteractionCreateEvent.getLocale(): Locale {
+public suspend fun GenericInteractionCreateEvent.getLocale(): Locale {
     val existing = localeCache[this]
 
     if (existing != null) {
@@ -52,7 +52,7 @@ public suspend fun InteractionCreateEvent.getLocale(): Locale {
     var result = bot.settings.i18nBuilder.defaultLocale
 
     for (resolver in bot.settings.i18nBuilder.localeResolvers) {
-        val channel = interaction.channel.asChannel()
+        val channel = interaction.channel
 
         val guild = if (channel is GuildChannel) {
             channel.guild

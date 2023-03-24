@@ -123,18 +123,20 @@ public suspend fun Message.requireChannel(
     deleteOriginal: Boolean = true,
     deleteResponse: Boolean = true,
 ): Boolean {
-    val topRole = if (isFromGuild) {
-        author.
-    } else {
-        getAuthorAsMember()!!.getTopRole()
+    val topRole = GlobalScope.async(Dispatchers.Default, start = CoroutineStart.LAZY) {
+        if (isFromGuild) {
+            guild.retrieveMemberById(authorId).await().getTopRole()
+        } else {
+            null
+        }
     }
 
-    val messageChannel = getChannelOrNull()
+    val messageChannel = this.channel
 
     @Suppress("UnnecessaryParentheses")  // In this case, it feels more readable
     if (
-        (allowDm && messageChannel is DmChannel) ||
-        (role != null && topRole != null && topRole >= role) ||
+        (allowDm && messageChannel is PrivateChannel) ||
+        (role != null && topRole.await() != null && topRole.await() >= role) ||
         channelId == channel.id
     ) return true
 
@@ -143,7 +145,7 @@ public suspend fun Message.requireChannel(
     )
 
     if (deleteResponse) response.delete(delay)
-    if (deleteOriginal && messageChannel !is DmChannel) this.delete(delay)
+    if (deleteOriginal && messageChannel !is PrivateChannel) this.delete(delay)
 
     return false
 }
