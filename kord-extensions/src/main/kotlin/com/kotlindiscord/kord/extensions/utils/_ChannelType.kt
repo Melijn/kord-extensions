@@ -8,25 +8,23 @@ package com.kotlindiscord.kord.extensions.utils
 
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
-import dev.kord.common.entity.ChannelType
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import java.util.*
 
 /** Given a [ChannelType], return a string representing its translation key. **/
-@Suppress("DEPRECATION_ERROR")
 public fun ChannelType.toTranslationKey(): String = when (this) {
-    ChannelType.DM -> "channelType.dm"
-    ChannelType.GroupDM -> "channelType.groupDm"
-    ChannelType.GuildCategory -> "channelType.guildCategory"
-    ChannelType.GuildNews -> "channelType.guildNews"
-    ChannelType.GuildStageVoice -> "channelType.guildStageVoice"
-    ChannelType.GuildText -> "channelType.guildText"
-    ChannelType.GuildVoice -> "channelType.guildVoice"
-    ChannelType.PublicNewsThread -> "channelType.publicNewsThread"
-    ChannelType.PublicGuildThread -> "channelType.publicGuildThread"
-    ChannelType.PrivateThread -> "channelType.privateThread"
-    ChannelType.GuildDirectory -> "channelType.guildDirectory"
-
-    is ChannelType.Unknown -> "channelType.unknown"
+    ChannelType.PRIVATE -> "channelType.dm"
+    ChannelType.GROUP -> "channelType.groupDm"
+    ChannelType.CATEGORY -> "channelType.guildCategory"
+    ChannelType.NEWS -> "channelType.guildNews"
+    ChannelType.STAGE -> "channelType.guildStageVoice"
+    ChannelType.TEXT -> "channelType.guildText"
+    ChannelType.VOICE -> "channelType.guildVoice"
+    ChannelType.GUILD_NEWS_THREAD -> "channelType.publicNewsThread"
+    ChannelType.GUILD_PUBLIC_THREAD -> "channelType.publicGuildThread"
+    ChannelType.GUILD_PRIVATE_THREAD -> "channelType.privateThread"
+    ChannelType.FORUM -> "channelType.guildDirectory"
+    ChannelType.UNKNOWN -> "channelType.unknown"
 }
 
 /**

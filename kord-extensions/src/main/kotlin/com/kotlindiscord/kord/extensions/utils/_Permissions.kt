@@ -10,73 +10,66 @@ package com.kotlindiscord.kord.extensions.utils
 
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
-import dev.kord.common.entity.Permission
+import net.dv8tion.jda.api.Permission
 import java.util.*
 
 /** Given a [Permission], return a string representing its translation key. **/
 public fun Permission.toTranslationKey(): String? = when (this) {
-    Permission.AddReactions -> "permission.addReactions"
-    Permission.Administrator -> "permission.administrator"
-    Permission.All -> "permission.all"
-    Permission.AttachFiles -> "permission.attachFiles"
-    Permission.BanMembers -> "permission.banMembers"
-    Permission.ChangeNickname -> "permission.changeNickname"
-    Permission.Connect -> "permission.connect"
-    Permission.CreateInstantInvite -> "permission.createInstantInvite"
-    Permission.DeafenMembers -> "permission.deafenMembers"
-    Permission.EmbedLinks -> "permission.embedLinks"
-    Permission.KickMembers -> "permission.kickMembers"
-    Permission.ManageChannels -> "permission.manageChannels"
-    Permission.ManageEmojisAndStickers -> "permission.manageEmojisAndStickers"
-    Permission.ManageEvents -> "permission.manageEvents"
-    Permission.ManageGuild -> "permission.manageGuild"
-    Permission.ManageMessages -> "permission.manageMessages"
-    Permission.ManageNicknames -> "permission.manageNicknames"
-    Permission.ManageRoles -> "permission.manageRoles"
-    Permission.ManageThreads -> "permission.manageThreads"
-    Permission.ManageWebhooks -> "permission.manageWebhooks"
-    Permission.MentionEveryone -> "permission.mentionEveryone"
-    Permission.MoveMembers -> "permission.moveMembers"
-    Permission.MuteMembers -> "permission.muteMembers"
-    Permission.PrioritySpeaker -> "permission.prioritySpeaker"
-    Permission.ReadMessageHistory -> "permission.readMessageHistory"
-    Permission.RequestToSpeak -> "permission.requestToSpeak"
-    Permission.SendMessages -> "permission.sendMessages"
-    Permission.SendTTSMessages -> "permission.sendTTSMessages"
-    Permission.Speak -> "permission.speak"
-    Permission.Stream -> "permission.stream"
-    Permission.ModerateMembers -> "permission.timeoutMembers"
-    Permission.UseExternalEmojis -> "permission.useExternalEmojis"
-    Permission.UseApplicationCommands -> "permission.useApplicationCommands"
-    Permission.UseVAD -> "permission.useVAD"
-    Permission.ViewAuditLog -> "permission.viewAuditLog"
-    Permission.ViewChannel -> "permission.viewChannel"
-    Permission.ViewGuildInsights -> "permission.viewGuildInsights"
+    Permission.MESSAGE_ADD_REACTION -> "permission.addReactions"
+    Permission.ADMINISTRATOR -> "permission.administrator"
+    Permission.MESSAGE_ATTACH_FILES -> "permission.attachFiles"
+    Permission.BAN_MEMBERS -> "permission.banMembers"
+    Permission.NICKNAME_CHANGE -> "permission.changeNickname"
+    Permission.VOICE_CONNECT -> "permission.connect"
+    Permission.CREATE_INSTANT_INVITE -> "permission.createInstantInvite"
+    Permission.VOICE_DEAF_OTHERS -> "permission.deafenMembers"
+    Permission.MESSAGE_EMBED_LINKS -> "permission.embedLinks"
+    Permission.KICK_MEMBERS -> "permission.kickMembers"
+    Permission.MANAGE_CHANNEL -> "permission.manageChannels"
+    Permission.MANAGE_EMOJIS_AND_STICKERS -> "permission.manageEmojisAndStickers"
+    Permission.MANAGE_EVENTS -> "permission.manageEvents"
+    Permission.MANAGE_SERVER -> "permission.manageGuild"
+    Permission.MANAGE_PERMISSIONS -> "permission.managePermissions"
+    Permission.MESSAGE_MANAGE -> "permission.manageMessages"
+    Permission.NICKNAME_MANAGE -> "permission.manageNicknames"
+    Permission.MANAGE_ROLES -> "permission.manageRoles"
+    Permission.MANAGE_THREADS -> "permission.manageThreads"
+    Permission.MANAGE_WEBHOOKS -> "permission.manageWebhooks"
+    Permission.MESSAGE_MENTION_EVERYONE -> "permission.mentionEveryone"
+    Permission.VOICE_MOVE_OTHERS -> "permission.moveMembers"
+    Permission.VOICE_MUTE_OTHERS -> "permission.muteMembers"
+    Permission.PRIORITY_SPEAKER -> "permission.prioritySpeaker"
+    Permission.MESSAGE_HISTORY -> "permission.readMessageHistory"
+    Permission.REQUEST_TO_SPEAK -> "permission.requestToSpeak"
+    Permission.MESSAGE_SEND -> "permission.sendMessages"
+    Permission.MESSAGE_TTS -> "permission.sendTTSMessages"
+    Permission.VOICE_SPEAK -> "permission.speak"
+    Permission.VOICE_STREAM -> "permission.stream"
+    Permission.MODERATE_MEMBERS -> "permission.timeoutMembers"
+    Permission.MESSAGE_EXT_EMOJI -> "permission.useExternalEmojis"
+    Permission.USE_APPLICATION_COMMANDS -> "permission.useApplicationCommands"
+    Permission.VOICE_USE_VAD -> "permission.useVAD"
+    Permission.VIEW_AUDIT_LOGS -> "permission.viewAuditLog"
+    Permission.VIEW_CHANNEL -> "permission.viewChannel"
+    Permission.VIEW_GUILD_INSIGHTS -> "permission.viewGuildInsights"
 
-    Permission.CreatePublicThreads -> "permission.createPublicThreads"
-    Permission.CreatePrivateThreads -> "permission.createPrivateThreads"
-    Permission.SendMessagesInThreads -> "permission.sendMessagesInThreads"
+    Permission.CREATE_PUBLIC_THREADS -> "permission.createPublicThreads"
+    Permission.CREATE_PRIVATE_THREADS -> "permission.createPrivateThreads"
+    Permission.MESSAGE_SEND_IN_THREADS -> "permission.sendMessagesInThreads"
 
-    Permission.UseExternalStickers -> "permission.useExternalStickers"
-    Permission.UseEmbeddedActivities -> "permission.useEmbeddedActivities"
+    Permission.MESSAGE_EXT_STICKER -> "permission.useExternalStickers"
+    Permission.VOICE_START_ACTIVITIES -> "permission.useEmbeddedActivities"
 
-    is Permission.Unknown -> null
+    Permission.UNKNOWN -> null
+
 }
-
-/** Because "Stream" is a confusing name, people may look for "Video" instead. **/
-public val Permission.Video: Permission.Stream
-    inline get() = Permission.Stream
-
-/** Because it hasn't been called "Moderate Members" since the DMD testing finished. **/
-public val Permission.TimeoutMembers: Permission.ModerateMembers
-    inline get() = Permission.ModerateMembers
 
 /** Given a [CommandContext], translate the [Permission] to a human-readable string based on the context's locale. **/
 public suspend fun Permission.translate(context: CommandContext): String {
     val key = toTranslationKey()
 
     return if (key == null) {
-        context.translate("permission.unknown", replacements = arrayOf(code.value))
+        context.translate("permission.unknown", replacements = arrayOf(this.rawValue))
     } else {
         context.translate(key)
     }
@@ -90,7 +83,7 @@ public fun Permission.translate(locale: Locale): String {
         getKoin().get<TranslationsProvider>().translate(
             "permission.unknown",
             locale,
-            replacements = arrayOf(code.value)
+            replacements = arrayOf(this.rawValue)
         )
     } else {
         getKoin().get<TranslationsProvider>().translate(key, locale)

@@ -6,7 +6,6 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import dev.kord.common.annotation.KordPreview
 import net.dv8tion.jda.api.events.Event
 
 internal typealias StringKeyedMap<T> = Map<String, T & Any>
@@ -15,7 +14,6 @@ internal typealias StringKeyedMap<T> = Map<String, T & Any>
 public typealias MutableStringKeyedMap<T> = MutableMap<String, T & Any>
 
 /** Provides direct access to the map KordEx registers for [Event.customContext]. **/
-@OptIn(KordPreview::class)
 @Suppress("UNCHECKED_CAST")
 public val Event.extraData: MutableStringKeyedMap<Any> get() =
     customContext as MutableStringKeyedMap<Any>

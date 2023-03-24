@@ -36,6 +36,9 @@ dependencies {
     api(libs.toml)
     api(libs.pf4j)
 
+    // ktor api
+    api(libs.ktor)
+
     api(project(":annotations"))
     api(project(":token-parser"))
 

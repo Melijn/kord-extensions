@@ -6,19 +6,17 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import dev.kord.common.entity.Permissions
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.createWebhook
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.Webhook
-import dev.kord.core.entity.channel.GuildChannel
-import dev.kord.core.entity.channel.TopGuildChannel
-import dev.kord.core.entity.channel.TopGuildMessageChannel
-import dev.kord.core.entity.channel.thread.ThreadChannel
-import dev.kord.rest.Image
-import kotlinx.coroutines.flow.firstOrNull
+import dev.minn.jda.ktx.coroutines.await
 import mu.KotlinLogging
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Icon
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.Webhook
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel
+import java.util.*
 
 private val logger = KotlinLogging.logger {}
 
@@ -35,26 +33,24 @@ private val logger = KotlinLogging.logger {}
  * @return Webhook object for the newly created webhook, or the existing one if it's already there.
  */
 public suspend fun ensureWebhook(
-    channelObj: TopGuildMessageChannel,
+    channelObj: StandardGuildMessageChannel,
     name: String,
-    logoFormat: Image.Format = Image.Format.PNG,
+    logoFormat: Icon.IconType = Icon.IconType.PNG,
     logo: (suspend () -> ByteArray)? = null
 ): Webhook {
-    val webhook = channelObj.webhooks.firstOrNull { it.name == name }
+    val webhook = channelObj.retrieveWebhooks().await().firstOrNull { it.name == name }
 
     if (webhook != null) {
         return webhook
     }
 
-    val guild = channelObj.guild.asGuild()
+    val guild = channelObj.guild
 
     logger.info { "Creating webhook for channel: #${channelObj.name} (Guild: ${guild.name}" }
 
-    return channelObj.createWebhook(name) {
-        if (logo != null) {
-            this.avatar = Image.raw(logo.invoke(), logoFormat)
-        }
-    }
+    return channelObj.createWebhook(name)
+        .setAvatar(logo?.let { Icon.from(it.invoke(), logoFormat) })
+        .await()
 }
 
 /**
@@ -63,9 +59,9 @@ public suspend fun ensureWebhook(
  *
  * @param memberId Member ID to calculate for
  */
-public suspend fun GuildChannel.permissionsForMember(memberId: Snowflake): Permissions = when (this) {
-    is TopGuildChannel -> getEffectivePermissions(memberId)
-    is ThreadChannel -> getParent().getEffectivePermissions(memberId)
+public suspend fun GuildChannel.permissionsForMember(memberId: Long): EnumSet<Permission> = when (this) {
+    is StandardGuildMessageChannel -> permissionsForMember(memberId)
+    is ThreadChannel -> parentChannel.permissionsForMember(memberId)
 
     else -> error("Unsupported channel type for channel: $this")
 }
@@ -74,10 +70,10 @@ public suspend fun GuildChannel.permissionsForMember(memberId: Snowflake): Permi
  * Given a guild channel, attempt to calculate the effective permissions for given user, checking the
  * parent channel if this one happens to be a thread.
  *
- * @param user User to calculate for
+ * @param member Member to calculate for
  */
-public suspend fun GuildChannel.permissionsForMember(user: UserBehavior): Permissions =
-    permissionsForMember(user.id)
+public suspend fun GuildChannel.permissionsForMember(member: Member): EnumSet<Permission> =
+    permissionsForMember(member.idLong)
 
 /**
  * Convenience function that returns the thread's parent message, if it was created from one.
@@ -85,7 +81,7 @@ public suspend fun GuildChannel.permissionsForMember(user: UserBehavior): Permis
  * If it wasn't, or the parent channel can't be found, this function returns `null`.
  */
 public suspend fun ThreadChannel.getParentMessage(): Message? {
-    val parentChannel = getParentOrNull() ?: return null
+    val parentChannel = parentMessageChannel ?: return null
 
-    return parentChannel.getMessageOrNull(this.id)
+    return parentChannel.retrieveMessageById(this.id).await()
 }

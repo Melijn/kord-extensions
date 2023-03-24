@@ -6,7 +6,6 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +16,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimePeriod
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
+import net.dv8tion.jda.api.EmbedBuilder
 import kotlin.time.Duration
 
 /**
@@ -32,14 +32,6 @@ public suspend fun <T> runSuspended(
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     body: suspend CoroutineScope.() -> T
 ): T = withContext(dispatcher, body)
-
-/** Retrieve the text from the footer of an embed builder, or `null` if no text was set. **/
-public fun EmbedBuilder.Footer.textOrNull(): String? =
-    try {
-        text
-    } catch (e: UninitializedPropertyAccessException) {
-        null
-    }
 
 /**
  * Returns `true` if any element in the `Flow` matches the given predicate. Consumes the `Flow`.

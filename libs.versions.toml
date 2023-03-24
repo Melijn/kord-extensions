@@ -15,14 +15,14 @@ junit = "5.8.2"
 koin = "3.2.0"
 konf = "1.1.2"
 
-jda-lib = "5.0.0-beta.4"
+jda-lib = "5.0.0-beta.6"
 jda-ktx = "17eb77a"
 
 kotlinpoet = "1.12.0"
 ksp = "1.7.10-1.0.6"
-ktor = "2.0.3"
+ktor = "2.2.4"
 kx-ser = "1.5.0"
-kx-date = "1.4.0"
+kx-date = "0.4.0"
 linkie = "1.0.99"
 logback = "1.2.5"
 logging = "2.1.23"
@@ -58,9 +58,10 @@ kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8" }
 ksp = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 ktor-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 kx-cor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kx-cor" }
 kx-ser = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kx-ser" }
-kx-date = { module = "org.jetbrains.kotlinx:kotlinx-date-time", version.ref = "kx-date" }
+kx-date = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kx-date" }
 linkie = { module = "me.shedaniel:linkie-core", version.ref = "linkie" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 logging = { module = "io.github.microutils:kotlin-logging", version.ref = "logging" }

@@ -6,12 +6,13 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import dev.kord.core.entity.Attachment
+import dev.minn.jda.ktx.coroutines.await
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.utils.io.core.*
 import io.ktor.utils.io.jvm.javaio.*
+import net.dv8tion.jda.api.entities.Message.Attachment
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.*
@@ -44,7 +45,7 @@ public suspend fun Attachment.downloadToFile(path: Path): Path {
         path.createFile()
     }
 
-    return downloadToFile(path.toFile())
+    return proxy.downloadToFile(path.toFile()).await().toPath()
 }
 
 /** Given a [File] object, download the attachment and write it to the given file. **/
@@ -76,7 +77,7 @@ public suspend fun Attachment.downloadToFolder(file: File): Path {
         file.toPath().createDirectories()
     }
 
-    val targetFile = File(file, "${this.id.value} - ${this.filename}")
+    val targetFile = File(file, "${this.id} - ${this.fileName}")
     val channel = client.get(this.url).bodyAsChannel()
 
     targetFile.outputStream().use { fileStream ->

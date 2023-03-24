@@ -6,21 +6,15 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import dev.kord.common.annotation.KordPreview
-import dev.kord.core.Kord
-import dev.kord.core.entity.User
 import net.dv8tion.jda.api.events.Event
-import dev.kord.core.live.LiveKordEntity
-import dev.kord.core.supplier.EntitySupplyStrategy
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.firstOrNull
+import dev.minn.jda.ktx.events.listener
 import kotlinx.coroutines.withTimeoutOrNull
+import net.dv8tion.jda.api.sharding.ShardManager
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
-/** Flow containing all [User] objects in the cache. **/
-public val Kord.users: Flow<User>
-    get() = with(EntitySupplyStrategy.cache).users
 
 /**
  * Return the first received event that matches the condition.
@@ -29,53 +23,28 @@ public val Kord.users: Flow<User>
  * @param timeout Time before returning null, if no match can be done. Set to null to disable it.
  * @param condition Function return true if the event object is valid and should be returned.
  */
-public suspend inline fun <reified T : Event> Kord.waitFor(
-    timeout: Long? = null,
-    noinline condition: (suspend T.() -> Boolean) = { true }
-): T? = if (timeout == null) {
-    events.filterIsInstance<T>().firstOrNull(condition)
-} else {
-    withTimeoutOrNull(timeout) {
-        events.filterIsInstance<T>().firstOrNull(condition)
-    }
-}
-
-/**
- * Return the first received event that matches the condition.
- *
- * @param T Event to wait for.
- * @param timeout Time before returning null, if no match can be done. Set to null to disable it.
- * @param condition Function return true if the event object is valid and should be returned.
- */
-public suspend inline fun <reified T : Event> Kord.waitFor(
+public suspend inline fun <reified T : Event> ShardManager.waitFor(
     timeout: Duration? = null,
-    noinline condition: (suspend T.() -> Boolean) = { true }
-): T? = if (timeout == null) {
-    events.filterIsInstance<T>().firstOrNull(condition)
-} else {
-    withTimeoutOrNull(timeout) {
-        events.filterIsInstance<T>().firstOrNull(condition)
-    }
-}
-
-/**
- * Return the first received event that matches the condition.
- *
- * @param T Event to wait for.
- * @param timeout Time before returning null, if no match can be done. Set to null to disable it.
- * @param condition Function return true if the event object is valid and should be returned.
- */
-@KordPreview
-@Suppress("ExpressionBodySyntax")
-public suspend inline fun <reified T : Event> LiveKordEntity.waitFor(
-    timeout: Long? = null,
-    noinline condition: (suspend T.() -> Boolean) = { true }
-): T? {
-    return if (timeout == null) {
-        events.filterIsInstance<T>().firstOrNull(condition)
-    } else {
-        withTimeoutOrNull(timeout) {
-            events.filterIsInstance<T>().firstOrNull(condition)
+    noinline condition: (suspend T.() -> Boolean) = { true },
+): T? = withTimeoutOrNull(timeout ?: Duration.INFINITE) {
+    suspendCoroutine { continuation ->
+        this@waitFor.listener<T> {
+            if (condition(it)) {
+                continuation.resume(it)
+                this.cancel()
+            }
         }
     }
 }
+
+/**
+ * Return the first received event that matches the condition.
+ *
+ * @param T Event to wait for.
+ * @param timeout Time in millis before returning null, if no match can be done. Set to null to disable it.
+ * @param condition Function return true if the event object is valid and should be returned.
+ */
+public suspend inline fun <reified T : Event> ShardManager.waitFor(
+    timeout: Long? = null,
+    noinline condition: (suspend T.() -> Boolean) = { true },
+): T? = waitFor(timeout?.milliseconds, condition)

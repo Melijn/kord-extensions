@@ -6,15 +6,14 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.Role
-import dev.kord.core.entity.User
-import dev.kord.rest.builder.message.create.MessageCreateBuilder
-import dev.kord.rest.request.RestRequestException
-import io.ktor.http.*
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.InlineMessage
+import dev.minn.jda.ktx.messages.MessageCreate
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toKotlinInstant
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import kotlin.contracts.contract
 
 private const val DISCORD_USERS_URI = "https://discord.com/users"
@@ -29,7 +28,7 @@ public val User.profileLink: String
  * The user's creation timestamp.
  */
 public val User.createdAt: Instant
-    get() = this.id.timestamp
+    get() = this.timeCreated.toInstant().toKotlinInstant()
 
 /**
  * Send a private message to a user, if they have their DMs enabled.
@@ -37,16 +36,8 @@ public val User.createdAt: Instant
  * @param builder Builder lambda for populating the message fields.
  * @return The sent message, or `null` if the user has their DMs disabled.
  */
-public suspend inline fun User.dm(builder: MessageCreateBuilder.() -> Unit): Message? {
-    return try {
-        this.getDmChannel().createMessage { builder() }
-    } catch (e: RestRequestException) {
-        if (e.hasStatus(HttpStatusCode.Forbidden)) {
-            null
-        } else {
-            throw e
-        }
-    }
+public suspend inline fun User.dm(builder: InlineMessage<MessageCreateData>.() -> Unit): Message? {
+    return this.openPrivateChannel().await().sendMessage(MessageCreate { builder() }).await()
 }
 
 /**
@@ -56,15 +47,6 @@ public suspend inline fun User.dm(builder: MessageCreateBuilder.() -> Unit): Mes
  * @return The sent message, or `null` if the user has their DMs disabled.
  */
 public suspend fun User.dm(content: String): Message? = this.dm { this.content = content }
-
-/**
- * Create a lambda that returns a user's top role, if they're a member of the guild corresponding to the given ID.
- *
- * @param guildID Guild ID to check against.
- *
- * @return Lambda returning the user's top role, or null if they're not on the guild or have no roles.
- */
-public fun topRole(guildID: Snowflake): suspend (User) -> Role? = { it.asMemberOrNull(guildID)?.getTopRole() }
 
 /**
  * Check whether the given user is `null` or a bot.
