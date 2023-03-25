@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.messages.MessageCreateData
+import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
@@ -123,7 +124,7 @@ public suspend fun Message.requireChannel(
     deleteOriginal: Boolean = true,
     deleteResponse: Boolean = true,
 ): Boolean {
-    val topRole = GlobalScope.async(Dispatchers.Default, start = CoroutineStart.LAZY) {
+    val topRoleDef = GlobalScope.async(Dispatchers.Default, start = CoroutineStart.LAZY) {
         if (isFromGuild) {
             guild.retrieveMemberById(authorId).await().getTopRole()
         } else {
@@ -135,17 +136,20 @@ public suspend fun Message.requireChannel(
 
     @Suppress("UnnecessaryParentheses")  // In this case, it feels more readable
     if (
-        (allowDm && messageChannel is PrivateChannel) ||
-        (role != null && topRole.await() != null && topRole.await() >= role) ||
-        channelId == channel.id
-    ) return true
+        (allowDm && messageChannel is PrivateChannel) || messageChannel == channel || role?.let {
+            val topRole = topRoleDef.await()
+            (topRole != null && topRole >= role)
+        } == true
+    ) {
+        return true
+    }
 
     val response = respond(
-        context.translate("utils.message.useThisChannel", replacements = arrayOf(channel.mention))
+        context.translate("utils.message.useThisChannel", replacements = arrayOf(channel.asMention))
     )
 
-    if (deleteResponse) response.delete(delay)
-    if (deleteOriginal && messageChannel !is PrivateChannel) this.delete(delay)
+    if (deleteResponse) response.delete().queueAfter(delay, TimeUnit.MILLISECONDS)
+    if (deleteOriginal && messageChannel !is PrivateChannel) this.delete().queueAfter(delay, TimeUnit.MILLISECONDS)
 
     return false
 }
@@ -282,12 +286,12 @@ public suspend fun Channel.waitForMessage(
  *
  * Will return `null` if no message is found before the timeout.
  */
-public suspend fun MessageBehavior.waitForReply(
+public suspend fun Message.waitForReply(
     timeout: Long,
-    filter: (suspend (MessageCreateEvent).() -> Boolean) = { true },
+    filter: (suspend (MessageReceivedEvent).() -> Boolean) = { true },
 ): Message? {
-    val kord = getKoin().get<Kord>()
-    val event = kord.waitFor<MessageCreateEvent>(timeout) {
+    val kord = getKoin().get<ShardManager>()
+    val event = kord.waitFor<MessageReceivedEvent>(timeout) {
         message.messageReference?.message?.id == id &&
             filter()
     }
@@ -303,12 +307,12 @@ public suspend fun MessageBehavior.waitForReply(
  */
 public suspend fun CommandContext.waitForResponse(
     timeout: Long,
-    filter: (suspend (MessageCreateEvent).() -> Boolean) = { true },
+    filter: (suspend (MessageReceivedEvent).() -> Boolean) = { true },
 ): Message? {
-    val kord = com.kotlindiscord.kord.extensions.utils.getKoin().get<Kord>()
-    val event = kord.waitFor<MessageCreateEvent>(timeout) {
-        message.author?.id == getUser()?.id &&
-            message.channelId == getChannel().id &&
+    val kord = com.kotlindiscord.kord.extensions.utils.getKoin().get<ShardManager>()
+    val event = kord.waitFor<MessageReceivedEvent>(timeout) {
+        message.author == getUser() &&
+            message.channel == getChannel() &&
             filter()
     }
 

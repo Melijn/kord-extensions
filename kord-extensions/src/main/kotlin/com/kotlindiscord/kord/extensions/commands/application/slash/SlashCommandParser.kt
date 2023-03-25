@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:OptIn(KordPreview::class)
 @file:Suppress(
     "StringLiteralDuplication" // Needs cleaning up with polymorphism later anyway
 )
@@ -17,10 +16,8 @@ import com.kotlindiscord.kord.extensions.commands.Argument
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.converters.*
 import com.kotlindiscord.kord.extensions.commands.getDefaultTranslatedDisplayName
-import dev.kord.common.annotation.KordPreview
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
 import mu.KotlinLogging
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
 
 private val logger = KotlinLogging.logger {}
 
@@ -47,18 +44,14 @@ public open class SlashCommandParser {
         logger.trace { "Arguments object: $argumentsObj (${argumentsObj.args.size} args)" }
 
         val args = argumentsObj.args.toMutableList()
-        val command = context.event.interaction.command
+        val command = context.event.interaction
 
-        val values = command.options.mapValues {
-            if (it.value is StringOptionValue) {
-                StringOptionValue((it.value.value as String).trim(), it.value.focused)
-            } else {
-                it.value
-            }
-        } as Map<String, OptionValue<*>>
+        val values = command.options.associateBy {
+            it.name
+        }
 
         var currentArg: Argument<*>?
-        var currentValue: OptionValue<*>?
+        var currentValue: OptionMapping?
 
         @Suppress("LoopWithTooManyJumpStatements")  // Listen here u lil shit
         while (true) {

@@ -9,13 +9,13 @@ package com.kotlindiscord.kord.extensions.commands.application.slash
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Public-only slash command context. **/
 public class PublicSlashCommandContext<A : Arguments>(
-    override val event: ChatInputCommandInteractionCreateEvent,
+    override val event: GenericCommandInteractionEvent,
     override val command: SlashCommand<PublicSlashCommandContext<A>, A>,
-    override val interactionResponse: PublicMessageInteractionResponseBehavior,
+    override val interactionResponse: InteractionHook,
     cache: MutableStringKeyedMap<Any>
 ) : SlashCommandContext<PublicSlashCommandContext<A>, A>(event, command, cache), PublicInteractionContext

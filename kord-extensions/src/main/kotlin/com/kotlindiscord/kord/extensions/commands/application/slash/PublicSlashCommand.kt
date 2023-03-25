@@ -5,7 +5,7 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
+
 
 package com.kotlindiscord.kord.extensions.commands.application.slash
 
@@ -17,14 +17,13 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.interaction.respondPublic
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 public typealias InitialPublicSlashResponseBehavior =
-    (suspend InteractionResponseCreateBuilder.(ChatInputCommandInteractionCreateEvent) -> Unit)?
+    (suspend InteractionHook.(GenericCommandInteractionEvent) -> Unit)?
 
 /** Public slash command. **/
 public class PublicSlashCommand<A : Arguments>(
@@ -42,11 +41,11 @@ public class PublicSlashCommand<A : Arguments>(
         initialResponseBuilder = body
     }
 
-    override suspend fun call(event: ChatInputCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: GenericCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         findCommand(event).run(event, cache)
     }
 
-    override suspend fun run(event: ChatInputCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun run(event: GenericCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         val invocationEvent = PublicSlashCommandInvocationEvent(this, event)
         emitEventAsync(invocationEvent)
 
@@ -67,9 +66,9 @@ public class PublicSlashCommand<A : Arguments>(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
+            event.interaction.reply(MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }
+            }).
 
             emitEventAsync(PublicSlashCommandFailedChecksEvent(this, event, e.reason))
 
@@ -77,9 +76,9 @@ public class PublicSlashCommand<A : Arguments>(
         }
 
         val response = if (initialResponseBuilder != null) {
-            event.interaction.respondPublic { initialResponseBuilder!!(event) }
+            event.interaction.reply(MessageCreate { initialResponseBuilder!!(event) }).await()
         } else {
-            event.interaction.deferPublicResponseUnsafe()
+            event.interaction.deferReply().await()
         }
 
         val context = PublicSlashCommandContext(event, this, response, cache)

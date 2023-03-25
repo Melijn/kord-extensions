@@ -8,11 +8,10 @@ package com.kotlindiscord.kord.extensions.pagination
 
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
-import dev.kord.core.behavior.interaction.response.edit
-import dev.kord.core.entity.ReactionEmoji
-import dev.kord.rest.builder.message.modify.embed
+import dev.minn.jda.ktx.messages.MessageEdit
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
 
 /**
@@ -22,14 +21,14 @@ import java.util.*
  */
 public class PublicResponsePaginator(
     pages: Pages,
-    owner: UserBehavior? = null,
+    owner: User? = null,
     timeoutSeconds: Long? = null,
     keepEmbed: Boolean = true,
-    switchEmoji: ReactionEmoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
+    switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
     bundle: String? = null,
     locale: Locale? = null,
 
-    public val interaction: PublicMessageInteractionResponseBehavior,
+    public val interaction: InteractionHook,
 ) : BaseButtonPaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
     /** Whether this paginator has been set up for the first time. **/
     public var isSetup: Boolean = false
@@ -43,13 +42,15 @@ public class PublicResponsePaginator(
             updateButtons()
         }
 
-        interaction.edit {
-            embed { applyPage() }
+        interaction.editOriginal(
+            MessageEdit {
+                embed { applyPage() }
 
-            with(this@PublicResponsePaginator.components) {
-                this@edit.applyToMessage()
+                with(this@PublicResponsePaginator.components) {
+                    this@MessageEdit.applyToMessage()
+                }
             }
-        }
+        )
     }
 
     override suspend fun destroy() {
@@ -59,11 +60,11 @@ public class PublicResponsePaginator(
 
         active = false
 
-        interaction.edit {
+        interaction.editOriginal(MessageEdit {
             embed { applyPage() }
 
-            this.components = mutableListOf()
-        }
+            this.builder.setComponents(mutableListOf())
+        })
 
         super.destroy()
     }
@@ -73,7 +74,7 @@ public class PublicResponsePaginator(
 @Suppress("FunctionNaming")  // Factory function
 public fun PublicResponsePaginator(
     builder: PaginatorBuilder,
-    interaction: PublicMessageInteractionResponseBehavior
+    interaction: InteractionHook
 ): PublicResponsePaginator = PublicResponsePaginator(
     pages = builder.pages,
     owner = builder.owner,

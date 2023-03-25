@@ -7,12 +7,12 @@
 package com.kotlindiscord.kord.extensions.commands.events
 
 import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommand
-import dev.kord.core.event.interaction.ApplicationCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 
 // region Invocation events
 
 /** Basic event emitted when am application command is invoked. **/
 public interface ApplicationCommandInvocationEvent<
     C : ApplicationCommand<*>,
-    E : ApplicationCommandInteractionCreateEvent
+    E : GenericCommandInteractionEvent
 > : CommandInvocationEvent<C, E>

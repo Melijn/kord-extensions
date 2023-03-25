@@ -32,8 +32,8 @@ public fun Scope.user(tag: String, id: String) {
  *
  * @param userObj Kord user object to add to this scope.
  */
-public fun Scope.user(userObj: dev.kord.core.entity.User): Unit =
-    user(userObj.tag, userObj.id.toString())
+public fun Scope.user(userObj: net.dv8tion.jda.api.entities.User): Unit =
+    user(userObj.asTag, userObj.id)
 
 /**
  * Convenience function to quickly set a Sentry tag in the current scope.

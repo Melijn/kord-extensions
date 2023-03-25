@@ -10,20 +10,19 @@ import com.kotlindiscord.kord.extensions.commands.events.ApplicationCommandInvoc
 import com.kotlindiscord.kord.extensions.commands.events.ChatCommandInvocationEvent
 import com.kotlindiscord.kord.extensions.commands.events.CommandInvocationEvent
 import com.kotlindiscord.kord.extensions.utils.getLocale
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.channel.MessageChannelBehavior
-import dev.kord.core.cache.data.UserData
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import java.util.*
 
 /** Data holder for information about command invocation. **/
 public data class DiscriminatingContext(
     /** Command invoker's [UserData]. **/
-    public val user: UserData,
+    public val user: User,
     /** [MessageChannelBehavior] of the messageChannel in which the command was invoked. **/
-    public val channel: MessageChannelBehavior,
+    public val channel: MessageChannel,
     /** guildId of the Guild in which the command was invoked, can be null if the command was invoked
      * in DMs. **/
-    public val guildId: Snowflake?,
+    public val guildId: Long?,
     /** Command invoker's [UserData]. **/
     public val event: CommandInvocationEvent<*, *>,
     /** Locale of this command's executor. **/
@@ -42,9 +41,9 @@ public data class DiscriminatingContext(
     public constructor(
         event: ApplicationCommandInvocationEvent<*, *>,
     ) : this(
-        event.event.interaction.user.data,
-        event.event.interaction.channel,
-        event.event.interaction.invokedCommandGuildId,
+        event.event.interaction.user,
+        event.event.interaction.messageChannel,
+        event.event.interaction.guild?.idLong,
         event,
         { event.event.getLocale() }
     )

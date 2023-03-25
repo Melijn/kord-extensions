@@ -5,7 +5,6 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
 
 package com.kotlindiscord.kord.extensions.components.buttons
 
@@ -15,23 +14,24 @@ import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import com.kotlindiscord.kord.extensions.utils.scheduling.Task
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.common.entity.ButtonStyle
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.interaction.respondPublic
-import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
-import dev.kord.rest.builder.component.ActionRowBuilder
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.InlineMessage
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.interactions.components.ItemComponent
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
+import net.dv8tion.jda.internal.interactions.component.ButtonImpl
 
 public typealias InitialPublicButtonResponseBuilder =
-    (suspend InteractionResponseCreateBuilder.(ButtonInteractionCreateEvent) -> Unit)?
+    (suspend InlineMessage<MessageCreateData>.(ButtonInteractionEvent) -> Unit)?
 
 /** Class representing a public-only button component. **/
 public open class PublicInteractionButton(
     timeoutTask: Task?
 ) : InteractionButtonWithAction<PublicInteractionButtonContext>(timeoutTask) {
     /** Button style - anything but Link is valid. **/
-    public open var style: ButtonStyle = ButtonStyle.Primary
+    public open var style: ButtonStyle = ButtonStyle.PRIMARY
 
     /** @suppress Initial response builder. **/
     public open var initialResponseBuilder: InitialPublicButtonResponseBuilder = null
@@ -57,16 +57,11 @@ public open class PublicInteractionButton(
         }
     }
 
-    override fun apply(builder: ActionRowBuilder) {
-        builder.interactionButton(style, id) {
-            emoji = partialEmoji
-            label = this@PublicInteractionButton.label
-
-            disabled = this@PublicInteractionButton.disabled
-        }
+    override fun apply(builder: MutableList<ItemComponent>) {
+        builder.add(ButtonImpl(id, label, style, disabled, partialEmoji))
     }
 
-    override suspend fun call(event: ButtonInteractionCreateEvent): Unit = withLock {
+    override suspend fun call(event: ButtonInteractionEvent): Unit = withLock {
         val cache: MutableStringKeyedMap<Any> = mutableMapOf()
 
         super.call(event)
@@ -76,20 +71,22 @@ public open class PublicInteractionButton(
                 return@withLock
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
+            event.interaction.reply(MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }
+            })
 
             return@withLock
         }
 
         val response = if (initialResponseBuilder != null) {
-            event.interaction.respondPublic { initialResponseBuilder!!(event) }
+            event.interaction.reply(MessageCreate {
+                initialResponseBuilder!!(event)
+            }).await()
         } else {
             if (!deferredAck) {
-                event.interaction.deferPublicResponseUnsafe()
+                event.interaction.deferReply().await()
             } else {
-                event.interaction.deferPublicMessageUpdate()
+                event.interaction.deferEdit().await()
             }
         }
 
@@ -119,7 +116,7 @@ public open class PublicInteractionButton(
     override fun validate() {
         super.validate()
 
-        if (style == ButtonStyle.Link) {
+        if (style == ButtonStyle.LINK) {
             error("The Link button style is reserved for link buttons.")
         }
     }

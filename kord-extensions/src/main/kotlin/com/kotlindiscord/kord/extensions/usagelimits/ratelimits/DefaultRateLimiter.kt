@@ -9,12 +9,10 @@ package com.kotlindiscord.kord.extensions.usagelimits.ratelimits
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.usagelimits.CachedUsageLimitType
 import com.kotlindiscord.kord.extensions.usagelimits.DiscriminatingContext
-import dev.kord.common.DiscordTimestampStyle
-import dev.kord.common.toMessageFormat
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.event.interaction.ApplicationCommandInteractionCreateEvent
-import dev.kord.core.event.message.MessageCreateEvent
-import kotlinx.datetime.Instant
+import dev.minn.jda.ktx.coroutines.await
+import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.TimeFormat
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -111,7 +109,7 @@ public open class DefaultRateLimiter : RateLimiter {
             CachedUsageLimitType.COMMAND_USER_CHANNEL -> translationsProvider.translate(
                 "ratelimit.notifier.commandUserChannel",
                 locale,
-                replacements = arrayOf(discordTimeStamp, commandName, context.channel.mention)
+                replacements = arrayOf(discordTimeStamp, commandName, context.channel.asMention)
             )
 
             CachedUsageLimitType.COMMAND_USER_GUILD -> translationsProvider.translate(
@@ -129,7 +127,7 @@ public open class DefaultRateLimiter : RateLimiter {
             CachedUsageLimitType.GLOBAL_USER_CHANNEL -> translationsProvider.translate(
                 "ratelimit.notifier.globalUserChannel",
                 locale,
-                replacements = arrayOf(discordTimeStamp, context.channel.mention)
+                replacements = arrayOf(discordTimeStamp, context.channel.asMention)
             )
 
             CachedUsageLimitType.GLOBAL_USER_GUILD -> translationsProvider.translate(
@@ -147,7 +145,7 @@ public open class DefaultRateLimiter : RateLimiter {
             CachedUsageLimitType.GLOBAL_CHANNEL -> translationsProvider.translate(
                 "ratelimit.notifier.globalChannel",
                 locale,
-                replacements = arrayOf(discordTimeStamp, context.channel.mention)
+                replacements = arrayOf(discordTimeStamp, context.channel.asMention)
             )
 
             CachedUsageLimitType.GLOBAL_GUILD -> translationsProvider.translate(
@@ -183,15 +181,13 @@ public open class DefaultRateLimiter : RateLimiter {
         val restOfRateLimitDuration = rateLimit.duration -
             (System.currentTimeMillis().milliseconds - usageHistory.usages.first().milliseconds)
         val endOfRateLimit = System.currentTimeMillis() + restOfRateLimitDuration.inWholeMilliseconds
-        val discordTimeStamp = Instant.fromEpochMilliseconds(endOfRateLimit)
-            .toMessageFormat(DiscordTimestampStyle.RelativeTime)
+
+        val discordTimeStamp = TimeFormat.RELATIVE.format(endOfRateLimit)
         val message = getMessage(context, discordTimeStamp, type)
 
         when (val discordEvent = context.event.event) {
-            is MessageCreateEvent -> discordEvent.message.channel.createMessage(message)
-            is ApplicationCommandInteractionCreateEvent -> discordEvent.interaction.respondEphemeral {
-                content = message
-            }
+            is MessageReceivedEvent -> discordEvent.message.channel.sendMessage(message).await()
+            is GenericCommandInteractionEvent -> discordEvent.interaction.reply(message).setEphemeral(true).await()
         }
     }
 }

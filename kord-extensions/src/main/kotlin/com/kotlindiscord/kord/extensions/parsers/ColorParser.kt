@@ -9,8 +9,8 @@ package com.kotlindiscord.kord.extensions.parsers
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.parsers.caches.ColorCache
-import dev.kord.common.Color
 import org.koin.core.component.inject
+import java.awt.Color
 import java.util.*
 
 /**

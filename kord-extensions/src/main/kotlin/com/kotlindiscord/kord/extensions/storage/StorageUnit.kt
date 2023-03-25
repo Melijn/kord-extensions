@@ -11,16 +11,15 @@ import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.checks.messageFor
 import com.kotlindiscord.kord.extensions.checks.userFor
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.MessageBehavior
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.ChannelBehavior
-import dev.kord.core.entity.channel.DmChannel
 import net.dv8tion.jda.api.events.Event
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.Channel
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import org.koin.core.component.inject
 import kotlin.reflect.KClass
 
@@ -51,19 +50,19 @@ public open class StorageUnit<T : Data>(
     protected val dataAdapter: DataAdapter<*> by inject()
 
     /** Channel context, supplied via [withChannel] or [withChannelFrom]. **/
-    public open var channel: Snowflake? = null
+    public open var channel: Long? = null
         internal set
 
     /** Guild context, supplied via [withGuild] or [withGuildFrom]. **/
-    public open var guild: Snowflake? = null
+    public open var guild: Long? = null
         internal set
 
     /** Message context, supplied via [withMessage] or [withMessageFrom]. **/
-    public open var message: Snowflake? = null
+    public open var message: Long? = null
         internal set
 
     /** User context, supplied via [withUser] or [withUserFrom]. **/
-    public open var user: Snowflake? = null
+    public open var user: Long? = null
         internal set
 
     /** Reference to the serializer for this storage unit's data type. **/
@@ -113,10 +112,10 @@ public open class StorageUnit<T : Data>(
     /**
      * Copy this [StorageUnit], applying the given channel's ID to its context, but only if it's not a DM channel.
      */
-    public suspend fun withChannel(channelObj: ChannelBehavior): StorageUnit<T> {
+    public suspend fun withChannel(channelObj: Channel): StorageUnit<T> {
         return copy().apply {
-            if (channelObj.asChannel() !is DmChannel) {
-                channel = channelObj.id
+            if (channelObj !is PrivateChannel) {
+                channel = channelObj.idLong
             }
         }
     }
@@ -124,7 +123,7 @@ public open class StorageUnit<T : Data>(
     /**
      * Copy this [StorageUnit], applying the given channel ID to its context, but only if it's not a DM channel.
      */
-    public fun withChannel(channelId: Snowflake): StorageUnit<T> {
+    public fun withChannel(channelId: Long): StorageUnit<T> {
         return copy().apply {
             channel = channelId
         }
@@ -145,16 +144,16 @@ public open class StorageUnit<T : Data>(
     /**
      * Copy this [StorageUnit], applying the given guild's ID to its context.
      */
-    public fun withGuild(guildObj: GuildBehavior): StorageUnit<T> {
+    public fun withGuild(guildObj: Guild): StorageUnit<T> {
         return copy().apply {
-            guild = guildObj.id
+            guild = guildObj.idLong
         }
     }
 
     /**
      * Copy this [StorageUnit], applying the given guild ID to its context.
      */
-    public fun withGuild(guildId: Snowflake): StorageUnit<T> {
+    public fun withGuild(guildId: Long): StorageUnit<T> {
         return copy().apply {
             guild = guildId
         }
@@ -172,16 +171,16 @@ public open class StorageUnit<T : Data>(
     /**
      * Copy this [StorageUnit], applying the given message's ID to its context.
      */
-    public fun withMessage(messageObj: MessageBehavior): StorageUnit<T> {
+    public fun withMessage(messageObj: Message): StorageUnit<T> {
         return copy().apply {
-            message = messageObj.id
+            message = messageObj.idLong
         }
     }
 
     /**
      * Copy this [StorageUnit], applying the given message ID to its context.
      */
-    public fun withMessage(messageId: Snowflake): StorageUnit<T> {
+    public fun withMessage(messageId: Long): StorageUnit<T> {
         return copy().apply {
             message = messageId
         }
@@ -199,16 +198,16 @@ public open class StorageUnit<T : Data>(
     /**
      * Copy this [StorageUnit], applying the given user's ID to its context.
      */
-    public fun withUser(userObj: UserBehavior): StorageUnit<T> {
+    public fun withUser(userObj: User): StorageUnit<T> {
         return copy().apply {
-            user = userObj.id
+            user = userObj.idLong
         }
     }
 
     /**
      * Copy this [StorageUnit], applying the given user ID to its context.
      */
-    public fun withUser(userId: Snowflake): StorageUnit<T> {
+    public fun withUser(userId: Long): StorageUnit<T> {
         return copy().apply {
             user = userId
         }

@@ -31,6 +31,13 @@ import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.events.interaction.GenericAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.Command
+import net.dv8tion.jda.api.interactions.commands.CommandInteractionPayload
 import java.util.*
 
 /**
@@ -46,7 +53,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
     public open val arguments: (() -> A)? = null,
     public open val parentCommand: SlashCommand<*, *>? = null,
     public open val parentGroup: SlashGroup? = null
-) : ApplicationCommand<ChatInputCommandInteractionCreateEvent>(extension) {
+) : ApplicationCommand<GenericCommandInteractionEvent>(extension) {
     /** @suppress This is only meant for use by code that extends the command system. **/
     public val kxLogger: KLogger = KotlinLogging.logger {}
 
@@ -70,10 +77,10 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
      */
     public val localizedDescription: Localized<String> by lazy { localize(description) }
 
-    override val type: ApplicationCommandType = ApplicationCommandType.ChatInput
+    override val type: Command.Type = Command.Type.SLASH
 
-    override var guildId: Snowflake? = if (parentCommand == null && parentGroup == null) {
-        settings.applicationCommandsBuilder.defaultGuild
+    override var guildId: Long? = if (parentCommand == null && parentGroup == null) {
+        settings.applicationCommandsBuilder.defaultGuild?.id
     } else {
         null
     }
@@ -137,7 +144,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
 
     /** Override this to implement your command's calling logic. Check subtypes for examples! **/
     public abstract override suspend fun call(
-        event: ChatInputCommandInteractionCreateEvent,
+        event: GenericCommandInteractionEvent,
         cache: MutableStringKeyedMap<Any>
     )
 
@@ -147,7 +154,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
     /**
      * Override this to implement the final calling logic, including creating the command context and running with it.
      */
-    public abstract suspend fun run(event: ChatInputCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>)
+    public abstract suspend fun run(event: GenericCommandInteractionEvent, cache: MutableStringKeyedMap<Any>)
 
     /** If enabled, adds the initial Sentry breadcrumb to the given context. **/
     public open suspend fun firstSentryBreadcrumb(context: C, commandObj: SlashCommand<*, *>) {
@@ -167,7 +174,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
 
                 if (channel != null) {
                     data["channel"] = when (channel) {
-                        is DmChannel -> "Private Message (${channel.id})"
+                        is PrivateChannel -> "Private Message (${channel.id})"
                         is GuildMessageChannel -> "#${channel.name} (${channel.id})"
 
                         else -> channel.id.toString()
@@ -182,7 +189,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
     }
 
     override suspend fun runChecks(
-        event: ChatInputCommandInteractionCreateEvent,
+        event: GenericCommandInteractionEvent,
         cache: MutableStringKeyedMap<Any>
     ): Boolean {
         val locale = event.getLocale()
@@ -226,34 +233,35 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
     }
 
     /** Given a command event, resolve the correct command or subcommand object. **/
-    public open fun findCommand(event: ChatInputCommandInteractionCreateEvent): SlashCommand<*, *> =
-        findCommand(event.interaction.command)
+    public open fun findCommand(event: GenericCommandInteractionEvent): SlashCommand<*, *> =
+        findCommand(event.interaction)
 
     /** Given an autocomplete event, resolve the correct command or subcommand object. **/
-    public open fun findCommand(event: AutoCompleteInteractionCreateEvent): SlashCommand<*, *> =
-        findCommand(event.interaction.command)
+    public open fun findCommand(event: CommandAutoCompleteInteractionEvent): SlashCommand<*, *> =
+        findCommand(event.interaction)
 
     /** Given an [InteractionCommand], resolve the correct command or subcommand object. **/
-    public open fun findCommand(eventCommand: InteractionCommand): SlashCommand<*, *> =
-        when (eventCommand) {
-            is SubCommand -> {
-                val firstSubCommandKey = eventCommand.name
-
-                this.subCommands.firstOrNull { it.localizedName.default == firstSubCommandKey }
-                    ?: error("Unknown subcommand: $firstSubCommandKey")
-            }
-
-            is GroupCommand -> {
-                val firstEventGroupKey = eventCommand.groupName
-                val group = this.groups[firstEventGroupKey] ?: error("Unknown command group: $firstEventGroupKey")
+    public open fun findCommand(eventCommand: CommandInteractionPayload): SlashCommand<*, *> {
+        val subcommandGroup = eventCommand.subcommandGroup
+        return when {
+            subcommandGroup != null -> {
+                val group = this.groups[subcommandGroup] ?: error("Unknown command group: $subcommandGroup")
                 val firstSubCommandKey = eventCommand.name
 
                 group.subCommands.firstOrNull { it.localizedName.default == firstSubCommandKey }
                     ?: error("Unknown subcommand: $firstSubCommandKey")
             }
 
+            eventCommand.subcommandName != null -> {
+                val firstSubCommandKey = eventCommand.name
+
+                this.subCommands.firstOrNull { it.localizedName.default == firstSubCommandKey }
+                    ?: error("Unknown subcommand: $firstSubCommandKey")
+            }
+
             else -> this
         }
+    }
 
     /** A general way to handle errors thrown during the course of a command's execution. **/
     public open suspend fun handleError(context: C, t: Throwable, commandObj: SlashCommand<*, *>) {
@@ -272,7 +280,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
 
                 tag("private", "false")
 
-                if (channel is DmChannel) {
+                if (channel is PrivateChannel) {
                     tag("private", "true")
                 }
 

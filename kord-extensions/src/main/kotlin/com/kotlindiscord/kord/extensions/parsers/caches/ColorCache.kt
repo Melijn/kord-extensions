@@ -9,8 +9,8 @@ package com.kotlindiscord.kord.extensions.parsers.caches
 import com.kotlindiscord.kord.extensions.*
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import dev.kord.common.Color
 import org.koin.core.component.inject
+import java.awt.Color
 import java.util.*
 
 private typealias ColorMap = LinkedHashMap<String, Color>

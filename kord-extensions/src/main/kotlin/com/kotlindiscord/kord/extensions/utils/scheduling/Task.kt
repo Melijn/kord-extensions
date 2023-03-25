@@ -21,10 +21,29 @@ import kotlinx.datetime.toLocalDateTime
 import mu.KLogger
 import mu.KotlinLogging
 import org.koin.core.component.inject
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.ForkJoinPool
+import java.util.concurrent.ScheduledExecutorService
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
+
+public object TaskConfig {
+    private val threadFactory = { name: String ->
+        var counter = 0
+        { r: Runnable ->
+            Thread(r, "[$name-Pool-%d]".replace("%d", "${counter++}"))
+        }
+    }
+
+    private val executorService: ExecutorService = ForkJoinPool()
+    private val dispatcher = executorService.asCoroutineDispatcher()
+    public val scheduledExecutorService: ScheduledExecutorService =
+        Executors.newScheduledThreadPool(15, threadFactory.invoke("Repeater"))
+    public val coroutineScope: CoroutineScope = CoroutineScope(dispatcher)
+}
 
 /**
  * Simple class representing a polling-based delayed task. Coroutine-based.
@@ -41,7 +60,7 @@ public open class Task(
     public open val duration: Duration,
     public open val callback: suspend () -> Unit,
     public open val pollingSeconds: Long = 1,
-    public open val coroutineScope: CoroutineScope = com.kotlindiscord.kord.extensions.utils.getKoin().get<Kord>(),
+    public open val coroutineScope: CoroutineScope = TaskConfig.coroutineScope,
     public open val parent: Scheduler? = null,
 
     public val name: String = "Unnamed",
@@ -66,9 +85,11 @@ public open class Task(
     public val running: Boolean get() = job != null
 
     /** Calculate whether it's time to start this task, returning `true` if so. **/
+    @OptIn(ExperimentalTime::class)
     public fun shouldStart(): Boolean = started.elapsedNow() >= duration
 
     /** Mark the start time and begin waiting until the execution time has been reached. **/
+    @OptIn(ExperimentalTime::class)
     public fun start() {
         val sentryContext = SentryContext()
 

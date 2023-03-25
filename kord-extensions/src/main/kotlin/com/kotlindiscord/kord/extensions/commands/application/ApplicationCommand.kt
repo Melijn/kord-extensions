@@ -47,7 +47,7 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
     public open val checkList: MutableList<CheckWithCache<E>> = mutableListOf()
 
     /** @suppress **/
-    public open var guildId: Snowflake? = settings.applicationCommandsBuilder.defaultGuild
+    public open var guildId: Long? = settings.applicationCommandsBuilder.defaultGuild?.id
 
     /**
      * Whether to allow everyone to use this command by default.
@@ -100,8 +100,9 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
      * enforce them please also call [hasPermission]**
      */
     public fun requirePermission(vararg permissions: Permission) {
-        val newPermissions = (defaultMemberPermissions ?: Permissions()) + Permissions(*permissions)
-        defaultMemberPermissions = newPermissions
+        val enumSet = EnumSet.noneOf(Permission::class.java)
+        enumSet.addAll(permissions)
+        defaultMemberPermissions = defaultMemberPermissions?.apply { enumSet.addAll(this) }
     }
 
     /**
@@ -146,17 +147,17 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
 
     /** Specify a specific guild for this application command to be locked to. **/
     public open fun guild(guild: Snowflake) {
-        this.guildId = guild
+        this.guildId = guild.id
     }
 
     /** Specify a specific guild for this application command to be locked to. **/
     public open fun guild(guild: Long) {
-        this.guildId = Snowflake(guild)
+        this.guildId = guild
     }
 
     /** Specify a specific guild for this application command to be locked to. **/
     public open fun guild(guild: Guild) {
-        this.guildId = Snowflake(guild.id)
+        this.guildId = guild.idLong
     }
 
     /**

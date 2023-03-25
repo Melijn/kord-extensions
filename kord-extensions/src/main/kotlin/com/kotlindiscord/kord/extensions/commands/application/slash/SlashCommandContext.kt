@@ -9,7 +9,7 @@ package com.kotlindiscord.kord.extensions.commands.application.slash
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommandContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 
 /**
  * Slash command context, containing everything you need for your slash command's execution.
@@ -17,7 +17,7 @@ import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
  * @param event Event that triggered this slash command invocation.
  */
 public open class SlashCommandContext<C : SlashCommandContext<C, A>, A : Arguments>(
-    public open val event: ChatInputCommandInteractionCreateEvent,
+    public open val event: GenericCommandInteractionEvent,
     public override val command: SlashCommand<C, A>,
     cache: MutableStringKeyedMap<Any>
 ) : ApplicationCommandContext(event, command, cache) {

@@ -13,16 +13,16 @@ import com.kotlindiscord.kord.extensions.sentry.tag
 import com.kotlindiscord.kord.extensions.sentry.user
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.utils.scheduling.Task
-import dev.kord.common.entity.DiscordPartialEmoji
-import dev.kord.core.entity.channel.DmChannel
-import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import io.sentry.Sentry
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.emoji.EmojiUnion
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 
 /** Abstract class representing a button component that has a click action. **/
 public abstract class InteractionButtonWithAction<C : InteractionButtonContext>(timeoutTask: Task?) :
-    ComponentWithAction<ButtonInteractionCreateEvent, C>(timeoutTask), HasPartialEmoji {
+    ComponentWithAction<ButtonInteractionEvent, C>(timeoutTask), HasPartialEmoji {
     internal val logger: KLogger = KotlinLogging.logger {}
 
     /** Button label, for display on Discord. **/
@@ -31,7 +31,7 @@ public abstract class InteractionButtonWithAction<C : InteractionButtonContext>(
     /** Whether this button is disabled. **/
     public open var disabled: Boolean = false
 
-    public override var partialEmoji: DiscordPartialEmoji? = null
+    public override var partialEmoji: EmojiUnion? = null
 
     /** Mark this button as disabled. **/
     public open fun disable() {
@@ -73,7 +73,7 @@ public abstract class InteractionButtonWithAction<C : InteractionButtonContext>(
 
                 tag("private", "false")
 
-                if (channel is DmChannel) {
+                if (channel is PrivateChannel) {
                     tag("private", "true")
                 }
 

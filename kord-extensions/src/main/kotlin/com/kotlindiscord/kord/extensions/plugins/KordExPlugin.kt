@@ -8,9 +8,10 @@ package com.kotlindiscord.kord.extensions.plugins
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import dev.kord.core.Kord
+import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
@@ -29,7 +30,7 @@ public abstract class KordExPlugin(wrapper: PluginWrapper) : Plugin(wrapper), Ko
     public val bot: ExtensibleBot by inject()
 
     /** Quick access to the Kord object. **/
-    public val kord: Kord by inject()
+    public val kord: ShardManager by inject()
 
     /**
      * Override this to set up and configure your plugin.
@@ -80,14 +81,14 @@ public abstract class KordExPlugin(wrapper: PluginWrapper) : Plugin(wrapper), Ko
     }
 
     override fun start(): Unit = runBlocking {
-        kord.launch { asyncStart() }.join()
+        TaskConfig.coroutineScope.launch { asyncStart() }.join()
     }
 
     override fun stop(): Unit = runBlocking {
-        kord.launch { asyncStop() }.join()
+        TaskConfig.coroutineScope.launch { asyncStop() }.join()
     }
 
     override fun delete(): Unit = runBlocking {
-        kord.launch { asyncDelete() }.join()
+        TaskConfig.coroutineScope.launch { asyncDelete() }.join()
     }
 }

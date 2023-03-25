@@ -12,10 +12,10 @@ package com.kotlindiscord.kord.extensions.components
 
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.utils.scheduling.Task
-import dev.kord.rest.builder.message.create.MessageCreateBuilder
-import dev.kord.rest.builder.message.create.actionRow
-import dev.kord.rest.builder.message.modify.MessageModifyBuilder
-import dev.kord.rest.builder.message.modify.actionRow
+import dev.minn.jda.ktx.messages.InlineMessage
+import net.dv8tion.jda.api.interactions.components.ItemComponent
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
+import net.dv8tion.jda.api.utils.messages.MessageEditData
 import org.koin.core.component.inject
 import kotlin.time.Duration
 
@@ -235,26 +235,26 @@ public open class ComponentContainer(
     }
 
     /** Apply the components in this container to a message that's being created. **/
-    public open suspend fun MessageCreateBuilder.applyToMessage() {
+    public open suspend fun InlineMessage<MessageCreateData>.applyToMessage() {
         sort()
 
         for (row in rows.filter { it.isNotEmpty() }) {
-            actionRow {
-                row.forEach { it.apply(this) }
-            }
+            val components = mutableListOf<ItemComponent>()
+            row.forEach { it.apply(components) }
+            actionRow(components)
         }
     }
 
     /** Apply the components in this container to a message that's being edited. **/
-    public open suspend fun MessageModifyBuilder.applyToMessage() {
-        this.components = mutableListOf()  // Clear 'em
+    public open suspend fun InlineMessage<MessageEditData>.applyToMessage() {
+        this.builder.setComponents(mutableListOf())  // Clear 'em
 
         sort()
 
         for (row in rows.filter { it.isNotEmpty() }) {
-            actionRow {
-                row.forEach { it.apply(this) }
-            }
+            val components = mutableListOf<ItemComponent>()
+            row.forEach { it.apply(components) }
+            actionRow(components)
         }
     }
 

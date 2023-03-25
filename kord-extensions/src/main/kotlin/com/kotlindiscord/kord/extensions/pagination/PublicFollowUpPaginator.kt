@@ -8,14 +8,11 @@ package com.kotlindiscord.kord.extensions.pagination
 
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.interaction.followup.edit
-import dev.kord.core.behavior.interaction.response.FollowupPermittingInteractionResponseBehavior
-import dev.kord.core.behavior.interaction.response.createPublicFollowup
-import dev.kord.core.entity.ReactionEmoji
-import dev.kord.core.entity.interaction.followup.PublicFollowupMessage
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.embed
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
 
 /**
@@ -26,28 +23,28 @@ import java.util.*
  */
 public class PublicFollowUpPaginator(
     pages: Pages,
-    owner: UserBehavior? = null,
+    owner: User? = null,
     timeoutSeconds: Long? = null,
     keepEmbed: Boolean = true,
-    switchEmoji: ReactionEmoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
+    switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
     bundle: String? = null,
     locale: Locale? = null,
 
-    public val interaction: FollowupPermittingInteractionResponseBehavior,
+    public val interaction: InteractionHook,
 ) : BaseButtonPaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
     /** Follow-up interaction to use for this paginator's embeds. Will be created by [send]. **/
-    public var embedInteraction: PublicFollowupMessage? = null
+    public var embedInteraction: InteractionHook? = null
 
     override suspend fun send() {
         if (embedInteraction == null) {
             setup()
 
-            embedInteraction = interaction.createPublicFollowup {
+            embedInteraction = interaction.sendMessage(MessageCreate {
                 embed { applyPage() }
                 with(this@PublicFollowUpPaginator.components) {
                     this@createPublicFollowup.applyToMessage()
                 }
-            }
+            }).await()
         } else {
             updateButtons()
 

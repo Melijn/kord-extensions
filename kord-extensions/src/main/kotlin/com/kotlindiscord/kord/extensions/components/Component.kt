@@ -12,8 +12,9 @@ import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommand
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.sentry.SentryAdapter
-import dev.kord.core.Kord
-import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.minn.jda.ktx.messages.InlineMessage
+import net.dv8tion.jda.api.interactions.components.ItemComponent
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 
 /** Abstract class representing a basic Discord component. **/
@@ -34,7 +35,7 @@ public abstract class Component : KordExKoinComponent {
     public val bot: ExtensibleBot by inject()
 
     /** Kord instance, backing the ExtensibleBot. **/
-    public val kord: Kord by inject()
+    public val kord: ShardManager by inject()
 
     /** Sentry adapter, for easy access to Sentry functions. **/
     public val sentry: SentryAdapter by inject()
@@ -46,5 +47,5 @@ public abstract class Component : KordExKoinComponent {
     public abstract fun validate()
 
     /** Called to apply the given component to a Kord [ActionRowBuilder]. **/
-    public abstract fun apply(builder: ActionRowBuilder)
+    public abstract fun apply(builder: MutableList<ItemComponent>)
 }

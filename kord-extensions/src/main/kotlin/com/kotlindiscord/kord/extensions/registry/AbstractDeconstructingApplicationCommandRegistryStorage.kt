@@ -7,7 +7,6 @@
 package com.kotlindiscord.kord.extensions.registry
 
 import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommand
-import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 
@@ -18,7 +17,7 @@ import kotlinx.coroutines.flow.mapNotNull
  * For simplicity the parameter / return types of the abstract methods are all [String]s.
  */
 public abstract class AbstractDeconstructingApplicationCommandRegistryStorage<T : ApplicationCommand<*>> :
-    RegistryStorage<Snowflake, T> {
+    RegistryStorage<String, T> {
 
     /**
      * Mapping of command-key to command-object.
@@ -59,28 +58,28 @@ public abstract class AbstractDeconstructingApplicationCommandRegistryStorage<T 
     protected abstract fun entries(): Flow<RegistryStorage.StorageEntry<String, String>>
 
     override fun constructUniqueIdentifier(data: T): String =
-        "${data.name}-${data.type.value}-${data.guildId?.value ?: 0}"
+        "${data.name}-${data.type}-${data.guildId}"
 
     override suspend fun register(data: T) {
         commandMapping[constructUniqueIdentifier(data)] = data
     }
 
-    override suspend fun set(id: Snowflake, data: T) {
+    override suspend fun set(id: String, data: T) {
         val key = constructUniqueIdentifier(data)
         commandMapping[key] = data
-        upsert(id.toString(), key)
+        upsert(id, key)
     }
 
-    override suspend fun get(id: Snowflake): T? {
-        val key = read(id.toString()) ?: return null
+    override suspend fun get(id: String): T? {
+        val key = read(id) ?: return null
         return commandMapping[key]
     }
 
-    override suspend fun remove(id: Snowflake): T? {
-        val key = delete(id.toString()) ?: return null
+    override suspend fun remove(id: String): T? {
+        val key = delete(id) ?: return null
         return commandMapping[key]
     }
 
-    override fun entryFlow(): Flow<RegistryStorage.StorageEntry<Snowflake, T>> = entries()
-        .mapNotNull { commandMapping[it.value]?.let { cmd -> RegistryStorage.StorageEntry(Snowflake(it.key), cmd) } }
+    override fun entryFlow(): Flow<RegistryStorage.StorageEntry<String, T>> = entries()
+        .mapNotNull { commandMapping[it.value]?.let { cmd -> RegistryStorage.StorageEntry(it.key, cmd) } }
 }
