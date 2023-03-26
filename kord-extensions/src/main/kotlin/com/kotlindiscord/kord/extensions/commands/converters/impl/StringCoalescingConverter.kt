@@ -17,6 +17,7 @@ import dev.kord.core.entity.interaction.OptionValue
 import dev.kord.core.entity.interaction.StringOptionValue
 import dev.kord.rest.builder.interaction.OptionsBuilder
 import dev.kord.rest.builder.interaction.StringChoiceBuilder
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Coalescing argument converter that simply joins all arguments with spaces to produce a single string.
@@ -43,7 +44,7 @@ public class StringCoalescingConverter(
         return parsed.length
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
         StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
 
     override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {

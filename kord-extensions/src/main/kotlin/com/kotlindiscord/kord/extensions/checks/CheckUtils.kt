@@ -4,35 +4,34 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:OptIn(KordUnsafe::class, KordExperimental::class)
-
 package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.events.interfaces.*
-import com.kotlindiscord.kord.extensions.utils.authorId
-import dev.kord.common.annotation.KordExperimental
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.*
-import dev.kord.core.behavior.channel.ChannelBehavior
-import dev.kord.core.behavior.channel.threads.ThreadChannelBehavior
-import dev.kord.core.cache.data.toData
-import dev.kord.core.entity.Member
-import dev.kord.core.entity.interaction.GuildApplicationCommandInteraction
-import dev.kord.core.entity.interaction.Interaction
-import net.dv8tion.jda.api.events.Event
-import dev.kord.core.event.channel.*
-import dev.kord.core.event.channel.thread.*
-import dev.kord.core.event.guild.*
-import dev.kord.core.event.interaction.InteractionCreateEvent
-import dev.kord.core.event.message.*
-import dev.kord.core.event.role.RoleCreateEvent
-import dev.kord.core.event.role.RoleDeleteEvent
-import dev.kord.core.event.role.RoleUpdateEvent
-import dev.kord.core.event.user.PresenceUpdateEvent
-import dev.kord.core.event.user.UserUpdateEvent
 import kotlinx.coroutines.flow.first
+import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.channel.Channel
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
+import net.dv8tion.jda.api.events.Event
+import net.dv8tion.jda.api.events.channel.ChannelCreateEvent
+import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent
+import net.dv8tion.jda.api.events.channel.GenericChannelEvent
+import net.dv8tion.jda.api.events.guild.GenericGuildEvent
+import net.dv8tion.jda.api.events.guild.GuildBanEvent
+import net.dv8tion.jda.api.events.guild.GuildUnbanEvent
+import net.dv8tion.jda.api.events.guild.invite.GenericGuildInviteEvent
+import net.dv8tion.jda.api.events.guild.member.GenericGuildMemberEvent
+import net.dv8tion.jda.api.events.interaction.GenericInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent
+import net.dv8tion.jda.api.events.message.*
+import net.dv8tion.jda.api.events.message.react.GenericMessageReactionEvent
+import net.dv8tion.jda.api.events.role.GenericRoleEvent
+import net.dv8tion.jda.api.events.thread.GenericThreadEvent
+import net.dv8tion.jda.api.events.thread.member.GenericThreadMemberEvent
+import net.dv8tion.jda.api.events.user.GenericUserEvent
+import net.dv8tion.jda.api.events.user.UserTypingEvent
+import net.dv8tion.jda.api.events.user.update.GenericUserPresenceEvent
+import net.dv8tion.jda.api.interactions.Interaction
 
 /**
  * Retrieves a channel that is the subject of a given event, if possible.
@@ -43,36 +42,24 @@ import kotlinx.coroutines.flow.first
  * value.
  *
  * @param event The event concerning to the channel to retrieve.
- * @return A [ChannelBehavior] representing the channel, or null if there isn't one.
+ * @return A [Channel] representing the channel, or null if there isn't one.
  */
-public suspend fun channelFor(event: Event): ChannelBehavior? {
+public fun channelFor(event: Event): Channel? {
     return when (event) {
         is ChannelEvent -> event.channel
 
         is ChannelCreateEvent -> event.channel
         is ChannelDeleteEvent -> event.channel
-        is ChannelPinsUpdateEvent -> event.channel
-        is ChannelUpdateEvent -> event.channel
-        is InteractionCreateEvent -> event.interaction.channel
-        is InviteCreateEvent -> event.channel
-        is InviteDeleteEvent -> event.channel
+        is GenericChannelEvent -> event.channel
+        is GenericInteractionCreateEvent -> event.interaction.channel
+        is GenericGuildInviteEvent -> event.channel
         is MessageBulkDeleteEvent -> event.channel
-        is MessageCreateEvent -> event.message.channel
-        is MessageDeleteEvent -> event.message?.channel
+        is MessageReceivedEvent -> event.message.channel
+        is MessageDeleteEvent -> event.channel
         is MessageUpdateEvent -> event.channel
-        is ReactionAddEvent -> event.channel
-        is ReactionRemoveAllEvent -> event.channel
-        is ReactionRemoveEmojiEvent -> event.channel
-        is ReactionRemoveEvent -> event.channel
-        is TypingStartEvent -> event.channel
-        is WebhookUpdateEvent -> event.channel
-
-        is ThreadChannelCreateEvent -> event.channel
-        is ThreadUpdateEvent -> event.channel
-        is ThreadChannelDeleteEvent -> event.old
-//        is ThreadListSyncEvent -> event.
-        is ThreadMemberUpdateEvent -> event.member.getThreadOrNull()
-//        is ThreadMembersUpdateEvent -> event.
+        is GenericMessageReactionEvent -> event.channel
+        is UserTypingEvent -> event.channel
+        is GenericThreadEvent -> event.thread
 
         else -> null
     }
@@ -88,13 +75,13 @@ public suspend fun channelFor(event: Event): ChannelBehavior? {
  * value.
  *
  * @param event The event concerning to the channel to retrieve.
- * @return A [ChannelBehavior] representing the channel, or null if there isn't one.
+ * @return A [Channel] representing the channel, or null if there isn't one.
  */
-public suspend fun topChannelFor(event: Event): ChannelBehavior? {
-    val channel = channelFor(event)?.asChannelOrNull() ?: return null
+public fun topChannelFor(event: Event): Channel? {
+    val channel = channelFor(event) ?: return null
 
-    return if (channel is ThreadChannelBehavior) {
-        channel.parent
+    return if (channel is ThreadChannel) {
+        channel.parentChannel
     } else {
         channel
     }
@@ -111,81 +98,8 @@ public suspend fun topChannelFor(event: Event): ChannelBehavior? {
  * @param event The event concerning to the channel to retrieve.
  * @return A [Long] representing the channel ID, or null if there isn't one.
  */
-public suspend fun channelIdFor(event: Event): ULong? {
-    return when (event) {
-        is ChannelEvent -> event.channel?.id?.value
-
-        is ChannelCreateEvent -> event.channel.id.value
-        is ChannelDeleteEvent -> event.channel.id.value
-        is ChannelPinsUpdateEvent -> event.channel.id.value
-        is ChannelUpdateEvent -> event.channel.id.value
-        is InteractionCreateEvent -> event.interaction.channel.id.value
-        is InviteCreateEvent -> event.channel.id.value
-        is InviteDeleteEvent -> event.channel.id.value
-        is MessageBulkDeleteEvent -> event.channelId.value
-        is MessageCreateEvent -> event.message.channel.id.value
-        is MessageDeleteEvent -> event.channelId.value
-        is MessageUpdateEvent -> event.channel.id.value
-        is ReactionAddEvent -> event.channel.id.value
-        is ReactionRemoveAllEvent -> event.channel.id.value
-        is ReactionRemoveEmojiEvent -> event.channel.id.value
-        is ReactionRemoveEvent -> event.channel.id.value
-        is TypingStartEvent -> event.channel.id.value
-        is WebhookUpdateEvent -> event.channel.id.value
-
-        is ThreadChannelCreateEvent -> event.channel.id.value
-        is ThreadUpdateEvent -> event.channel.id.value
-        is ThreadChannelDeleteEvent -> event.channel.id.value
-//        is ThreadListSyncEvent -> event.
-        is ThreadMemberUpdateEvent -> event.member.getThreadOrNull()?.id?.value
-//        is ThreadMembersUpdateEvent -> event.
-
-        else -> null
-    }
-}
-
-/**
- * Retrieves a channel ID representing a channel that is the subject of a given event, if possible.
- *
- * This function only supports a specific set of events - any unsupported events will
- * simply result in a `null` value. Please note that some events may support a
- * null value for this type of object, and this will also be reflected in the return
- * value.
- *
- * @param event The event concerning to the channel to retrieve.
- * @return A [Snowflake] representing the channel ID, or null if there isn't one.
- */
-public suspend fun channelSnowflakeFor(event: Event): Snowflake? {
-    return when (event) {
-        is ChannelEvent -> event.channel?.id
-
-        is ChannelCreateEvent -> event.channel.id
-        is ChannelDeleteEvent -> event.channel.id
-        is ChannelPinsUpdateEvent -> event.channel.id
-        is ChannelUpdateEvent -> event.channel.id
-        is InteractionCreateEvent -> event.interaction.channel.id
-        is InviteCreateEvent -> event.channel.id
-        is InviteDeleteEvent -> event.channel.id
-        is MessageBulkDeleteEvent -> event.channelId
-        is MessageCreateEvent -> event.message.channel.id
-        is MessageDeleteEvent -> event.channelId
-        is MessageUpdateEvent -> event.channel.id
-        is ReactionAddEvent -> event.channel.id
-        is ReactionRemoveAllEvent -> event.channel.id
-        is ReactionRemoveEmojiEvent -> event.channel.id
-        is ReactionRemoveEvent -> event.channel.id
-        is TypingStartEvent -> event.channel.id
-        is WebhookUpdateEvent -> event.channel.id
-
-        is ThreadChannelCreateEvent -> event.channel.id
-        is ThreadUpdateEvent -> event.channel.id
-        is ThreadChannelDeleteEvent -> event.channel.id
-//        is ThreadListSyncEvent -> event.
-        is ThreadMemberUpdateEvent -> event.member.getThreadOrNull()?.id
-//        is ThreadMembersUpdateEvent -> event.
-
-        else -> null
-    }
+public fun channelIdFor(event: Event): Long? {
+    return channelFor(event)?.idLong
 }
 
 /**
@@ -197,85 +111,20 @@ public suspend fun channelSnowflakeFor(event: Event): Snowflake? {
  * value.
  *
  * @param event The event concerning to the channel to retrieve.
- * @return A [GuildBehavior] representing the guild, or null if there isn't one.
+ * @return A [Guild] representing the guild, or null if there isn't one.
  */
-public suspend fun guildFor(event: Event): GuildBehavior? {
+public fun guildFor(event: Event): Guild? {
     return when (event) {
-        is GuildEvent -> event.guild
-
-        is BanAddEvent -> event.guild
-        is BanRemoveEvent -> event.guild
-
-        is CategoryCreateEvent -> event.channel.guild
-        is CategoryDeleteEvent -> event.channel.guild
-        is CategoryUpdateEvent -> event.channel.guild
-        is EmojisUpdateEvent -> event.guild
-        is GuildCreateEvent -> event.guild
-        is GuildDeleteEvent -> event.guild
-        is GuildUpdateEvent -> event.guild
-        is IntegrationsUpdateEvent -> event.guild
-
-        is InteractionCreateEvent -> {
-            val guildId = event.interaction.data.guildId.value
-
-            if (guildId == null) {
-                null
-            } else {
-                event.kord.unsafe.guild(guildId)
-            }
-        }
-
-        is InviteCreateEvent -> event.guild
-        is InviteDeleteEvent -> event.guild
-        is MembersChunkEvent -> event.guild
-        is MemberJoinEvent -> event.guild
-        is MemberLeaveEvent -> event.guild
-        is MemberUpdateEvent -> event.guild
+        is GenericGuildEvent -> event.guild
         is MessageBulkDeleteEvent -> event.guild
 
-        is MessageCreateEvent -> {
-            val guildId = event.message.data.guildId.value
-
-            if (guildId == null) {
-                guildId
-            } else {
-                event.kord.unsafe.guild(guildId)
-            }
-        }
-
-        is MessageDeleteEvent -> event.guild
-
-        is MessageUpdateEvent -> {
-            val guildId = event.new.guildId.value
-
-            if (guildId == null) {
-                guildId
-            } else {
-                event.kord.unsafe.guild(guildId)
-            }
-        }
-
-        is NewsChannelCreateEvent -> event.channel.guild
-        is NewsChannelDeleteEvent -> event.channel.guild
-        is NewsChannelUpdateEvent -> event.channel.guild
-        is ReactionAddEvent -> event.guild
-        is ReactionRemoveEvent -> event.guild
-        is TextChannelCreateEvent -> event.channel.guild
-        is TextChannelDeleteEvent -> event.channel.guild
-        is TextChannelUpdateEvent -> event.channel.guild
-        is TypingStartEvent -> event.guild
-        is VoiceChannelCreateEvent -> event.channel.guild
-        is VoiceChannelDeleteEvent -> event.channel.guild
-        is VoiceChannelUpdateEvent -> event.channel.guild
-        is VoiceServerUpdateEvent -> event.guild
-        is WebhookUpdateEvent -> event.guild
-
-        is ThreadChannelCreateEvent -> event.channel.guild
-        is ThreadUpdateEvent -> event.channel.guild
-//        is ThreadChannelDeleteEvent -> event.
-        is ThreadListSyncEvent -> event.guild
-        is ThreadMemberUpdateEvent -> event.member.getThreadOrNull()?.guild
-//        is ThreadMembersUpdateEvent -> event.
+        is MessageReceivedEvent ->  if (event.isFromGuild) event.guild else null
+        is MessageDeleteEvent ->  if (event.isFromGuild) event.guild else null
+        is MessageUpdateEvent ->  if (event.isFromGuild) event.guild else null
+        is GenericChannelEvent ->  if (event.isFromGuild) event.guild else null
+        is GenericMessageReactionEvent -> if (event.isFromGuild) event.guild else null
+        is GenericInteractionCreateEvent -> if (event.isFromGuild) event.guild else null
+        is UserTypingEvent -> event.guild
 
         else -> null
     }
@@ -290,50 +139,21 @@ public suspend fun guildFor(event: Event): GuildBehavior? {
  * value.
  *
  * @param event The event concerning to the channel to retrieve.
- * @return A [MemberBehavior] representing the member, or null if there isn't one.
+ * @return A [Member] representing the member, or null if there isn't one.
  */
-public suspend fun memberFor(event: Event): MemberBehavior? {
+public fun memberFor(event: Event): Member? {
     return when (event) {
         is MemberEvent -> event.member
 
-        is InteractionCreateEvent -> (event.interaction as? GuildApplicationCommandInteraction)?.user
-        is MemberJoinEvent -> event.member
-        is MemberUpdateEvent -> event.member
-        is MessageCreateEvent -> event.member
-        is MessageDeleteEvent ->
-            event.message?.data?.guildId?.value
-            ?.let { event.kord.unsafe.member(it, event.message!!.data.authorId) }
-        is MessageUpdateEvent -> {
-            val message = event.new
-            if (message.author.value != null && message.member.value != null) {
-                val userData = message.author.value!!.toData()
-                val memberData = message.member.value!!.toData(userData.id, event.new.guildId.value!!)
-                return Member(memberData, userData, event.kord)
-            }
-            return null
-        }
-        is ReactionAddEvent -> event.userAsMember
-        is ReactionRemoveEvent -> event.userAsMember
-        is TypingStartEvent -> if (event.guildId != null) {
-            event.getGuild()!!.getMemberOrNull(event.userId)
-        } else {
-            null
-        }
-        is ThreadChannelCreateEvent -> event.channel.owner.asMember(event.channel.guildId)
-//        event is ThreadUpdateEvent -> event.
-//        event is ThreadChannelDeleteEvent -> event.
-//        event is ThreadListSyncEvent -> event.
-        is ThreadMemberUpdateEvent -> {
-            val thread = event.member.getThreadOrNull()
+        is GenericInteractionCreateEvent -> event.member
+        is GenericGuildMemberEvent -> event.member
+        is MessageReceivedEvent -> event.member
+        is MessageDeleteEvent -> null // TODO: could be fetched if a database is used
+        is MessageUpdateEvent -> event.member
+        is GenericMessageReactionEvent -> event.member
+        is UserTypingEvent -> event.member
+        is GenericThreadMemberEvent -> event.member
 
-            if (thread == null) {
-                null
-            } else {
-                event.member.asMember(thread.guildId)
-            }
-        }
-
-//        event is ThreadMembersUpdateEvent -> event.
         else -> null
     }
 }
@@ -347,26 +167,17 @@ public suspend fun memberFor(event: Event): MemberBehavior? {
  * value.
  *
  * @param event The event concerning to the channel to retrieve.
- * @return A [MessageBehavior] representing the message, or null if there isn't one.
+ * @return A [Message] representing the message, or null if there isn't one.
  */
-public suspend fun messageFor(event: Event): MessageBehavior? {
+public fun messageFor(event: Event): Message? {
     return when (event) {
         is MessageEvent -> event.message
 
-        is MessageCreateEvent -> event.message
-        is MessageDeleteEvent -> event.message
-        is MessageUpdateEvent -> event.getMessage()
-        is ReactionAddEvent -> event.message
-        is ReactionRemoveAllEvent -> event.message
-        is ReactionRemoveEmojiEvent -> event.message
-        is ReactionRemoveEvent -> event.message
-
-        is ThreadChannelCreateEvent -> event.channel.getLastMessage()
-//        is ThreadUpdateEvent -> event.
-//        is ThreadChannelDeleteEvent -> event.
-//        is ThreadListSyncEvent -> event.
-//        is ThreadMemberUpdateEvent -> event.
-//        is ThreadMembersUpdateEvent -> event.
+        is MessageReceivedEvent -> event.message
+        is MessageDeleteEvent -> null
+        is MessageUpdateEvent -> event.message
+        is GenericComponentInteractionCreateEvent -> event.message
+        is GenericMessageReactionEvent -> null
 
         else -> null
     }
@@ -381,22 +192,12 @@ public suspend fun messageFor(event: Event): MessageBehavior? {
  * value.
  *
  * @param event The event concerning to the channel to retrieve.
- * @return A [RoleBehavior] representing the role, or null if there isn't one.
+ * @return A [Role] representing the role, or null if there isn't one.
  */
-public fun roleFor(event: Event): RoleBehavior? {
+public fun roleFor(event: Event): Role? {
     return when (event) {
         is RoleEvent -> event.role
-
-        is RoleCreateEvent -> event.role
-        is RoleDeleteEvent -> event.role
-        is RoleUpdateEvent -> event.role
-
-//        is ThreadChannelCreateEvent -> event.
-//        is ThreadUpdateEvent -> event.
-//        is ThreadChannelDeleteEvent -> event.
-//        is ThreadListSyncEvent -> event.
-//        is ThreadMemberUpdateEvent -> event.
-//        is ThreadMembersUpdateEvent -> event.
+        is GenericRoleEvent -> event.role
 
         else -> null
     }
@@ -411,10 +212,10 @@ public fun roleFor(event: Event): RoleBehavior? {
  * value.
  *
  * @param event The event concerning to the channel to retrieve.
- * @return A [ThreadChannelBehavior] representing the role, or null if there isn't one.
+ * @return A [ThreadChannel] representing the role, or null if there isn't one.
  */
-public suspend fun threadFor(event: Event): ThreadChannelBehavior? =
-    channelFor(event) as? ThreadChannelBehavior
+public fun threadFor(event: Event): ThreadChannel? =
+    channelFor(event) as? ThreadChannel
 
 /**
  * Retrieves a user that is the subject of a given event, if possible.
@@ -425,39 +226,60 @@ public suspend fun threadFor(event: Event): ThreadChannelBehavior? =
  * value.
  *
  * @param event The event concerning to the channel to retrieve.
- * @return A [UserBehavior] representing the user, or null if there isn't one.
+ * @return A [Long] representing the user, or null if there isn't one.
  */
-public suspend fun userFor(event: Event): UserBehavior? {
+public fun userIdFor(event: Event): Long? {
+    return when (event) {
+        is UserEvent -> event.user?.idLong
+
+        is GenericUserEvent -> event.user.idLong
+        is GuildBanEvent -> event.user.idLong
+        is GuildUnbanEvent -> event.user.idLong
+
+        // We don't deal with selfbots, so we only want the first user - bots can't be in group DMs.
+        is MessageReceivedEvent -> event.author.idLong
+        is MessageUpdateEvent -> event.author.idLong
+
+        is GenericInteractionCreateEvent -> event.interaction.user.idLong
+        is GenericGuildMemberEvent -> event.user.idLong
+        is GenericUserPresenceEvent -> event.member.user.idLong
+        is GenericMessageReactionEvent -> event.userIdLong
+
+        is GenericThreadMemberEvent -> event.threadMemberIdLong
+
+        else -> null
+    }
+}
+
+/**
+ * Retrieves a user that is the subject of a given event, if possible.
+ *
+ * This function only supports a specific set of events - any unsupported events will
+ * simply result in a `null` value. Please note that some events may support a
+ * null value for this type of object, and this will also be reflected in the return
+ * value.
+ *
+ * @param event The event concerning to the channel to retrieve.
+ * @return A [User] representing the user, or null if there isn't one.
+ */
+public fun userFor(event: Event): User? {
     return when (event) {
         is UserEvent -> event.user
 
-        is BanAddEvent -> event.user
-        is BanRemoveEvent -> event.user
+        is GenericUserEvent -> event.user
+        is GuildBanEvent -> event.user
+        is GuildUnbanEvent -> event.user
 
         // We don't deal with selfbots, so we only want the first user - bots can't be in group DMs.
-        is DMChannelCreateEvent -> event.channel.recipients.first { it.id != event.kord.selfId }
-        is DMChannelDeleteEvent -> event.channel.recipients.first { it.id != event.kord.selfId }
-        is DMChannelUpdateEvent -> event.channel.recipients.first { it.id != event.kord.selfId }
+        is MessageReceivedEvent -> event.author
+        is MessageUpdateEvent -> event.author
 
-        is InteractionCreateEvent -> event.interaction.user
-        is MemberJoinEvent -> event.member
-        is MemberLeaveEvent -> event.user
-        is MemberUpdateEvent -> event.member
-        is MessageCreateEvent -> event.message.author
-        is MessageDeleteEvent -> event.message?.author
-        is MessageUpdateEvent -> event.getMessage().author
-        is PresenceUpdateEvent -> event.member
-        is ReactionAddEvent -> event.user
-        is ReactionRemoveEvent -> event.user
-        is TypingStartEvent -> event.user
-        is UserUpdateEvent -> event.user
+        is GenericInteractionCreateEvent -> event.interaction.user
+        is GenericGuildMemberEvent -> event.user
+        is GenericUserPresenceEvent -> event.member.user
+        is GenericMessageReactionEvent -> event.user
 
-        is ThreadChannelCreateEvent -> event.channel.owner
-//        is ThreadUpdateEvent -> event.
-//        is ThreadChannelDeleteEvent -> event.
-//        is ThreadListSyncEvent -> event.
-        is ThreadMemberUpdateEvent -> event.member
-//        is ThreadMembersUpdateEvent -> event.
+        is GenericThreadMemberEvent -> event.member?.user
 
         else -> null
     }
@@ -479,4 +301,4 @@ public fun CheckContext<*>.silence() {
  * @param event The event concerning to the interaction to retrieve.
  * @return A [Interaction] representing the interaction, or null if there isn't one.
  */
-public fun interactionFor(event: Event): Interaction? = (event as? InteractionCreateEvent)?.interaction
+public fun interactionFor(event: Event): Interaction? = (event as? GenericInteractionCreateEvent)?.interaction

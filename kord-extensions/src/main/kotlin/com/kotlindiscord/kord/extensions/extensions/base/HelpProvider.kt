@@ -12,7 +12,7 @@ import com.kotlindiscord.kord.extensions.commands.chat.ChatCommandContext
 import com.kotlindiscord.kord.extensions.commands.chat.ChatCommandRegistry
 import com.kotlindiscord.kord.extensions.pagination.BasePaginator
 import com.kotlindiscord.kord.extensions.utils.getKoin
-import dev.kord.core.event.message.MessageCreateEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 /**
  * Interface representing the main functionality required for extensions that replace the bundled `HelpExtension`.
@@ -39,7 +39,7 @@ public interface HelpProvider {
      */
     public suspend fun formatCommandHelp(
         prefix: String,
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         command: ChatCommand<out Arguments>,
         longDescription: Boolean = false
     ): Triple<String, String, String>
@@ -69,12 +69,12 @@ public interface HelpProvider {
     /**
      * Gather all available commands (with passing checks) from the bot, and return them.
      */
-    public suspend fun gatherCommands(event: MessageCreateEvent): List<ChatCommand<out Arguments>>
+    public suspend fun gatherCommands(event: MessageReceivedEvent): List<ChatCommand<out Arguments>>
 
     /**
      * Return the [MessageCommand] specified in the arguments, or `null` if it can't be found (or the checks fail).
      */
-    public suspend fun getCommand(event: MessageCreateEvent, args: List<String>): ChatCommand<out Arguments>?
+    public suspend fun getCommand(event: MessageReceivedEvent, args: List<String>): ChatCommand<out Arguments>?
 
     /**
      * Given an event, prefix and argument list, attempt to find the command represented by the arguments and return
@@ -89,7 +89,7 @@ public interface HelpProvider {
      * @return Paginator containing the command's help, or an error message.
      */
     public suspend fun getCommandHelpPaginator(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         prefix: String,
         args: List<String>
     ): BasePaginator
@@ -130,7 +130,7 @@ public interface HelpProvider {
      * @return Paginator containing the command's help, or an error message.
      */
     public suspend fun getCommandHelpPaginator(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         prefix: String,
         command: ChatCommand<out Arguments>?
     ): BasePaginator
@@ -173,7 +173,7 @@ public interface HelpProvider {
      *
      * @return Paginator containing help information for all loaded commands with passing checks.
      */
-    public suspend fun getMainHelpPaginator(event: MessageCreateEvent, prefix: String): BasePaginator
+    public suspend fun getMainHelpPaginator(event: MessageReceivedEvent, prefix: String): BasePaginator
 
     /**
      * Given a command context, return a [BasePaginator] containing help information for all loaded commands with

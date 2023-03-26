@@ -63,9 +63,9 @@ import kotlin.io.path.div
 import kotlin.time.Duration
 
 internal typealias LocaleResolver = suspend (
-    guild: Guild?,
-    channel: Channel?,
-    user: User?,
+    guildId: Long?,
+    channelId: Long?,
+    userId: Long?,
     interaction: Interaction?
 ) -> Locale?
 

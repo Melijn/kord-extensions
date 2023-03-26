@@ -7,19 +7,20 @@
 package com.kotlindiscord.kord.extensions.commands
 
 import com.kotlindiscord.kord.extensions.annotations.ExtensionDSL
-import com.kotlindiscord.kord.extensions.checks.channelFor
-import com.kotlindiscord.kord.extensions.checks.guildFor
-import com.kotlindiscord.kord.extensions.checks.interactionFor
-import com.kotlindiscord.kord.extensions.checks.userFor
+import com.kotlindiscord.kord.extensions.checks.*
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.sentry.SentryContext
 import com.kotlindiscord.kord.extensions.usagelimits.cooldowns.CooldownType
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.MemberBehavior
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.ChannelBehavior
+import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.events.Event
 import org.koin.core.component.inject
 import java.util.*
@@ -51,7 +52,9 @@ public abstract class CommandContext(
     public val sentry: SentryContext = SentryContext()
 
     /** Cached locale variable, stored and retrieved by [getLocale]. **/
-    public open var resolvedLocale: Locale? = null
+    public val resolvedLocale: Deferred<Locale> = TaskConfig.coroutineScope.async(TaskConfig.dispatcher, CoroutineStart.LAZY) {
+        getLocale()
+    }
 
     /**
      * Progressive cooldown counters, can be set using [incCooldown], [decCooldown], [setCooldown]
@@ -59,32 +62,25 @@ public abstract class CommandContext(
      * **/
     public open var cooldownCounters: MutableMap<CooldownType, Duration> = HashMap()
 
-    /** Called before processing, used to populate any extra variables from event data. **/
-    public abstract suspend fun populate()
-
     /** Extract channel information from event data. **/
-    public abstract suspend fun getChannel(): ChannelBehavior
+    public abstract val channel: Channel
 
     /** Extract guild information from event data, if that context is available. **/
-    public abstract suspend fun getGuild(): GuildBehavior?
+    public abstract val guild: Guild?
 
     /** Extract member information from event data, if that context is available. **/
-    public abstract suspend fun getMember(): MemberBehavior?
+    public abstract val member: Member?
 
     /** Extract user information from event data, if that context is available. **/
-    public abstract suspend fun getUser(): UserBehavior?
+    public abstract val user: User
 
     /** Resolve the locale for this command context. **/
-    public suspend fun getLocale(): Locale {
-        var locale: Locale? = resolvedLocale
+    private suspend fun getLocale(): Locale {
+        var locale: Locale? = null
 
-        if (locale != null) {
-            return locale
-        }
-
-        val guild = guildFor(eventObj)
-        val channel = channelFor(eventObj)
-        val user = userFor(eventObj)
+        val guild = guildFor(eventObj)?.idLong
+        val channel = channelIdFor(eventObj)
+        val user = userIdFor(eventObj)
 
         for (resolver in command.extension.bot.settings.i18nBuilder.localeResolvers) {
             val result = resolver(guild, channel, user, interactionFor(eventObj))
@@ -94,10 +90,7 @@ public abstract class CommandContext(
                 break
             }
         }
-
-        resolvedLocale = locale ?: command.extension.bot.settings.i18nBuilder.defaultLocale
-
-        return resolvedLocale!!
+        return locale ?: command.extension.bot.settings.i18nBuilder.defaultLocale
     }
 
     /**

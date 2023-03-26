@@ -18,6 +18,7 @@ import com.kotlindiscord.kord.extensions.extensions.impl.SentryExtension
 import com.kotlindiscord.kord.extensions.koin.KordExContext
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.types.Lockable
+import com.kotlindiscord.kord.extensions.types.Snowflake
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.minn.jda.ktx.events.listener
 import kotlinx.coroutines.*
@@ -27,6 +28,7 @@ import kotlinx.coroutines.sync.Mutex
 import mu.KLogger
 import mu.KotlinLogging
 import net.dv8tion.jda.api.events.Event
+import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -47,7 +49,7 @@ import org.koin.dsl.bind
  */
 public open class ExtensibleBot(
     public val settings: ExtensibleBotBuilder,
-    private val token: String
+    private val token: String,
 ) : KordExKoinComponent, Lockable {
 
     override var mutex: Mutex? = Mutex()
@@ -145,8 +147,8 @@ public open class ExtensibleBot(
             withLock {  // If configured, this won't be concurrent, saving larger bots from spammy rate limits
                 val guild = it.guild
                 if (
-                    settings.membersBuilder.guildsToFill == null ||
-                    settings.membersBuilder.guildsToFill!!.contains(guild)
+                    (settings.membersBuilder.guildsToFill == null) ||
+                    settings.membersBuilder.guildsToFill!!.contains(Snowflake(guild.idLong))
                 ) {
                     logger.debug { "Requesting members for guild: ${guild.name}" }
 
@@ -240,7 +242,7 @@ public open class ExtensibleBot(
     public inline fun <reified T : Event> on(
         launch: Boolean = true,
         scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
-        noinline consumer: suspend T.() -> Unit
+        noinline consumer: suspend T.() -> Unit,
     ): Job =
         events.buffer(Channel.UNLIMITED)
             .filterIsInstance<T>()
@@ -254,7 +256,7 @@ public open class ExtensibleBot(
     /**
      * @suppress
      */
-    public suspend inline fun send(event: Event) {
+    public suspend inline fun send(event: GenericEvent) {
         eventPublisher.emit(event)
     }
 

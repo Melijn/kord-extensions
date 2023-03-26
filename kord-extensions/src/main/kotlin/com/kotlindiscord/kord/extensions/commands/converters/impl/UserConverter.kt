@@ -15,14 +15,11 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import com.kotlindiscord.kord.extensions.utils.users
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.User
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.UserOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.UserBuilder
-import kotlinx.coroutines.flow.firstOrNull
+import dev.minn.jda.ktx.coroutines.await
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Argument converter for discord [User] arguments.
@@ -50,31 +47,22 @@ public class UserConverter(
 
     override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
         if (useReply && context is ChatCommandContext<*>) {
-            val messageReference = context.message.asMessage().messageReference
+            val user = context.message.messageReference?.message?.author
 
-            if (messageReference != null) {
-                val user = messageReference.message?.asMessage()?.author?.asUserOrNull()
-
-                if (user != null) {
-                    parsed = user
-                    return true
-                }
+            if (user != null) {
+                parsed = user
+                return true
             }
         }
 
         val arg: String = named ?: parser?.parseNext()?.data ?: return false
 
         if (arg.equals("me", true)) {
-            val user = context.getUser()?.asUserOrNull()
-
-            if (user != null) {
-                this.parsed = user
-
-                return true
-            }
+            parsed = context.user
+            return true
         }
 
-        this.parsed = findUser(arg, context)
+        parsed = findUser(arg, context)
             ?: throw DiscordRelayedException(
                 context.translate("converters.user.error.missing", replacements = arrayOf(arg))
             )
@@ -83,37 +71,38 @@ public class UserConverter(
     }
 
     private suspend fun findUser(arg: String, context: CommandContext): User? =
-        if (arg.startsWith("<@") && arg.endsWith(">")) { // It's a mention
+        if (arg.length > 40) null
+        else if (arg.startsWith("<@") && arg.endsWith(">")) { // It's a mention
             val id: String = arg.substring(2, arg.length - 1).replace("!", "")
 
             try {
-                kord.getUser(Snowflake(id))
-            } catch (e: NumberFormatException) {
+                kord.retrieveUserById(id).await()
+            } catch (e: IllegalArgumentException) {
                 throw DiscordRelayedException(
                     context.translate("converters.user.error.invalid", replacements = arrayOf(id))
                 )
             }
         } else {
             try { // Try for a user ID first
-                kord.getUser(Snowflake(arg))
-            } catch (e: NumberFormatException) { // It's not an ID, let's try the tag
+                kord.retrieveUserById(arg).await()
+            } catch (e: IllegalArgumentException) { // It's not an ID, let's try the tag
                 if (!arg.contains("#")) {
-                    null
+                    (context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, false) } ?:
+                    context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, true) }) ?.user
                 } else {
                     kord.users.firstOrNull { user ->
-                        user.tag.equals(arg, true)
+                        user.asTag.equals(arg, true)
                     }
                 }
             }
         }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        UserBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.USER, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? UserOptionValue)?.resolvedObject ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.USER) option.asUser else null ?: return false
         this.parsed = optionValue
-
         return true
     }
 }

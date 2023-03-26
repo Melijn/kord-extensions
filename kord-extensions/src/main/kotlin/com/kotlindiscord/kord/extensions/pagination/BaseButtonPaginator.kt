@@ -15,10 +15,9 @@ import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import com.kotlindiscord.kord.extensions.utils.capitalizeWords
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.kotlindiscord.kord.extensions.utils.scheduling.Task
-import dev.kord.common.entity.ButtonStyle
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.entity.ReactionEmoji
-import dev.kord.core.event.interaction.ComponentInteractionCreateEvent
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle
 import java.util.*
 
 /**
@@ -26,10 +25,10 @@ import java.util.*
  */
 public abstract class BaseButtonPaginator(
     pages: Pages,
-    owner: UserBehavior? = null,
+    owner: Long? = null,
     timeoutSeconds: Long? = null,
     keepEmbed: Boolean = true,
-    switchEmoji: ReactionEmoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
+    switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
     bundle: String? = null,
     locale: Locale? = null,
 ) : BasePaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
@@ -72,12 +71,12 @@ public abstract class BaseButtonPaginator(
     public val canUseSwitchingButtons: Boolean by lazy { allGroups.size in 3..5 && "" !in allGroups }
 
     /** A button-oriented check function that matches based on the [owner] property. **/
-    public val defaultCheck: CheckWithCache<ComponentInteractionCreateEvent> = {
+    public val defaultCheck: CheckWithCache<GenericComponentInteractionCreateEvent> = {
         if (!active) {
             fail()
         } else if (owner == null) {
             pass()
-        } else if (event.interaction.user.id == owner.id) {
+        } else if (event.interaction.user.idLong == owner) {
             pass()
         } else {
             fail()
@@ -94,7 +93,7 @@ public abstract class BaseButtonPaginator(
             // Add navigation buttons...
             firstPageButton = components.publicButton {
                 deferredAck = true
-                style = ButtonStyle.Secondary
+                style = ButtonStyle.SECONDARY
                 disabled = pages.groups[currentGroup]!!.size <= 1
 
                 check(defaultCheck)
@@ -111,7 +110,7 @@ public abstract class BaseButtonPaginator(
 
             backButton = components.publicButton {
                 deferredAck = true
-                style = ButtonStyle.Secondary
+                style = ButtonStyle.SECONDARY
                 disabled = pages.groups[currentGroup]!!.size <= 1
 
                 check(defaultCheck)
@@ -128,7 +127,7 @@ public abstract class BaseButtonPaginator(
 
             nextButton = components.publicButton {
                 deferredAck = true
-                style = ButtonStyle.Secondary
+                style = ButtonStyle.SECONDARY
                 disabled = pages.groups[currentGroup]!!.size <= 1
 
                 check(defaultCheck)
@@ -145,7 +144,7 @@ public abstract class BaseButtonPaginator(
 
             lastPageButton = components.publicButton {
                 deferredAck = true
-                style = ButtonStyle.Secondary
+                style = ButtonStyle.SECONDARY
                 disabled = pages.groups[currentGroup]!!.size <= 1
 
                 check(defaultCheck)
@@ -169,12 +168,12 @@ public abstract class BaseButtonPaginator(
                 check(defaultCheck)
 
                 label = if (keepEmbed) {
-                    style = ButtonStyle.Primary
+                    style = ButtonStyle.PRIMARY
                     emoji(FINISH_EMOJI)
 
                     translate("paginator.button.done")
                 } else {
-                    style = ButtonStyle.Danger
+                    style = ButtonStyle.DANGER
                     emoji(DELETE_EMOJI)
 
                     translate("paginator.button.delete")
@@ -194,7 +193,7 @@ public abstract class BaseButtonPaginator(
                     groupButtons[group] = components.publicButton(secondRowNumber) {
                         deferredAck = true
                         label = translate(group).capitalizeWords(localeObj)
-                        style = ButtonStyle.Secondary
+                        style = ButtonStyle.SECONDARY
 
                         check(defaultCheck)
 

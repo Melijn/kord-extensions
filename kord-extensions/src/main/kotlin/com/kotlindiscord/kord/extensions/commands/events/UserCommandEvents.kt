@@ -9,24 +9,24 @@ package com.kotlindiscord.kord.extensions.commands.events
 import com.kotlindiscord.kord.extensions.commands.application.user.EphemeralUserCommand
 import com.kotlindiscord.kord.extensions.commands.application.user.PublicUserCommand
 import com.kotlindiscord.kord.extensions.commands.application.user.UserCommand
-import dev.kord.core.event.interaction.UserCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
 
 // region Invocation events
 
 /** Basic event emitted when a user command is invoked. **/
 public interface UserCommandInvocationEvent<C : UserCommand<*>> :
-    ApplicationCommandInvocationEvent<C, UserCommandInteractionCreateEvent>
+    ApplicationCommandInvocationEvent<C, UserContextInteractionEvent>
 
 /** Event emitted when an ephemeral user command is invoked. **/
 public data class EphemeralUserCommandInvocationEvent(
     override val command: EphemeralUserCommand,
-    override val event: UserCommandInteractionCreateEvent
+    override val event: UserContextInteractionEvent
 ) : UserCommandInvocationEvent<EphemeralUserCommand>
 
 /** Event emitted when a public user command is invoked. **/
 public data class PublicUserCommandInvocationEvent(
     override val command: PublicUserCommand,
-    override val event: UserCommandInteractionCreateEvent
+    override val event: UserContextInteractionEvent
 ) : UserCommandInvocationEvent<PublicUserCommand>
 
 // endregion
@@ -35,18 +35,18 @@ public data class PublicUserCommandInvocationEvent(
 
 /** Basic event emitted when a user command invocation succeeds. **/
 public interface UserCommandSucceededEvent<C : UserCommand<*>> :
-    CommandSucceededEvent<C, UserCommandInteractionCreateEvent>
+    CommandSucceededEvent<C, UserContextInteractionEvent>
 
 /** Event emitted when an ephemeral user command invocation succeeds. **/
 public data class EphemeralUserCommandSucceededEvent(
     override val command: EphemeralUserCommand,
-    override val event: UserCommandInteractionCreateEvent
+    override val event: UserContextInteractionEvent
 ) : UserCommandSucceededEvent<EphemeralUserCommand>
 
 /** Event emitted when a public user command invocation succeeds. **/
 public data class PublicUserCommandSucceededEvent(
     override val command: PublicUserCommand,
-    override val event: UserCommandInteractionCreateEvent
+    override val event: UserContextInteractionEvent
 ) : UserCommandSucceededEvent<PublicUserCommand>
 
 // endregion
@@ -55,41 +55,41 @@ public data class PublicUserCommandSucceededEvent(
 
 /** Basic event emitted when a user command invocation fails. **/
 public sealed interface UserCommandFailedEvent<C : UserCommand<*>> :
-    CommandFailedEvent<C, UserCommandInteractionCreateEvent>
+    CommandFailedEvent<C, UserContextInteractionEvent>
 
 /** Basic event emitted when a user command's checks fail. **/
 public interface UserCommandFailedChecksEvent<C : UserCommand<*>> :
-    UserCommandFailedEvent<C>, CommandFailedChecksEvent<C, UserCommandInteractionCreateEvent>
+    UserCommandFailedEvent<C>, CommandFailedChecksEvent<C, UserContextInteractionEvent>
 
 /** Event emitted when an ephemeral user command's checks fail. **/
 public data class EphemeralUserCommandFailedChecksEvent(
     override val command: EphemeralUserCommand,
-    override val event: UserCommandInteractionCreateEvent,
+    override val event: UserContextInteractionEvent,
     override val reason: String,
 ) : UserCommandFailedChecksEvent<EphemeralUserCommand>
 
 /** Event emitted when a public user command's checks fail. **/
 public data class PublicUserCommandFailedChecksEvent(
     override val command: PublicUserCommand,
-    override val event: UserCommandInteractionCreateEvent,
+    override val event: UserContextInteractionEvent,
     override val reason: String,
 ) : UserCommandFailedChecksEvent<PublicUserCommand>
 
 /** Basic event emitted when a user command invocation fails with an exception. **/
 public interface UserCommandFailedWithExceptionEvent<C : UserCommand<*>> :
-    UserCommandFailedEvent<C>, CommandFailedWithExceptionEvent<C, UserCommandInteractionCreateEvent>
+    UserCommandFailedEvent<C>, CommandFailedWithExceptionEvent<C, UserContextInteractionEvent>
 
 /** Event emitted when an ephemeral user command invocation fails with an exception. **/
 public data class EphemeralUserCommandFailedWithExceptionEvent(
     override val command: EphemeralUserCommand,
-    override val event: UserCommandInteractionCreateEvent,
+    override val event: UserContextInteractionEvent,
     override val throwable: Throwable
 ) : UserCommandFailedWithExceptionEvent<EphemeralUserCommand>
 
 /** Event emitted when a public user command invocation fails with an exception. **/
 public data class PublicUserCommandFailedWithExceptionEvent(
     override val command: PublicUserCommand,
-    override val event: UserCommandInteractionCreateEvent,
+    override val event: UserContextInteractionEvent,
     override val throwable: Throwable
 ) : UserCommandFailedWithExceptionEvent<PublicUserCommand>
 

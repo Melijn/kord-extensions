@@ -6,13 +6,13 @@
 
 package com.kotlindiscord.kord.extensions.events.interfaces
 
-import dev.kord.core.behavior.RoleBehavior
-import dev.kord.core.entity.Role
+import net.dv8tion.jda.api.entities.Role
+
 
 /** Generic interface for custom events that can contain role behaviors. Mostly used by checks. **/
 public interface RoleEvent {
     /** The role behavior for this event, if any. **/
-    public val role: RoleBehavior?
+    public val role: Role?
 
     /** Get a Role object, or throw if one can't be retrieved. **/
     public suspend fun getRole(): Role

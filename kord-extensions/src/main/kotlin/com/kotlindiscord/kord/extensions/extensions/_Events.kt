@@ -9,10 +9,9 @@ package com.kotlindiscord.kord.extensions.extensions
 import com.kotlindiscord.kord.extensions.EventHandlerRegistrationException
 import com.kotlindiscord.kord.extensions.InvalidEventHandlerException
 import com.kotlindiscord.kord.extensions.events.EventHandler
-import dev.kord.core.enableEvent
-import net.dv8tion.jda.api.events.Event
-import dev.kord.gateway.Intents
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.Event
+import net.dv8tion.jda.api.requests.GatewayIntent
 
 /**
  * DSL function for easily registering an event handler.
@@ -44,10 +43,6 @@ public suspend inline fun <reified T : Event> Extension.event(
         logger.error(e) { "Failed to register event handler - $e" }
     }
 
-    val fakeBuilder = Intents.IntentsBuilder()
-
-    fakeBuilder.enableEvent<T>()
-    intents += fakeBuilder.flags().values
-
+    intents += GatewayIntent.fromEvents(T::class.java)
     return eventHandler
 }

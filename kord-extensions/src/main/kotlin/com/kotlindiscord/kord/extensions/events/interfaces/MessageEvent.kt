@@ -6,13 +6,13 @@
 
 package com.kotlindiscord.kord.extensions.events.interfaces
 
-import dev.kord.core.behavior.MessageBehavior
-import dev.kord.core.entity.Message
+import net.dv8tion.jda.api.entities.Message
+
 
 /** Generic interface for custom events that can contain message behaviors. Mostly used by checks. **/
 public interface MessageEvent {
     /** The message behavior for this event, if any. **/
-    public val message: MessageBehavior?
+    public val message: Message?
 
     /** Get a Message object, or throw if one can't be retrieved. **/
     public suspend fun getMessage(): Message

@@ -10,6 +10,9 @@ import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.MessageCreate
+import dev.minn.jda.ktx.messages.MessageEdit
+import dev.minn.jda.ktx.messages.editMessage
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.InteractionHook
@@ -33,28 +36,28 @@ public class PublicFollowUpPaginator(
     public val interaction: InteractionHook,
 ) : BaseButtonPaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
     /** Follow-up interaction to use for this paginator's embeds. Will be created by [send]. **/
-    public var embedInteraction: InteractionHook? = null
+    public var sent: Boolean = false
 
     override suspend fun send() {
-        if (embedInteraction == null) {
+        if (!sent) {
             setup()
 
-            embedInteraction = interaction.sendMessage(MessageCreate {
+            interaction.sendMessage(MessageCreate {
                 embed { applyPage() }
                 with(this@PublicFollowUpPaginator.components) {
-                    this@createPublicFollowup.applyToMessage()
+                    this@MessageCreate.applyToMessage()
                 }
             }).await()
         } else {
             updateButtons()
 
-            embedInteraction!!.edit {
+            interaction.editOriginal(MessageEdit {
                 embed { applyPage() }
 
                 with(this@PublicFollowUpPaginator.components) {
-                    this@edit.applyToMessage()
+                    this@MessageEdit.applyToMessage()
                 }
-            }
+            }).await()
         }
     }
 
@@ -66,13 +69,13 @@ public class PublicFollowUpPaginator(
         active = false
 
         if (!keepEmbed) {
-            embedInteraction?.delete()
+            interaction.deleteOriginal().await()
         } else {
-            embedInteraction?.edit {
+            interaction.editOriginal(MessageEdit{
                 embed { applyPage() }
 
-                this.components = mutableListOf()
-            }
+                this.builder.setComponents(mutableListOf())
+            }).await()
         }
 
         super.destroy()
@@ -83,7 +86,7 @@ public class PublicFollowUpPaginator(
 @Suppress("FunctionNaming")  // Factory function
 public fun PublicFollowUpPaginator(
     builder: PaginatorBuilder,
-    interaction: FollowupPermittingInteractionResponseBehavior
+    interaction: InteractionHook
 ): PublicFollowUpPaginator = PublicFollowUpPaginator(
     pages = builder.pages,
     owner = builder.owner,

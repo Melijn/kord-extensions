@@ -6,13 +6,13 @@
 
 package com.kotlindiscord.kord.extensions.events.interfaces
 
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.entity.Guild
+
+import net.dv8tion.jda.api.entities.Guild
 
 /** Generic interface for custom events that can contain guild behaviors. Mostly used by checks. **/
 public interface GuildEvent {
     /** The guild behavior for this event, if any. **/
-    public val guild: GuildBehavior?
+    public val guild: Guild?
 
     /** Get a Guild object, or throw if one can't be retrieved. **/
     public suspend fun getGuild(): Guild

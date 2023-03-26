@@ -18,11 +18,11 @@ import com.kotlindiscord.kord.extensions.pagination.BasePaginator
 import com.kotlindiscord.kord.extensions.pagination.MessageButtonPaginator
 import com.kotlindiscord.kord.extensions.pagination.pages.Page
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
-import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.getLocale
 import com.kotlindiscord.kord.extensions.utils.translate
-import dev.kord.core.event.message.MessageCreateEvent
+import dev.minn.jda.ktx.coroutines.await
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.koin.core.component.inject
 
 private val logger = KotlinLogging.logger {}
@@ -76,7 +76,7 @@ public class HelpExtension : HelpProvider, Extension() {
         }
     }
 
-    override suspend fun getMainHelpPaginator(event: MessageCreateEvent, prefix: String): BasePaginator {
+    override suspend fun getMainHelpPaginator(event: MessageReceivedEvent, prefix: String): BasePaginator {
         var totalCommands = 0
         val locale = event.getLocale()
 
@@ -100,14 +100,14 @@ public class HelpExtension : HelpProvider, Extension() {
                     title = translationsProvider.translate("extensions.help.paginator.title.commands", locale)
 
                     footer {
-                        text = translationsProvider.translate(
+                        name = translationsProvider.translate(
                             "extensions.help.paginator.footer",
                             locale,
                             replacements = arrayOf(totalCommands)
                         )
                     }
 
-                    color = settings.colourGetter(event)
+                    color = settings.colourGetter(event).rgb
                 }
             )
 
@@ -119,14 +119,14 @@ public class HelpExtension : HelpProvider, Extension() {
                     title = translationsProvider.translate("extensions.help.paginator.title.arguments", locale)
 
                     footer {
-                        text = translationsProvider.translate(
+                        name = translationsProvider.translate(
                             "extensions.help.paginator.footer",
                             locale,
                             replacements = arrayOf(totalCommands)
                         )
                     }
 
-                    color = settings.colourGetter(event)
+                    color = settings.colourGetter(event).rgb
                 }
             )
         }
@@ -140,13 +140,13 @@ public class HelpExtension : HelpProvider, Extension() {
                     description = translationsProvider.translate("extensions.help.paginator.noCommands", locale)
                     title = translationsProvider.translate("extensions.help.paginator.noCommands", locale)
                     footer {
-                        text = translationsProvider.translate(
+                        name = translationsProvider.translate(
                             "extensions.help.paginator.footer",
                             locale,
                             replacements = arrayOf(0)
                         )
                     }
-                    color = settings.colourGetter(event)
+                    color = settings.colourGetter(event).rgb
                 }
             )
         }
@@ -154,7 +154,7 @@ public class HelpExtension : HelpProvider, Extension() {
         return MessageButtonPaginator(
             keepEmbed = settings.deletePaginatorOnTimeout.not(),
             locale = locale,
-            owner = event.message.author,
+            owner = event.message.author.idLong,
             pages = pages,
             pingInReply = settings.pingInReply,
             targetMessage = event.message,
@@ -163,7 +163,7 @@ public class HelpExtension : HelpProvider, Extension() {
             if (settings.deleteInvocationOnPaginatorTimeout) {
                 @Suppress("TooGenericExceptionCaught")
                 try {
-                    event.message.deleteIgnoringNotFound()
+                    event.message.delete().await()
                 } catch (t: Throwable) {
                     logger.warn(t) { "Failed to delete command invocation." }
                 }
@@ -172,7 +172,7 @@ public class HelpExtension : HelpProvider, Extension() {
     }
 
     override suspend fun getCommandHelpPaginator(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         prefix: String,
         args: List<String>
     ): BasePaginator = getCommandHelpPaginator(event, prefix, getCommand(event, args))
@@ -184,7 +184,7 @@ public class HelpExtension : HelpProvider, Extension() {
         getCommandHelpPaginator(context, getCommand(context.event, args))
 
     override suspend fun getCommandHelpPaginator(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         prefix: String,
         command: ChatCommand<out Arguments>?
     ): BasePaginator {
@@ -196,7 +196,7 @@ public class HelpExtension : HelpProvider, Extension() {
                 COMMANDS_GROUP,
 
                 Page {
-                    color = settings.colourGetter(event)
+                    color = settings.colourGetter(event).rgb
 
                     description = translationsProvider.translate(
                         "extensions.help.error.missingCommandDescription",
@@ -222,7 +222,7 @@ public class HelpExtension : HelpProvider, Extension() {
                 COMMANDS_GROUP,
 
                 Page {
-                    color = settings.colourGetter(event)
+                    color = settings.colourGetter(event).rgb
                     description = "$openingLine\n$desc\n\n$arguments"
 
                     title = translationsProvider.translate(
@@ -237,7 +237,7 @@ public class HelpExtension : HelpProvider, Extension() {
         return MessageButtonPaginator(
             keepEmbed = settings.deletePaginatorOnTimeout.not(),
             locale = locale,
-            owner = event.message.author,
+            owner = event.message.author.idLong,
             pages = pages,
             pingInReply = settings.pingInReply,
             targetMessage = event.message,
@@ -246,7 +246,7 @@ public class HelpExtension : HelpProvider, Extension() {
             if (settings.deleteInvocationOnPaginatorTimeout) {
                 @Suppress("TooGenericExceptionCaught")
                 try {
-                    event.message.deleteIgnoringNotFound()
+                    event.message.delete().await()
                 } catch (t: Throwable) {
                     logger.warn(t) { "Failed to delete command invocation." }
                 }
@@ -254,14 +254,14 @@ public class HelpExtension : HelpProvider, Extension() {
         }
     }
 
-    override suspend fun gatherCommands(event: MessageCreateEvent): List<ChatCommand<out Arguments>> =
+    override suspend fun gatherCommands(event: MessageReceivedEvent): List<ChatCommand<out Arguments>> =
         messageCommandsRegistry.commands
             .filter { !it.hidden && it.enabled && it.runChecks(event, false, mutableMapOf()) }
             .sortedBy { it.name }
 
     override suspend fun formatCommandHelp(
         prefix: String,
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         command: ChatCommand<out Arguments>,
         longDescription: Boolean
     ): Triple<String, String, String> {
@@ -406,7 +406,7 @@ public class HelpExtension : HelpProvider, Extension() {
     }
 
     override suspend fun getCommand(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         args: List<String>
     ): ChatCommand<out Arguments>? {
         val firstArg = args.first()

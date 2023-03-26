@@ -6,9 +6,7 @@
 
 package com.kotlindiscord.kord.extensions.events
 
-import com.kotlindiscord.kord.extensions.checks.channelFor
-import com.kotlindiscord.kord.extensions.checks.guildFor
-import com.kotlindiscord.kord.extensions.checks.interactionFor
+import com.kotlindiscord.kord.extensions.checks.*
 import com.kotlindiscord.kord.extensions.checks.userFor
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
@@ -50,9 +48,9 @@ public open class EventContext<T : Event>(
         val eventObj = event as Event
         var locale: Locale? = null
 
-        val guild = guildFor(eventObj)
-        val channel = channelFor(eventObj)
-        val user = userFor(eventObj)
+        val guild = guildFor(eventObj)?.idLong
+        val channel = channelIdFor(eventObj)
+        val user = userIdFor(eventObj)
 
         for (resolver in eventHandler.extension.bot.settings.i18nBuilder.localeResolvers) {
             val result = resolver(guild, channel, user, interactionFor(eventObj))

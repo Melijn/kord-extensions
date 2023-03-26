@@ -8,11 +8,10 @@ package com.kotlindiscord.kord.extensions.pagination
 
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.interaction.response.EphemeralMessageInteractionResponseBehavior
-import dev.kord.core.behavior.interaction.response.edit
-import dev.kord.core.entity.ReactionEmoji
-import dev.kord.rest.builder.message.modify.embed
+import dev.minn.jda.ktx.messages.MessageEdit
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
 
 /**
@@ -22,13 +21,13 @@ import java.util.*
  */
 public class EphemeralResponsePaginator(
     pages: Pages,
-    owner: UserBehavior? = null,
+    owner: Long? = null,
     timeoutSeconds: Long? = null,
-    switchEmoji: ReactionEmoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
+    switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
     bundle: String? = null,
     locale: Locale? = null,
 
-    public val interaction: EphemeralMessageInteractionResponseBehavior,
+    public val interaction: InteractionHook,
 ) : BaseButtonPaginator(pages, owner, timeoutSeconds, true, switchEmoji, bundle, locale) {
     /** Whether this paginator has been set up for the first time. **/
     public var isSetup: Boolean = false
@@ -42,13 +41,13 @@ public class EphemeralResponsePaginator(
             updateButtons()
         }
 
-        interaction.edit {
+        interaction.editOriginal(MessageEdit {
             embed { applyPage() }
 
             with(this@EphemeralResponsePaginator.components) {
-                this@edit.applyToMessage()
+                this@MessageEdit.applyToMessage()
             }
-        }
+        })
     }
 
     override suspend fun destroy() {
@@ -58,11 +57,11 @@ public class EphemeralResponsePaginator(
 
         active = false
 
-        interaction.edit {
+        interaction.editOriginal(MessageEdit {
             embed { applyPage() }
 
-            this.components = mutableListOf()
-        }
+            this.builder.setComponents(mutableListOf())
+        })
 
         super.destroy()
     }
@@ -72,7 +71,7 @@ public class EphemeralResponsePaginator(
 @Suppress("FunctionNaming")  // Factory function
 public fun EphemeralResponsePaginator(
     builder: PaginatorBuilder,
-    interaction: EphemeralMessageInteractionResponseBehavior
+    interaction: InteractionHook
 ): EphemeralResponsePaginator = EphemeralResponsePaginator(
     pages = builder.pages,
     owner = builder.owner,

@@ -8,9 +8,9 @@ package com.kotlindiscord.kord.extensions.pagination.builders
 
 import com.kotlindiscord.kord.extensions.pagination.pages.Page
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.entity.ReactionEmoji
-import dev.kord.rest.builder.message.EmbedBuilder
+import dev.minn.jda.ktx.messages.InlineEmbed
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import java.util.*
 
 /**
@@ -27,7 +27,7 @@ public class PaginatorBuilder(
     public val pages: Pages = Pages(defaultGroup)
 
     /** Paginator owner, if only one person should be able to interact. **/
-    public var owner: UserBehavior? = null
+    public var owner: Long? = null
 
     /** Paginator timeout, in seconds. When elapsed, the paginator will be destroyed. **/
     public var timeoutSeconds: Long? = null
@@ -36,7 +36,7 @@ public class PaginatorBuilder(
     public var keepEmbed: Boolean = true
 
     /** Alternative switch button emoji, if needed. **/
-    public var switchEmoji: ReactionEmoji? = null
+    public var switchEmoji: Emoji? = null
 
     /** Translations bundle to use for page groups, if any. **/
     public var bundle: String? = null
@@ -50,7 +50,7 @@ public class PaginatorBuilder(
     /** Add a page to [pages], using the default group. **/
     public fun page(
         bundle: String? = null,
-        builder: suspend EmbedBuilder.() -> Unit
+        builder: suspend InlineEmbed.() -> Unit
     ): Unit =
         page(Page(builder = builder, bundle = bundle))
 
@@ -58,7 +58,7 @@ public class PaginatorBuilder(
     public fun page(
         group: String,
         bundle: String? = null,
-        builder: suspend EmbedBuilder.() -> Unit
+        builder: suspend InlineEmbed.() -> Unit
     ): Unit =
         page(group, Page(builder = builder, bundle = bundle))
 }

@@ -8,16 +8,13 @@ package com.kotlindiscord.kord.extensions.pagination
 
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.MessageChannelBehavior
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.behavior.edit
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.ReactionEmoji
-import dev.kord.rest.builder.message.create.allowedMentions
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.allowedMentions
-import dev.kord.rest.builder.message.modify.embed
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
+import dev.minn.jda.ktx.messages.MessageEdit
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import java.util.*
 
 /**
@@ -29,15 +26,15 @@ import java.util.*
  */
 public class MessageButtonPaginator(
     pages: Pages,
-    owner: UserBehavior? = null,
+    owner: Long? = null,
     timeoutSeconds: Long? = null,
     keepEmbed: Boolean = true,
-    switchEmoji: ReactionEmoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
+    switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
     bundle: String? = null,
     locale: Locale? = null,
 
     public val pingInReply: Boolean = true,
-    public val targetChannel: MessageChannelBehavior? = null,
+    public val targetChannel: MessageChannel? = null,
     public val targetMessage: Message? = null,
 ) : BaseButtonPaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
     init {
@@ -47,7 +44,7 @@ public class MessageButtonPaginator(
     }
 
     /** Specific channel to send the paginator to. **/
-    public val channel: MessageChannelBehavior = targetMessage?.channel ?: targetChannel!!
+    public val channel: MessageChannel = targetMessage?.channel ?: targetChannel!!
 
     /** Message containing the paginator. **/
     public var message: Message? = null
@@ -56,26 +53,24 @@ public class MessageButtonPaginator(
         if (message == null) {
             setup()
 
-            message = channel.createMessage {
-                this.messageReference = targetMessage?.id
-
-                allowedMentions { repliedUser = pingInReply }
+            message = channel.sendMessage(MessageCreate {
+                this.builder.mentionRepliedUser(pingInReply)
                 embed { applyPage() }
 
                 with(this@MessageButtonPaginator.components) {
-                    this@createMessage.applyToMessage()
+                    this@MessageCreate.applyToMessage()
                 }
-            }
+            }).setMessageReference(targetMessage?.id).await()
         } else {
             updateButtons()
 
-            message!!.edit {
+            message!!.editMessage(MessageEdit {
                 embed { applyPage() }
 
                 with(this@MessageButtonPaginator.components) {
-                    this@edit.applyToMessage()
+                    this@MessageEdit.applyToMessage()
                 }
-            }
+            })
         }
     }
 
@@ -89,12 +84,11 @@ public class MessageButtonPaginator(
         if (!keepEmbed) {
             message!!.delete()
         } else {
-            message!!.edit {
-                allowedMentions { repliedUser = pingInReply }
+            message!!.editMessage(MessageEdit {
                 embed { applyPage() }
 
-                this.components = mutableListOf()
-            }
+                this.builder.setComponents(mutableListOf())
+            }).mentionRepliedUser(pingInReply).await()
         }
 
         super.destroy()
@@ -105,7 +99,7 @@ public class MessageButtonPaginator(
 @Suppress("FunctionNaming")  // Factory function
 public fun MessageButtonPaginator(
     pingInReply: Boolean = true,
-    targetChannel: MessageChannelBehavior? = null,
+    targetChannel: MessageChannel? = null,
     targetMessage: Message? = null,
 
     builder: PaginatorBuilder

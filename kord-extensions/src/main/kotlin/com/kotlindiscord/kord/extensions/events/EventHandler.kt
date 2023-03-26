@@ -19,12 +19,12 @@ import com.kotlindiscord.kord.extensions.sentry.SentryAdapter
 import com.kotlindiscord.kord.extensions.sentry.tag
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import com.kotlindiscord.kord.extensions.utils.getKoin
-import dev.kord.core.Kord
-import dev.kord.core.entity.channel.DmChannel
-import dev.kord.core.entity.channel.GuildMessageChannel
 import net.dv8tion.jda.api.events.Event
 import kotlinx.coroutines.Job
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import java.util.*
 
@@ -50,7 +50,7 @@ public open class EventHandler<T : Event>(
     public val sentry: SentryAdapter by inject()
 
     /** Current Kord instance powering the bot. **/
-    public open val kord: Kord by inject()
+    public open val kord: ShardManager by inject()
 
     /** Translations provider, for retrieving translations. **/
     public val translationsProvider: TranslationsProvider by inject()
@@ -153,58 +153,36 @@ public open class EventHandler<T : Event>(
                 message = "Event \"$eventName\" fired."
 
                 val channel = topChannelFor(event)
-                val guildBehavior = guildFor(event)
+                val guild = guildFor(event)
                 val messageBehavior = messageFor(event)
-                val roleBehavior = roleFor(event)
-                val thread = threadFor(event)?.asChannel()
-                val userBehavior = userFor(event)
+                val role = roleFor(event)
+                val thread = threadFor(event)
+                val user = userFor(event)
 
                 if (channel != null) {
                     data["channel"] = when (channel) {
-                        is DmChannel -> "Private Message (${channel.id})"
+                        is PrivateChannel -> "Private Message (${channel.id})"
                         is GuildMessageChannel -> "#${channel.name} (${channel.id})"
 
-                        else -> channel.id.toString()
+                        else -> channel.id
                     }
                 }
 
-                if (thread != null) {
+                if (thread != null)
                     data["thread"] = "#${thread.name} (${thread.id})"
-                }
 
-                if (guildBehavior != null) {
-                    val guild = guildBehavior.asGuildOrNull()
+                if (guild != null)
+                    data["guild"] = "${guild.name} (${guild.id})"
 
-                    data["guild"] = if (guild != null) {
-                        "${guild.name} (${guild.id})"
-                    } else {
-                        guildBehavior.id.toString()
-                    }
-                }
+                if (messageBehavior != null)
+                    data["message"] = messageBehavior.id
 
-                if (messageBehavior != null) {
-                    data["message"] = messageBehavior.id.toString()
-                }
+                if (role != null)
+                    data["role"] = "@${role.name} (${role.id})"
 
-                if (roleBehavior != null) {
-                    val role = roleBehavior.guild.getRoleOrNull(roleBehavior.id)
 
-                    data["role"] = if (role != null) {
-                        "@${role.name} (${role.id})"
-                    } else {
-                        roleBehavior.id.toString()
-                    }
-                }
-
-                if (userBehavior != null) {
-                    val user = userBehavior.asUserOrNull()
-
-                    data["user"] = if (user != null) {
-                        "${user.tag} (${user.id})"
-                    } else {
-                        userBehavior.id.toString()
-                    }
-                }
+                if (user != null)
+                    data["user"] = "${user.asTag} (${user.id})"
             }
         }
 
@@ -237,9 +215,9 @@ public open class EventHandler<T : Event>(
             return locale
         }
 
-        val guild = guildFor(this)
-        val channel = channelFor(this)
-        val user = userFor(this)
+        val guild = guildFor(this)?.idLong
+        val channel = channelIdFor(this)
+        val user = userIdFor(this)
 
         for (resolver in extension.bot.settings.i18nBuilder.localeResolvers) {
             val result = resolver(guild, channel, user, interactionFor(this))

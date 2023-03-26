@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:OptIn(KordUnsafe::class, KordExperimental::class)
-
 package com.kotlindiscord.kord.extensions.commands.chat
 
 import com.kotlindiscord.kord.extensions.annotations.ExtensionDSL
@@ -17,14 +15,12 @@ import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import com.kotlindiscord.kord.extensions.utils.respond
-import dev.kord.common.annotation.KordExperimental
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.MemberBehavior
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.MessageChannelBehavior
-import dev.kord.core.entity.Message
-import dev.kord.core.event.message.MessageCreateEvent
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 /**
  * Command context object representing the context given to chat commands.
@@ -36,55 +32,37 @@ import dev.kord.core.event.message.MessageCreateEvent
 @ExtensionDSL
 public open class ChatCommandContext<T : Arguments>(
     public val chatCommand: ChatCommand<out T>,
-    eventObj: MessageCreateEvent,
+    eventObj: MessageReceivedEvent,
     commandName: String,
     public open val parser: StringParser,
     public val argString: String,
     cache: MutableStringKeyedMap<Any>
 ) : CommandContext(chatCommand, eventObj, commandName, cache) {
     /** Event that triggered this command execution. **/
-    public val event: MessageCreateEvent get() = eventObj as MessageCreateEvent
+    public val event: MessageReceivedEvent get() = eventObj as MessageReceivedEvent
 
     /** Message channel this command happened in, if any. **/
-    public open lateinit var channel: MessageChannelBehavior
+    public override val channel: MessageChannel = event.message.channel
 
     /** Guild this command happened in, if any. **/
-    public open var guild: GuildBehavior? = null
+    public override val guild: Guild? = event.guild
 
     /** Guild member responsible for executing this command, if any. **/
-    public open var member: MemberBehavior? = null
+    public override val member: Member? = event.member
 
     /** User responsible for executing this command, if any (if `null`, it's a webhook). **/
-    public open var user: UserBehavior? = null
+    public override val user: User = event.message.author
 
     /** Message object containing this command invocation. **/
-    public open lateinit var message: Message
+    public open val message: Message = event.message
 
     /** Arguments object containing this command's parsed arguments. **/
     public open lateinit var arguments: T
-
-    override suspend fun populate() {
-        channel = getChannel()
-        guild = getGuild()
-        member = getMember()
-        user = getUser()
-
-        message = getMessage()
-    }
 
     /** @suppress Internal function **/
     public fun populateArgs(args: T) {
         arguments = args
     }
-
-    override suspend fun getChannel(): MessageChannelBehavior = event.message.channel
-    override suspend fun getGuild(): GuildBehavior? = event.guildId
-        ?.let { event.kord.unsafe.guild(it) }
-    override suspend fun getMember(): MemberBehavior? = event.member
-    override suspend fun getUser(): UserBehavior? = event.message.author
-
-    /** Extract message information from event data, if that context is available. **/
-    public open suspend fun getMessage(): Message = event.message
 
     /**
      * Convenience function to create a button paginator using a builder DSL syntax. Handles the contextual stuff for
@@ -94,12 +72,12 @@ public open class ChatCommandContext<T : Arguments>(
         defaultGroup: String = "",
 
         pingInReply: Boolean = true,
-        targetChannel: MessageChannelBehavior? = null,
+        targetChannel: MessageChannel? = null,
         targetMessage: Message? = null,
 
         body: suspend PaginatorBuilder.() -> Unit
     ): MessageButtonPaginator {
-        val builder = PaginatorBuilder(getLocale(), defaultGroup = defaultGroup)
+        val builder = PaginatorBuilder(resolvedLocale.await(), defaultGroup = defaultGroup)
 
         body(builder)
 

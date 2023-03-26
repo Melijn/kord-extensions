@@ -6,13 +6,13 @@
 
 package com.kotlindiscord.kord.extensions.events.interfaces
 
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.entity.User
+
+import net.dv8tion.jda.api.entities.User
 
 /** Generic interface for custom events that can contain user behaviors. Mostly used by checks. **/
 public interface UserEvent {
     /** The user behavior for this event, if any. **/
-    public val user: UserBehavior?
+    public val user: User?
 
     /** Get a User object, or throw if one can't be retrieved. **/
     public suspend fun getUser(): User

@@ -24,14 +24,14 @@ import com.kotlindiscord.kord.extensions.usagelimits.cooldowns.CooldownType
 import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.RateLimit
 import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.RateLimitType
 import com.kotlindiscord.kord.extensions.utils.permissionsForMember
+import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import com.kotlindiscord.kord.extensions.utils.translate
-import dev.kord.common.entity.Permission
-import dev.kord.core.Kord
-import dev.kord.core.behavior.channel.asChannelOf
-import dev.kord.core.entity.channel.GuildChannel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import java.util.*
 import kotlin.time.Duration
@@ -75,7 +75,7 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
     public val sentry: SentryAdapter by inject()
 
     /** Kord instance, backing the ExtensibleBot. **/
-    public val kord: Kord by inject()
+    public val kord: ShardManager by inject()
 
     /** Permissions required to be able to run this command. **/
     public open val requiredPerms: MutableSet<Permission> = mutableSetOf()
@@ -140,7 +140,7 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
 
     /** Quick shortcut for emitting a command event without blocking. **/
     public open suspend fun emitEventAsync(event: CommandEvent<*, *>): Job =
-        kord.launch {
+        TaskConfig.coroutineScope.launch {
             extension.bot.send(event)
         }
 
@@ -150,8 +150,9 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
     internal open suspend fun onSuccessUseLimitUpdate(
         commandContext: CommandContext,
         invocationEvent: CommandInvocationEvent<*, *>,
-        success: Boolean
-    ) { }
+        success: Boolean,
+    ) {
+    }
 
     /** Checks whether the bot has the specified required permissions, throwing if it doesn't. **/
     @Throws(DiscordRelayedException::class)
@@ -160,28 +161,26 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
             return  // Nothing to check, don't try to hit the cache
         }
 
-        if (context.getGuild() != null) {
-            val perms = context
-                .getChannel()
-                .asChannelOf<GuildChannel>()
-                .permissionsForMember(kord.selfId)
+        val guild = context.guild ?: return
+        val perms = (context
+            .channel as GuildChannel)
+            .permissionsForMember(guild.selfMember)
 
-            val missingPerms = requiredPerms.filter { !perms.contains(it) }
+        val missingPerms = requiredPerms.filter { !perms.contains(it) }
 
-            if (missingPerms.isNotEmpty()) {
-                throw DiscordRelayedException(
-                    context.translate(
-                        "commands.error.missingBotPermissions",
-                        null,
+        if (missingPerms.isEmpty()) {
+            throw DiscordRelayedException(
+                context.translate(
+                    "commands.error.missingBotPermissions",
+                    null,
 
-                        replacements = arrayOf(
-                            missingPerms
-                                .map { it.translate(context.getLocale()) }
-                                .joinToString()
-                        )
+                    replacements = arrayOf(
+                        missingPerms
+                            .map { it.translate(context.resolvedLocale.await()) }
+                            .joinToString()
                     )
                 )
-            }
+            )
         }
     }
 }

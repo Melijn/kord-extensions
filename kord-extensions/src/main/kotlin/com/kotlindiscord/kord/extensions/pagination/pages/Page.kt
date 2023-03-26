@@ -10,8 +10,7 @@ import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.utils.capitalizeWords
-import com.kotlindiscord.kord.extensions.utils.textOrNull
-import dev.kord.rest.builder.message.EmbedBuilder
+import dev.minn.jda.ktx.messages.InlineEmbed
 import org.koin.core.component.inject
 import java.util.*
 
@@ -23,7 +22,7 @@ import java.util.*
  */
 public open class Page(
     public open val bundle: String? = null,
-    public open val builder: suspend EmbedBuilder.() -> Unit,
+    public open val builder: suspend InlineEmbed.() -> Unit,
 ) : KordExKoinComponent {
     /** Current instance of the bot. **/
     public open val bot: ExtensibleBot by inject()
@@ -39,16 +38,16 @@ public open class Page(
         group: String?,
         groupIndex: Int,
         groups: Int,
-    ): suspend EmbedBuilder.() -> Unit = {
+    ): suspend InlineEmbed.() -> Unit = {
         builder()
-
-        val curFooterText = footer?.textOrNull()
-        val curFooterIcon = footer?.icon
+        val msgEmbed = build()
+        val curFooterIcon = msgEmbed.footer?.iconUrl
+        val curFooterText = msgEmbed.footer?.text
 
         footer {
-            icon = curFooterIcon
+            iconUrl = curFooterIcon
 
-            text = buildString {
+            name = buildString {
                 if (pages > 1) {
                     append(
                         translationsProvider.translate(
@@ -59,7 +58,7 @@ public open class Page(
                     )
                 }
 
-                if (group != null && group.isNotBlank() || groups > 2) {
+                if (!group.isNullOrBlank() || groups > 2) {
                     if (isNotBlank()) {
                         append(" • ")
                     }

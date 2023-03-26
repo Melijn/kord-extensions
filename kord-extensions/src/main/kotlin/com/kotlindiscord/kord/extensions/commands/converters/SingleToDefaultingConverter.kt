@@ -9,8 +9,8 @@ package com.kotlindiscord.kord.extensions.commands.converters
 import com.kotlindiscord.kord.extensions.commands.Argument
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * A special [SingleConverter] that wraps another [SingleConverter], effectively turning it into an optional
@@ -60,14 +60,14 @@ public class SingleToDefaultingConverter<T : Any>(
         context: CommandContext
     ): String = singleConverter.handleError(t, context)
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder {
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData {
         val option = singleConverter.toSlashOption(arg)
-        option.required = false
+        option.isRequired = false
 
         return option
     }
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
         val result = singleConverter.parseOption(context, option)
 
         if (result) {

@@ -15,7 +15,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.builders.ConverterB
 import com.kotlindiscord.kord.extensions.commands.converters.builders.ValidationContext
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.core.Kord
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import kotlin.reflect.KProperty
 
@@ -46,7 +46,7 @@ public abstract class Converter<InputType : Any?, OutputType : Any?, NamedInputT
     public open val bot: ExtensibleBot by inject()
 
     /** Kord instance, backing the ExtensibleBot. **/
-    public val kord: Kord by inject()
+    public val kord: ShardManager by inject()
 
     /**
      * The parsed value.

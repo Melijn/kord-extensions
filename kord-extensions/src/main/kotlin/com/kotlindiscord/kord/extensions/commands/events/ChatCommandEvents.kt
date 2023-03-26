@@ -8,37 +8,37 @@ package com.kotlindiscord.kord.extensions.commands.events
 
 import com.kotlindiscord.kord.extensions.ArgumentParsingException
 import com.kotlindiscord.kord.extensions.commands.chat.ChatCommand
-import dev.kord.core.event.message.MessageCreateEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 /** Event emitted when a chat command is invoked. **/
 public data class ChatCommandInvocationEvent(
     override val command: ChatCommand<*>,
-    override val event: MessageCreateEvent
-) : CommandInvocationEvent<ChatCommand<*>, MessageCreateEvent>
+    override val event: MessageReceivedEvent
+) : CommandInvocationEvent<ChatCommand<*>, MessageReceivedEvent>
 
 /** Event emitted when a chat command invocation succeeds. **/
 public data class ChatCommandSucceededEvent(
     override val command: ChatCommand<*>,
-    override val event: MessageCreateEvent
-) : CommandSucceededEvent<ChatCommand<*>, MessageCreateEvent>
+    override val event: MessageReceivedEvent
+) : CommandSucceededEvent<ChatCommand<*>, MessageReceivedEvent>
 
 /** Event emitted when a chat command's checks fail. **/
 public data class ChatCommandFailedChecksEvent(
     override val command: ChatCommand<*>,
-    override val event: MessageCreateEvent,
+    override val event: MessageReceivedEvent,
     override val reason: String,
-) : CommandFailedChecksEvent<ChatCommand<*>, MessageCreateEvent>
+) : CommandFailedChecksEvent<ChatCommand<*>, MessageReceivedEvent>
 
 /** Event emitted when a chat command's argument parsing fails. **/
 public data class ChatCommandFailedParsingEvent(
     override val command: ChatCommand<*>,
-    override val event: MessageCreateEvent,
+    override val event: MessageReceivedEvent,
     override val exception: ArgumentParsingException,
-) : CommandFailedParsingEvent<ChatCommand<*>, MessageCreateEvent>
+) : CommandFailedParsingEvent<ChatCommand<*>, MessageReceivedEvent>
 
 /** Event emitted when a chat command's invocation fails with an exception. **/
 public data class ChatCommandFailedWithExceptionEvent(
     override val command: ChatCommand<*>,
-    override val event: MessageCreateEvent,
+    override val event: MessageReceivedEvent,
     override val throwable: Throwable
-) : CommandFailedWithExceptionEvent<ChatCommand<*>, MessageCreateEvent>
+) : CommandFailedWithExceptionEvent<ChatCommand<*>, MessageReceivedEvent>

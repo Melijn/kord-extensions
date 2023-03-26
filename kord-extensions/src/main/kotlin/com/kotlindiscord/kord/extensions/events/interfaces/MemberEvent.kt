@@ -6,8 +6,7 @@
 
 package com.kotlindiscord.kord.extensions.events.interfaces
 
-import dev.kord.core.behavior.MemberBehavior
-import dev.kord.core.entity.Member
+import net.dv8tion.jda.api.entities.Member
 
 /**
  * Generic interface for custom events that can contain member behaviors. Mostly used by checks.
@@ -17,7 +16,7 @@ import dev.kord.core.entity.Member
  */
 public interface MemberEvent : GuildEvent, UserEvent {
     /** The member behavior for this event, if any. **/
-    public val member: MemberBehavior?
+    public val member: Member?
 
     /** Get a Member object, or throw if one can't be retrieved. **/
     public suspend fun getMember(): Member

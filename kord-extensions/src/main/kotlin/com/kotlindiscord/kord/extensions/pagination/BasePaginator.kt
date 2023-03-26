@@ -11,37 +11,40 @@ import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.pagination.pages.Page
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
-import dev.kord.core.Kord
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.entity.ReactionEmoji
-import dev.kord.rest.builder.message.EmbedBuilder
+import dev.minn.jda.ktx.messages.InlineEmbed
 import mu.KotlinLogging
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.entities.emoji.EmojiUnion
+import net.dv8tion.jda.api.entities.emoji.UnicodeEmoji
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import java.util.*
 
 /** Emoji used to jump to the first page. **/
-public val FIRST_PAGE_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("⏮️")
+public val FIRST_PAGE_EMOJI: UnicodeEmoji = Emoji.fromUnicode("⏮️")
 
 /** Emoji used to jump to the previous page. **/
-public val LEFT_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("⬅️")
+public val LEFT_EMOJI: UnicodeEmoji = Emoji.fromUnicode("⬅️")
 
 /** Emoji used to jump to the next page. **/
-public val RIGHT_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("➡️")
+public val RIGHT_EMOJI: UnicodeEmoji = Emoji.fromUnicode("➡️")
 
 /** Emoji used to jump to the last page. **/
-public val LAST_PAGE_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("⏭️")
+public val LAST_PAGE_EMOJI: UnicodeEmoji = Emoji.fromUnicode("⏭️")
 
 /** Emoji used to destroy the paginator and delete the message. **/
-public val DELETE_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("\uD83D\uDDD1️")
+public val DELETE_EMOJI: UnicodeEmoji = Emoji.fromUnicode("\uD83D\uDDD1️")
 
 /** Emoji used to destroy the paginator without deleting the message. **/
-public val FINISH_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("☑️")
+public val FINISH_EMOJI: UnicodeEmoji = Emoji.fromUnicode("☑️")
 
 /** Group switch emoji, counter-clockwise arrows icon. **/
-public val SWITCH_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("\uD83D\uDD04")
+public val SWITCH_EMOJI: UnicodeEmoji = Emoji.fromUnicode("\uD83D\uDD04")
 
 /** Group switch emoji, information icon. **/
-public val EXPAND_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("\u2139\uFE0F")
+public val EXPAND_EMOJI: UnicodeEmoji = Emoji.fromUnicode("\u2139\uFE0F")
 
 /**
  * Abstract class intended for building paginators.
@@ -52,16 +55,17 @@ public val EXPAND_EMOJI: ReactionEmoji.Unicode = ReactionEmoji.Unicode("\u2139\u
  * @param owner Optional paginator owner - setting this will prevent other users from interacting with the paginator
  * @param timeoutSeconds How long (in seconds) to wait before destroying the paginator, if needed
  * @param keepEmbed Set this to `false` to remove the paginator's message when it's destroyed
- * @param switchEmoji The `ReactionEmoji` to use for group switching
+ * @param switchEmoji The `Emoji` to use for group switching
  * @param locale A Locale object for this pagination context, which defaults to the bot's default locale
  * @param bundle Translation bundle to use for this paginator
  */
 public abstract class BasePaginator(
     public open val pages: Pages,
-    public open val owner: UserBehavior? = null,
+    /** userId of the pagination owenber **/
+    public open val owner: Long? = null,
     public open val timeoutSeconds: Long? = null,
     public open val keepEmbed: Boolean = true,
-    public open val switchEmoji: ReactionEmoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
+    public open val switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
     public open val bundle: String? = null,
 
     locale: Locale? = null
@@ -72,7 +76,7 @@ public abstract class BasePaginator(
     public val bot: ExtensibleBot by inject()
 
     /** Kord instance, backing the ExtensibleBot. **/
-    public val kord: Kord by inject()
+    public val kord: ShardManager by inject()
 
     /** Current translations provider. **/
     public val translations: TranslationsProvider by inject()
@@ -105,7 +109,7 @@ public abstract class BasePaginator(
     public open var currentPage: Page = pages.get(currentGroup, currentPageNum)
 
     /** Builder that generates an embed for the paginator's current context. **/
-    public open suspend fun EmbedBuilder.applyPage() {
+    public open suspend fun InlineEmbed.applyPage() {
         val groupEmoji = if (pages.groups.size > 1) {
             currentGroup
         } else {

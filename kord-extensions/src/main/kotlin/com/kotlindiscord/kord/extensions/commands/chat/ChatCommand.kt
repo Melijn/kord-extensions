@@ -27,11 +27,11 @@ import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import com.kotlindiscord.kord.extensions.utils.getLocale
 import com.kotlindiscord.kord.extensions.utils.respond
-import dev.kord.common.entity.Permission
-import dev.kord.core.entity.channel.DmChannel
-import dev.kord.core.entity.channel.GuildMessageChannel
-import dev.kord.core.event.message.MessageCreateEvent
 import mu.KotlinLogging
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.koin.core.component.inject
 import java.util.*
 
@@ -273,7 +273,7 @@ public open class ChatCommand<T : Arguments>(
 
     /** Run checks with the provided [MessageCreateEvent]. Return false if any failed, true otherwise. **/
     public open suspend fun runChecks(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         sendMessage: Boolean = true,
         cache: MutableStringKeyedMap<Any>,
     ): Boolean {
@@ -376,7 +376,7 @@ public open class ChatCommand<T : Arguments>(
      * @param skipChecks Whether to skip testing the command's checks.
      */
     public open suspend fun call(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         commandName: String,
         parser: StringParser,
         argString: String,
@@ -414,31 +414,25 @@ public open class ChatCommand<T : Arguments>(
 
         val context = ChatCommandContext(this, event, commandName, parser, argString, cache)
 
-        context.populate()
-
         if (sentry.enabled) {
             context.sentry.breadcrumb(BreadcrumbType.User) {
                 category = "command.chat"
                 message = "Command \"$name\" called."
 
-                val channel = event.message.getChannelOrNull()
-                val guild = event.message.getGuildOrNull()
+                val channel = event.channel
+                val guild = event.guild
 
                 data["arguments"] = argString
-                data["message"] = event.message.content
+                data["message"] = event.message.contentRaw
 
-                if (channel != null) {
-                    data["channel"] = when (channel) {
-                        is DmChannel -> "Private Message (${channel.id})"
-                        is GuildMessageChannel -> "#${channel.name} (${channel.id})"
+                data["channel"] = when (channel) {
+                    PrivateChannel::class -> "Private Message (${channel.id})"
+                    GuildMessageChannel::class -> "#${channel.name} (${channel.id})"
 
-                        else -> channel.id.toString()
-                    }
+                    else -> channel.id
                 }
 
-                if (guild != null) {
-                    data["guild"] = "${guild.name} (${guild.id})"
-                }
+                data["guild"] = "${guild.name} (${guild.id})"
             }
         }
 
@@ -486,25 +480,22 @@ public open class ChatCommand<T : Arguments>(
             if (sentry.enabled) {
                 logger.trace { "Submitting error to sentry." }
 
-                val channel = event.message.getChannelOrNull()
-
+                val channel = event.message
+                val locale = context.resolvedLocale.await()
                 val translatedName = when (this) {
-                    is ChatSubCommand -> this.getFullTranslatedName(context.getLocale())
-                    is ChatGroupCommand -> this.getFullTranslatedName(context.getLocale())
-
-                    else -> this.getTranslatedName(context.getLocale())
+                    is ChatSubCommand -> this.getFullTranslatedName(locale)
+                    is ChatGroupCommand -> this.getFullTranslatedName(locale)
+                    else -> this.getTranslatedName(locale)
                 }
 
                 val sentryId = context.sentry.captureException(t) {
                     val author = event.message.author
 
-                    if (author != null) {
-                        user(author)
-                    }
+                    user(author)
 
                     tag("private", "false")
 
-                    if (channel is DmChannel) {
+                    if (channel is PrivateChannel) {
                         tag("private", "true")
                     }
 

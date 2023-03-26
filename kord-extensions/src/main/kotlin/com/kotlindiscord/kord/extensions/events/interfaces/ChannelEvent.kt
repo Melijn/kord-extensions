@@ -6,13 +6,12 @@
 
 package com.kotlindiscord.kord.extensions.events.interfaces
 
-import dev.kord.core.behavior.channel.ChannelBehavior
-import dev.kord.core.entity.channel.Channel
+import net.dv8tion.jda.api.entities.channel.Channel
 
 /** Generic interface for custom events that can contain channel behaviors. Mostly used by checks. **/
 public interface ChannelEvent {
     /** The channel behavior for this event, if any. **/
-    public val channel: ChannelBehavior?
+    public val channel: Channel?
 
     /** Get a generic Channel object, or throw if one can't be retrieved. **/
     public suspend fun getChannel(): Channel
