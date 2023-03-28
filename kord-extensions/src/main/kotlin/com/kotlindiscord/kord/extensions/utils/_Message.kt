@@ -311,8 +311,8 @@ public suspend fun CommandContext.waitForResponse(
 ): Message? {
     val kord = com.kotlindiscord.kord.extensions.utils.getKoin().get<ShardManager>()
     val event = kord.waitFor<MessageReceivedEvent>(timeout) {
-        message.author == getUser() &&
-            message.channel == getChannel() &&
+        message.author == user &&
+            message.channel == channel &&
             filter()
     }
 

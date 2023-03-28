@@ -9,13 +9,13 @@ package com.kotlindiscord.kord.extensions.commands.application.slash
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.behavior.interaction.response.EphemeralMessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Ephemeral-only slash command context. **/
 public class EphemeralSlashCommandContext<A : Arguments>(
-    override val event: ChatInputCommandInteractionCreateEvent,
+    event: SlashCommandInteractionEvent,
     override val command: SlashCommand<EphemeralSlashCommandContext<A>, A>,
-    override val interactionResponse: EphemeralMessageInteractionResponseBehavior,
+    override val interactionResponse: InteractionHook,
     cache: MutableStringKeyedMap<Any>
 ) : SlashCommandContext<EphemeralSlashCommandContext<A>, A>(event, command, cache), EphemeralInteractionContext

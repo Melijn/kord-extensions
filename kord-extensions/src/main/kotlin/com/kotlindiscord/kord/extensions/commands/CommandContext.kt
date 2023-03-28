@@ -7,7 +7,10 @@
 package com.kotlindiscord.kord.extensions.commands
 
 import com.kotlindiscord.kord.extensions.annotations.ExtensionDSL
-import com.kotlindiscord.kord.extensions.checks.*
+import com.kotlindiscord.kord.extensions.checks.channelIdFor
+import com.kotlindiscord.kord.extensions.checks.guildFor
+import com.kotlindiscord.kord.extensions.checks.interactionFor
+import com.kotlindiscord.kord.extensions.checks.userIdFor
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.sentry.SentryContext
@@ -24,7 +27,6 @@ import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.events.Event
 import org.koin.core.component.inject
 import java.util.*
-import kotlin.collections.HashMap
 import kotlin.time.Duration
 
 /**
@@ -63,7 +65,7 @@ public abstract class CommandContext(
     public open var cooldownCounters: MutableMap<CooldownType, Duration> = HashMap()
 
     /** Extract channel information from event data. **/
-    public abstract val channel: Channel
+    public abstract val channel: Channel?
 
     /** Extract guild information from event data, if that context is available. **/
     public abstract val guild: Guild?

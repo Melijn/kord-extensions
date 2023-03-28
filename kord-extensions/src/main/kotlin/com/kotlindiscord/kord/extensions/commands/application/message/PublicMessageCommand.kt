@@ -5,7 +5,6 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
 
 package com.kotlindiscord.kord.extensions.commands.application.message
 
@@ -18,14 +17,14 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.interaction.respondPublic
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.InlineMessage
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 
 public typealias InitialPublicMessageResponseBuilder =
-    (suspend InteractionResponseCreateBuilder.(MessageCommandInteractionCreateEvent) -> Unit)?
+    (suspend InlineMessage<MessageCreateData>.(MessageContextInteractionEvent) -> Unit)?
 
 /** Public message command. **/
 public class PublicMessageCommand(
@@ -39,7 +38,7 @@ public class PublicMessageCommand(
         initialResponseBuilder = body
     }
 
-    override suspend fun call(event: MessageCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: MessageContextInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         val invocationEvent = PublicMessageCommandInvocationEvent(this, event)
         emitEventAsync(invocationEvent)
 
@@ -60,9 +59,9 @@ public class PublicMessageCommand(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
+            event.interaction.reply(MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }
+            }).await()
 
             emitEventAsync(PublicMessageCommandFailedChecksEvent(this, event, e.reason))
 
@@ -70,14 +69,12 @@ public class PublicMessageCommand(
         }
 
         val response = if (initialResponseBuilder != null) {
-            event.interaction.respondPublic { initialResponseBuilder!!(event) }
+            event.interaction.reply(MessageCreate { initialResponseBuilder!!(event) }).await()
         } else {
-            event.interaction.deferPublicResponseUnsafe()
+            event.interaction.deferReply().await()
         }
 
         val context = PublicMessageCommandContext(event, this, response, cache)
-
-        context.populate()
 
         firstSentryBreadcrumb(context)
 

@@ -14,10 +14,11 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
+import dev.minn.jda.ktx.interactions.commands.Option
+import dev.minn.jda.ktx.interactions.commands.choice
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Choice converter for enum arguments. Supports mapping up to 25 choices to an enum type.
@@ -80,18 +81,18 @@ public class EnumChoiceConverter<E>(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply {
-            required = true
-
-            this@EnumChoiceConverter.choices.forEach { choice(it.key, it.value.name) }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        Option<String>(arg.displayName, arg.description, true).apply {
+            this@EnumChoiceConverter.choices.forEach {
+                choice(it.key, it.value.readableName)
+            }
         }
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val stringOption = option as? StringOptionValue ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.STRING) option.asString else return false
 
         try {
-            parsed = getter.invoke(stringOption.value) ?: return false
+            parsed = getter.invoke(optionValue) ?: return false
         } catch (e: IllegalArgumentException) {
             return false
         }

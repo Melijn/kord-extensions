@@ -5,7 +5,6 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
 
 package com.kotlindiscord.kord.extensions.commands.application.slash
 
@@ -17,13 +16,14 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.InlineMessage
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 
-public typealias InitialEphemeralSlashResponseBuilder =
-    (suspend InteractionResponseCreateBuilder.(ChatInputCommandInteractionCreateEvent) -> Unit)?
+public typealias InitialSlashResponseBuilder =
+    (suspend InlineMessage<MessageCreateData>.(SlashCommandInteractionEvent) -> Unit)?
 
 /** Ephemeral slash command. **/
 public class EphemeralSlashCommand<A : Arguments>(
@@ -31,21 +31,21 @@ public class EphemeralSlashCommand<A : Arguments>(
 
     public override val arguments: (() -> A)? = null,
     public override val parentCommand: SlashCommand<*, *>? = null,
-    public override val parentGroup: SlashGroup? = null
+    public override val parentGroup: SlashGroup? = null,
 ) : SlashCommand<EphemeralSlashCommandContext<A>, A>(extension) {
     /** @suppress Internal guilder **/
-    public var initialResponseBuilder: InitialEphemeralSlashResponseBuilder = null
+    public var initialResponseBuilder: InitialSlashResponseBuilder = null
 
     /** Call this to open with a response, omit it to ack instead. **/
-    public fun initialResponse(body: InitialEphemeralSlashResponseBuilder) {
+    public fun initialResponse(body: InitialSlashResponseBuilder) {
         initialResponseBuilder = body
     }
 
-    override suspend fun call(event: ChatInputCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: SlashCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         findCommand(event).run(event, cache)
     }
 
-    override suspend fun run(event: ChatInputCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun run(event: SlashCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         val invocationEvent = EphemeralSlashCommandInvocationEvent(this, event)
         emitEventAsync(invocationEvent)
 
@@ -66,9 +66,9 @@ public class EphemeralSlashCommand<A : Arguments>(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
+            event.interaction.reply(MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }
+            }).setEphemeral(true).await()
 
             emitEventAsync(
                 EphemeralSlashCommandFailedChecksEvent(
@@ -82,14 +82,12 @@ public class EphemeralSlashCommand<A : Arguments>(
         }
 
         val response = if (initialResponseBuilder != null) {
-            event.interaction.respondEphemeral { initialResponseBuilder!!(event) }
+            event.interaction.reply(MessageCreate { initialResponseBuilder!!(event) }).setEphemeral(true).await()
         } else {
-            event.interaction.deferEphemeralResponseUnsafe()
+            event.interaction.deferReply(true).await()
         }
 
         val context = EphemeralSlashCommandContext(event, this, response, cache)
-
-        context.populate()
 
         firstSentryBreadcrumb(context, this)
 
@@ -145,7 +143,7 @@ public class EphemeralSlashCommand<A : Arguments>(
     override suspend fun respondText(
         context: EphemeralSlashCommandContext<A>,
         message: String,
-        failureType: FailureReason<*>
+        failureType: FailureReason<*>,
     ) {
         context.respond { settings.failureResponseBuilder(this, message, failureType) }
     }

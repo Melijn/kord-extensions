@@ -20,22 +20,13 @@ import com.kotlindiscord.kord.extensions.sentry.user
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import com.kotlindiscord.kord.extensions.utils.getLocale
-import dev.kord.common.entity.ApplicationCommandType
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.channel.DmChannel
-import dev.kord.core.entity.channel.GuildMessageChannel
-import dev.kord.core.entity.interaction.GroupCommand
-import dev.kord.core.entity.interaction.InteractionCommand
-import dev.kord.core.entity.interaction.SubCommand
-import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import mu.KLogger
 import mu.KotlinLogging
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
-import net.dv8tion.jda.api.events.interaction.GenericAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.CommandInteractionPayload
 import java.util.*
@@ -53,7 +44,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
     public open val arguments: (() -> A)? = null,
     public open val parentCommand: SlashCommand<*, *>? = null,
     public open val parentGroup: SlashGroup? = null
-) : ApplicationCommand<GenericCommandInteractionEvent>(extension) {
+) : ApplicationCommand<SlashCommandInteractionEvent>(extension) {
     /** @suppress This is only meant for use by code that extends the command system. **/
     public val kxLogger: KLogger = KotlinLogging.logger {}
 
@@ -144,7 +135,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
 
     /** Override this to implement your command's calling logic. Check subtypes for examples! **/
     public abstract override suspend fun call(
-        event: GenericCommandInteractionEvent,
+        event: SlashCommandInteractionEvent,
         cache: MutableStringKeyedMap<Any>
     )
 
@@ -154,7 +145,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
     /**
      * Override this to implement the final calling logic, including creating the command context and running with it.
      */
-    public abstract suspend fun run(event: GenericCommandInteractionEvent, cache: MutableStringKeyedMap<Any>)
+    public abstract suspend fun run(event: SlashCommandInteractionEvent, cache: MutableStringKeyedMap<Any>)
 
     /** If enabled, adds the initial Sentry breadcrumb to the given context. **/
     public open suspend fun firstSentryBreadcrumb(context: C, commandObj: SlashCommand<*, *>) {
@@ -163,8 +154,8 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
                 category = "command.application.slash"
                 message = "Slash command \"${commandObj.name}\" called."
 
-                val channel = context.channel.asChannelOrNull()
-                val guild = context.guild?.asGuildOrNull()
+                val channel = context.channel
+                val guild = context.guild
 
                 data["command"] = commandObj.name
 
@@ -177,7 +168,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
                         is PrivateChannel -> "Private Message (${channel.id})"
                         is GuildMessageChannel -> "#${channel.name} (${channel.id})"
 
-                        else -> channel.id.toString()
+                        else -> channel.id
                     }
                 }
 
@@ -189,7 +180,7 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
     }
 
     override suspend fun runChecks(
-        event: GenericCommandInteractionEvent,
+        event: SlashCommandInteractionEvent,
         cache: MutableStringKeyedMap<Any>
     ): Boolean {
         val locale = event.getLocale()
@@ -271,12 +262,10 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
             kxLogger.trace { "Submitting error to sentry." }
 
             val channel = context.channel
-            val author = context.user.asUserOrNull()
+            val author = context.user
 
             val sentryId = context.sentry.captureException(t) {
-                if (author != null) {
-                    user(author)
-                }
+                user(author)
 
                 tag("private", "false")
 

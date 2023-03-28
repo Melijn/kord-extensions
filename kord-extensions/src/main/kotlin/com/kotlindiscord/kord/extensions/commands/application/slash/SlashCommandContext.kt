@@ -9,7 +9,11 @@ package com.kotlindiscord.kord.extensions.commands.application.slash
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommandContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.Channel
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 
 /**
  * Slash command context, containing everything you need for your slash command's execution.
@@ -17,7 +21,7 @@ import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionE
  * @param event Event that triggered this slash command invocation.
  */
 public open class SlashCommandContext<C : SlashCommandContext<C, A>, A : Arguments>(
-    public open val event: GenericCommandInteractionEvent,
+    public val event: SlashCommandInteractionEvent,
     public override val command: SlashCommand<C, A>,
     cache: MutableStringKeyedMap<Any>
 ) : ApplicationCommandContext(event, command, cache) {
@@ -28,4 +32,9 @@ public open class SlashCommandContext<C : SlashCommandContext<C, A>, A : Argumen
     public fun populateArgs(args: A) {
         arguments = args
     }
+
+    override val channel: Channel = event.channel
+    override val guild: Guild? = event.guild
+    override val member: Member? = event.member
+    override val user: User = event.user
 }

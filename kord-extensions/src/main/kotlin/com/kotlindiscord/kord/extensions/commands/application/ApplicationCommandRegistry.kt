@@ -9,10 +9,6 @@
     "TooGenericExceptionCaught",
     "StringLiteralDuplication",
 )
-@file:OptIn(
-    KordUnsafe::class,
-    KordExperimental::class
-)
 
 package com.kotlindiscord.kord.extensions.commands.application
 
@@ -24,24 +20,9 @@ import com.kotlindiscord.kord.extensions.commands.application.user.UserCommand
 import com.kotlindiscord.kord.extensions.commands.converters.SlashCommandConverter
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import dev.kord.common.annotation.KordExperimental
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.common.entity.ApplicationCommandType
-import dev.kord.common.entity.Choice
-import dev.kord.common.entity.Snowflake
-import dev.kord.common.entity.optional.Optional
-import dev.kord.core.Kord
-import dev.kord.core.behavior.createChatInputCommand
-import dev.kord.core.behavior.createMessageCommand
-import dev.kord.core.behavior.createUserCommand
-import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
-import dev.kord.core.event.interaction.UserCommandInteractionCreateEvent
-import dev.kord.rest.builder.interaction.*
-import dev.kord.rest.request.KtorRequestException
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import java.util.*
 
@@ -61,7 +42,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
     public open val bot: ExtensibleBot by inject()
 
     /** Kord instance, backing the ExtensibleBot. **/
-    public open val kord: Kord by inject()
+    public open val kord: ShardManager by inject()
 
     /** Translations provider, for retrieving translations. **/
     public open val translationsProvider: TranslationsProvider by inject()
@@ -71,16 +52,6 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
 
     /** Whether the initial sync has been finished, and commands should be registered directly. **/
     public var initialised: Boolean = false
-
-    /** Quick access to the human-readable name for a Discord application command type. **/
-    public val ApplicationCommandType.name: String
-        get() = when (this) {
-            is ApplicationCommandType.Unknown -> "unknown"
-
-            ApplicationCommandType.ChatInput -> "slash"
-            ApplicationCommandType.Message -> "message"
-            ApplicationCommandType.User -> "user"
-        }
 
     /** Handles the initial registration of commands, after extensions have been loaded. **/
     public suspend fun initialRegistration() {
@@ -166,11 +137,11 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
     /** @suppress Internal function used to delete the given command from Discord. Used by [unregister]. **/
     public open suspend fun deleteGeneric(
         command: ApplicationCommand<*>,
-        discordCommandId: Snowflake,
+        discordCommandId: Long,
     ) {
         try {
             if (command.guildId != null) {
-                kord.unsafe.guildApplicationCommand(
+                kord.guildApplicationCommand(
                     command.guildId!!,
                     kord.resources.applicationId,
                     discordCommandId

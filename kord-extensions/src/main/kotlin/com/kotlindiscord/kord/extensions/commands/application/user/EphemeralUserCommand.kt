@@ -5,7 +5,6 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
 
 package com.kotlindiscord.kord.extensions.commands.application.user
 
@@ -18,27 +17,26 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.event.interaction.UserCommandInteractionCreateEvent
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
+import dev.minn.jda.ktx.messages.InlineMessage
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 
-public typealias InitialEphemeralUserResponseBuilder =
-    (suspend InteractionResponseCreateBuilder.(UserCommandInteractionCreateEvent) -> Unit)?
+public typealias InitialUserResponseBuilder =
+    (suspend InlineMessage<MessageCreateData>.(UserContextInteractionEvent) -> Unit)?
 
 /** Ephemeral user command. **/
 public class EphemeralUserCommand(
     extension: Extension
 ) : UserCommand<EphemeralUserCommandContext>(extension) {
     /** @suppress Internal guilder **/
-    public var initialResponseBuilder: InitialEphemeralUserResponseBuilder = null
+    public var initialResponseBuilder: InitialUserResponseBuilder = null
 
     /** Call this to open with a response, omit it to ack instead. **/
-    public fun initialResponse(body: InitialEphemeralUserResponseBuilder) {
+    public fun initialResponse(body: InitialUserResponseBuilder) {
         initialResponseBuilder = body
     }
 
-    override suspend fun call(event: UserCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: UserContextInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         val invocationEvent = EphemeralUserCommandInvocationEvent(this, event)
         emitEventAsync(invocationEvent)
 

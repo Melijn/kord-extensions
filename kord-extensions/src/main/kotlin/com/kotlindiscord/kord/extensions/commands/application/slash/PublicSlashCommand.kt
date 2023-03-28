@@ -18,12 +18,14 @@ import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.InlineMessage
 import dev.minn.jda.ktx.messages.MessageCreate
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
-import net.dv8tion.jda.api.interactions.InteractionHook
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 
 public typealias InitialPublicSlashResponseBehavior =
-    (suspend InteractionHook.(GenericCommandInteractionEvent) -> Unit)?
+    (suspend InlineMessage<MessageCreateData>.(GenericCommandInteractionEvent) -> Unit)?
 
 /** Public slash command. **/
 public class PublicSlashCommand<A : Arguments>(
@@ -41,11 +43,11 @@ public class PublicSlashCommand<A : Arguments>(
         initialResponseBuilder = body
     }
 
-    override suspend fun call(event: GenericCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: SlashCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         findCommand(event).run(event, cache)
     }
 
-    override suspend fun run(event: GenericCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun run(event: SlashCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         val invocationEvent = PublicSlashCommandInvocationEvent(this, event)
         emitEventAsync(invocationEvent)
 
@@ -68,7 +70,7 @@ public class PublicSlashCommand<A : Arguments>(
         } catch (e: DiscordRelayedException) {
             event.interaction.reply(MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }).
+            }).await()
 
             emitEventAsync(PublicSlashCommandFailedChecksEvent(this, event, e.reason))
 
@@ -82,8 +84,6 @@ public class PublicSlashCommand<A : Arguments>(
         }
 
         val context = PublicSlashCommandContext(event, this, response, cache)
-
-        context.populate()
 
         firstSentryBreadcrumb(context, this)
 

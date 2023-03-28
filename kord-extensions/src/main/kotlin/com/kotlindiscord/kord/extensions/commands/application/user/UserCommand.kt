@@ -16,23 +16,23 @@ import com.kotlindiscord.kord.extensions.sentry.user
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import com.kotlindiscord.kord.extensions.utils.getLocale
-import dev.kord.common.entity.ApplicationCommandType
-import dev.kord.core.entity.channel.DmChannel
-import dev.kord.core.entity.channel.GuildMessageChannel
-import dev.kord.core.event.interaction.UserCommandInteractionCreateEvent
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.Command
 
 /** User context command, for right-click actions on users. **/
 public abstract class UserCommand<C : UserCommandContext<*>>(
     extension: Extension
-) : ApplicationCommand<UserCommandInteractionCreateEvent>(extension) {
+) : ApplicationCommand<UserContextInteractionEvent>(extension) {
     private val logger: KLogger = KotlinLogging.logger {}
 
     /** Command body, to be called when the command is executed. **/
     public lateinit var body: suspend C.() -> Unit
 
-    override val type: ApplicationCommandType = ApplicationCommandType.User
+    override val type: Command.Type = Command.Type.USER
 
     /** Call this to supply a command [body], to be called when the command is executed. **/
     public fun action(action: suspend C.() -> Unit) {
@@ -49,7 +49,7 @@ public abstract class UserCommand<C : UserCommandContext<*>>(
 
     /** Override this to implement your command's calling logic. Check subtypes for examples! **/
     public abstract override suspend fun call(
-        event: UserCommandInteractionCreateEvent,
+        event: UserContextInteractionEvent,
         cache: MutableStringKeyedMap<Any>
     )
 
@@ -63,8 +63,8 @@ public abstract class UserCommand<C : UserCommandContext<*>>(
                 category = "command.application.user"
                 message = "User command \"$name\" called."
 
-                val channel = context.channel.asChannelOrNull()
-                val guild = context.guild?.asGuildOrNull()
+                val channel = context.channel
+                val guild = context.guild
 
                 data["command"] = name
 
@@ -74,10 +74,10 @@ public abstract class UserCommand<C : UserCommandContext<*>>(
 
                 if (channel != null) {
                     data["channel"] = when (channel) {
-                        is DmChannel -> "Private Message (${channel.id})"
+                        is PrivateChannel -> "Private Message (${channel.id})"
                         is GuildMessageChannel -> "#${channel.name} (${channel.id})"
 
-                        else -> channel.id.toString()
+                        else -> channel.id
                     }
                 }
 
@@ -89,7 +89,7 @@ public abstract class UserCommand<C : UserCommandContext<*>>(
     }
 
     override suspend fun runChecks(
-        event: UserCommandInteractionCreateEvent,
+        event: UserContextInteractionEvent,
         cache: MutableStringKeyedMap<Any>
     ): Boolean {
         val locale = event.getLocale()
@@ -132,7 +132,7 @@ public abstract class UserCommand<C : UserCommandContext<*>>(
             logger.trace { "Submitting error to sentry." }
 
             val channel = context.channel
-            val author = context.user.asUserOrNull()
+            val author = context.user
 
             val sentryId = context.sentry.captureException(t) {
                 if (author != null) {
@@ -141,7 +141,7 @@ public abstract class UserCommand<C : UserCommandContext<*>>(
 
                 tag("private", "false")
 
-                if (channel is DmChannel) {
+                if (channel is PrivateChannel) {
                     tag("private", "true")
                 }
 
