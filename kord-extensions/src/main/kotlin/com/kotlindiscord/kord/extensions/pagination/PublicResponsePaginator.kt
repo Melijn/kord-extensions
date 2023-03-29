@@ -60,11 +60,13 @@ public class PublicResponsePaginator(
 
         active = false
 
-        interaction.editOriginal(MessageEdit {
+        interaction.editOriginal(
+            MessageEdit {
             embed { applyPage() }
 
             this.builder.setComponents(mutableListOf())
-        })
+        }
+        )
 
         super.destroy()
     }

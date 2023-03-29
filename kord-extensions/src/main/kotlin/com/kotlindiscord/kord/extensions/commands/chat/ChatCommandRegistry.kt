@@ -14,8 +14,8 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.utils.getLocale
-import dev.kord.core.Kord
-import dev.kord.core.event.message.MessageCreateEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 
 /**
@@ -26,7 +26,7 @@ public open class ChatCommandRegistry : KordExKoinComponent {
     public val bot: ExtensibleBot by inject()
 
     /** Kord instance, backing the ExtensibleBot. **/
-    public val kord: Kord by inject()
+    public val kord: ShardManager by inject()
 
     /** Chat command parser object. **/
     public open val parser: ChatCommandParser = ChatCommandParser()
@@ -102,7 +102,7 @@ public open class ChatCommandRegistry : KordExKoinComponent {
      * By default, this can be set in [ExtensibleBotBuilder] - but you can override this function in subclasses if
      * needed.
      */
-    public open suspend fun getPrefix(event: MessageCreateEvent): String =
+    public open suspend fun getPrefix(event: MessageReceivedEvent): String =
         botSettings.chatCommandsBuilder.prefixCallback(event, botSettings.chatCommandsBuilder.defaultPrefix)
 
     /**
@@ -110,13 +110,10 @@ public open class ChatCommandRegistry : KordExKoinComponent {
      * is returned, otherwise `null`.
      */
     public open fun String.startsWithSelfMention(): String? {
-        val mention = "<@${kord.selfId.value}>"
-        val nickMention = "<@!${kord.selfId.value}>"
+        val mention = kord.shards.first().selfUser.asMention
 
         return when {
             startsWith(mention) -> mention
-            startsWith(nickMention) -> nickMention
-
             else -> null
         }
     }
@@ -124,11 +121,11 @@ public open class ChatCommandRegistry : KordExKoinComponent {
     /**
      * Handles an incoming [MessageCreateEvent] and dispatches a command invocation, if possible.
      */
-    public open suspend fun handleEvent(event: MessageCreateEvent) {
+    public open suspend fun handleEvent(event: MessageReceivedEvent) {
         val message = event.message
         var commandName: String?
         val prefix = getPrefix(event)
-        var content = message.content
+        var content = message.contentRaw
 
         if (content.isEmpty()) {
             // Empty message.
@@ -240,7 +237,7 @@ public open class ChatCommandRegistry : KordExKoinComponent {
      *
      * If a command supports locale fallback, this will also attempt to resolve names via the bot's default locale.
      */
-    public open suspend fun getCommand(name: String, event: MessageCreateEvent): ChatCommand<out Arguments>? {
+    public open suspend fun getCommand(name: String, event: MessageReceivedEvent): ChatCommand<out Arguments>? {
         val defaultLocale = botSettings.i18nBuilder.defaultLocale
         val locale = event.getLocale()
 

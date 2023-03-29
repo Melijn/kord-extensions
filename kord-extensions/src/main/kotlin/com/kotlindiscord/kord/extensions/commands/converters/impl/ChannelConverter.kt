@@ -19,18 +19,13 @@ import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converte
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.utils.translate
-import dev.kord.common.entity.ChannelType
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.channel.Channel
-import dev.kord.core.entity.channel.GuildChannel
-import dev.kord.core.entity.interaction.ChannelOptionValue
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.rest.builder.interaction.ChannelBuilder
-import dev.kord.rest.builder.interaction.OptionsBuilder
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.toList
+import net.dv8tion.jda.api.entities.channel.Channel
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Argument converter for Discord [Channel] arguments.
@@ -67,7 +62,7 @@ import kotlinx.coroutines.flow.toList
 )
 public class ChannelConverter(
     private val requireSameGuild: Boolean = true,
-    private var requiredGuild: (suspend () -> Snowflake)? = null,
+    private var requiredGuild: (suspend () -> Long)? = null,
     private val requiredChannelTypes: Set<ChannelType> = setOf(),
     override var validator: Validator<Channel> = null
 ) : SingleConverter<Channel>() {
@@ -77,7 +72,7 @@ public class ChannelConverter(
         val arg: String = named ?: parser?.parseNext()?.data ?: return false
 
         if (arg.equals("this", true)) {
-            val channel = context.getChannel().asChannelOrNull()
+            val channel = context.channel
 
             if (channel != null) {
                 this.parsed = channel
@@ -101,7 +96,7 @@ public class ChannelConverter(
             val id = arg.substring(2, arg.length - 1)
 
             try {
-                kord.getChannel(Snowflake(id.toLong()))
+                kord.getChannelById(Channel::class.java, id.toLong())
             } catch (e: NumberFormatException) {
                 throw DiscordRelayedException(
                     context.translate(
@@ -111,37 +106,30 @@ public class ChannelConverter(
             }
         } else {
             val string: String = if (arg.startsWith("#")) arg.substring(1) else arg
-
-            try {
-                kord.getChannel(Snowflake(string.toLong()))
-            } catch (e: NumberFormatException) { // It's not a numeric ID, so let's try a channel name
-                kord.guilds
-                    .flatMapConcat { it.channels }
-                    .filter { it.name.equals(string, true) }
-                    .filter {
-                        if (requiredChannelTypes.isNotEmpty()) {
-                            it.type in requiredChannelTypes
-                        } else {
-                            true
-                        }
-                    }
-                    .toList()
-                    .firstOrNull()
+            val potentialTargets = context.guild?.channels?.filter { it.name.startsWith(string, true) }
+            val bestTarget = potentialTargets?.minByOrNull {
+                when {
+                    it.name.equals(string, false) -> 0
+                    it.name.equals(string, true) -> 1
+                    it.name.startsWith(string, false) -> 2
+                    else -> 3
+                }
             }
+            bestTarget
         }
 
         channel ?: return null
 
         if (channel is GuildChannel && (requireSameGuild || requiredGuild != null)) {
-            val guildId: Snowflake? = if (requiredGuild != null) requiredGuild!!.invoke() else context.getGuild()?.id
+            val guildId: Long? = if (requiredGuild != null) requiredGuild!!.invoke() else context.guild?.idLong
 
-            if (requireSameGuild && channel.guildId != guildId) {
+            if (requireSameGuild && channel.guild.idLong != guildId) {
                 return null  // Channel isn't in the right guild
             }
         }
 
         if (requiredChannelTypes.isNotEmpty() && channel.type !in requiredChannelTypes) {
-            val locale = context.getLocale()
+            val locale = context.resolvedLocale.await()
 
             throw DiscordRelayedException(
                 context.translate(
@@ -157,15 +145,13 @@ public class ChannelConverter(
         return channel
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        ChannelBuilder(arg.displayName, arg.description).apply {
-            channelTypes = requiredChannelTypes.toList()
-
-            required = true
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.CHANNEL, arg.displayName, arg.description, required).apply {
+            setChannelTypes(requiredChannelTypes)
         }
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? ChannelOptionValue)?.resolvedObject ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.CHANNEL) option.asChannel else return false
         this.parsed = optionValue
 
         return true

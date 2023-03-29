@@ -99,7 +99,6 @@ public suspend fun Message.respond(
     }
 }
 
-
 /**
  * Check that this message happened in either the given channel or a DM, or that the author is at least a given role.
  *
@@ -222,7 +221,6 @@ public suspend fun Message.requireGuildChannel(
 /** Whether this message was published to the guilds that are following its channel. **/
 public val Message.isPublished: Boolean
     get() = this.flags.contains(Message.MessageFlag.CROSSPOSTED)
-
 
 /** Whether this message was sent from a different guild's followed announcement channel. **/
 public val Message.isCrossPost: Boolean

@@ -9,7 +9,6 @@ package com.kotlindiscord.kord.extensions.pagination
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import dev.minn.jda.ktx.messages.MessageEdit
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
@@ -41,13 +40,15 @@ public class EphemeralResponsePaginator(
             updateButtons()
         }
 
-        interaction.editOriginal(MessageEdit {
+        interaction.editOriginal(
+            MessageEdit {
             embed { applyPage() }
 
             with(this@EphemeralResponsePaginator.components) {
                 this@MessageEdit.applyToMessage()
             }
-        })
+        }
+        )
     }
 
     override suspend fun destroy() {
@@ -57,11 +58,13 @@ public class EphemeralResponsePaginator(
 
         active = false
 
-        interaction.editOriginal(MessageEdit {
+        interaction.editOriginal(
+            MessageEdit {
             embed { applyPage() }
 
             this.builder.setComponents(mutableListOf())
-        })
+        }
+        )
 
         super.destroy()
     }

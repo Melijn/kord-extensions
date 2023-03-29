@@ -9,7 +9,6 @@ package com.kotlindiscord.kord.extensions.pagination.builders
 import com.kotlindiscord.kord.extensions.pagination.pages.Page
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import dev.minn.jda.ktx.messages.InlineEmbed
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import java.util.*
 

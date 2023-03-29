@@ -11,8 +11,8 @@ package com.kotlindiscord.kord.extensions.checks
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.utils.translate
 import dev.kord.common.entity.ChannelType
-import net.dv8tion.jda.api.events.Event
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.Event
 
 /**
  * Check asserting that the channel an [Event] fired in is of a given set of types.

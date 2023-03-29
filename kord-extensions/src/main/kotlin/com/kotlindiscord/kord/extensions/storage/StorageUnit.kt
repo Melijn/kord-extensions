@@ -11,7 +11,6 @@ import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.checks.messageFor
 import com.kotlindiscord.kord.extensions.checks.userFor
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import net.dv8tion.jda.api.events.Event
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
@@ -20,6 +19,7 @@ import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.events.Event
 import org.koin.core.component.inject
 import kotlin.reflect.KClass
 

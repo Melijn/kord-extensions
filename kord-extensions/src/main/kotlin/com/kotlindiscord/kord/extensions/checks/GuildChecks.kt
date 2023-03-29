@@ -11,8 +11,8 @@ package com.kotlindiscord.kord.extensions.checks
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
-import net.dv8tion.jda.api.events.Event
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.Event
 
 /**
  * Check asserting an [Event] was fired within a guild.

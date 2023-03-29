@@ -61,7 +61,6 @@ public fun Permission.toTranslationKey(): String? = when (this) {
     Permission.VOICE_START_ACTIVITIES -> "permission.useEmbeddedActivities"
 
     Permission.UNKNOWN -> null
-
 }
 
 /** Given a [CommandContext], translate the [Permission] to a human-readable string based on the context's locale. **/

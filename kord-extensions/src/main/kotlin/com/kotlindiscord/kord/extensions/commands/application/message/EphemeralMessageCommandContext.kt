@@ -8,13 +8,13 @@ package com.kotlindiscord.kord.extensions.commands.application.message
 
 import com.kotlindiscord.kord.extensions.types.EphemeralInteractionContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.behavior.interaction.response.EphemeralMessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Ephemeral-only message command context. **/
 public class EphemeralMessageCommandContext(
-    override val event: MessageCommandInteractionCreateEvent,
+    event: MessageContextInteractionEvent,
     override val command: MessageCommand<EphemeralMessageCommandContext>,
-    override val interactionResponse: EphemeralMessageInteractionResponseBehavior,
+    override val interactionResponse: InteractionHook,
     cache: MutableStringKeyedMap<Any>
 ) : MessageCommandContext<EphemeralMessageCommandContext>(event, command, cache), EphemeralInteractionContext

@@ -16,7 +16,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimePeriod
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
-import net.dv8tion.jda.api.EmbedBuilder
 import kotlin.time.Duration
 
 /**

@@ -15,8 +15,8 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import com.kotlindiscord.kord.extensions.utils.getLocale
-import dev.kord.core.event.message.MessageCreateEvent
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.koin.core.component.inject
 import java.util.*
 
@@ -50,7 +50,7 @@ public open class ChatGroupCommand<T : Arguments>(
     }
 
     override suspend fun runChecks(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         sendMessage: Boolean,
         cache: MutableStringKeyedMap<Any>
     ): Boolean {
@@ -183,7 +183,7 @@ public open class ChatGroupCommand<T : Arguments>(
     /** @suppress **/
     public open suspend fun getCommand(
         name: String?,
-        event: MessageCreateEvent
+        event: MessageReceivedEvent
     ): ChatCommand<out Arguments>? {
         name ?: return null
 
@@ -211,7 +211,7 @@ public open class ChatGroupCommand<T : Arguments>(
      * @param event The message creation event.
      */
     override suspend fun call(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         commandName: String,
         parser: StringParser,
         argString: String,

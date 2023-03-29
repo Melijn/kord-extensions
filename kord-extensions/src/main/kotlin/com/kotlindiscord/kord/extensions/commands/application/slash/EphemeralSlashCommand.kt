@@ -66,9 +66,11 @@ public class EphemeralSlashCommand<A : Arguments>(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.reply(MessageCreate {
+            event.interaction.reply(
+                MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }).setEphemeral(true).await()
+            }
+            ).setEphemeral(true).await()
 
             emitEventAsync(
                 EphemeralSlashCommandFailedChecksEvent(

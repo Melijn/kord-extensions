@@ -19,11 +19,11 @@ import com.kotlindiscord.kord.extensions.sentry.SentryAdapter
 import com.kotlindiscord.kord.extensions.sentry.tag
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import com.kotlindiscord.kord.extensions.utils.getKoin
-import net.dv8tion.jda.api.events.Event
 import kotlinx.coroutines.Job
 import mu.KotlinLogging
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.events.Event
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import java.util.*
@@ -168,21 +168,25 @@ public open class EventHandler<T : Event>(
                     }
                 }
 
-                if (thread != null)
+                if (thread != null) {
                     data["thread"] = "#${thread.name} (${thread.id})"
+                }
 
-                if (guild != null)
+                if (guild != null) {
                     data["guild"] = "${guild.name} (${guild.id})"
+                }
 
-                if (messageBehavior != null)
+                if (messageBehavior != null) {
                     data["message"] = messageBehavior.id
+                }
 
-                if (role != null)
+                if (role != null) {
                     data["role"] = "@${role.name} (${role.id})"
+                }
 
-
-                if (user != null)
+                if (user != null) {
                     data["user"] = "${user.asTag} (${user.id})"
+                }
             }
         }
 

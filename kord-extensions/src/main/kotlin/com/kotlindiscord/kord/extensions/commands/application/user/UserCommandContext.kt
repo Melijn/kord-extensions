@@ -33,5 +33,4 @@ public abstract class UserCommandContext<C : UserCommandContext<C>>(
     override val guild: Guild? = event.guild
     override val member: Member? = event.member
     override val user: User = event.user
-
 }

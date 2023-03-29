@@ -6,7 +6,6 @@
 
 @file:Suppress("TooGenericExceptionCaught")
 
-
 package com.kotlindiscord.kord.extensions.commands.application.slash
 
 import com.kotlindiscord.kord.extensions.ArgumentParsingException
@@ -68,9 +67,11 @@ public class PublicSlashCommand<A : Arguments>(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.reply(MessageCreate {
+            event.interaction.reply(
+                MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }).await()
+            }
+            ).await()
 
             emitEventAsync(PublicSlashCommandFailedChecksEvent(this, event, e.reason))
 

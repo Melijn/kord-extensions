@@ -60,7 +60,8 @@ dependencies {
 val compileKotlin: KotlinCompile by tasks
 
 compileKotlin.kotlinOptions {
-    languageVersion = "1.7"
+    languageVersion = "1.8"
+    freeCompilerArgs = listOf("-Xcontext-receivers")
 }
 
 dokkaModule {

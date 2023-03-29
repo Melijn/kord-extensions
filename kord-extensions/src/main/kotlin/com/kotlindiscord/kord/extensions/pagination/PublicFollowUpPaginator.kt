@@ -11,8 +11,6 @@ import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.MessageCreate
 import dev.minn.jda.ktx.messages.MessageEdit
-import dev.minn.jda.ktx.messages.editMessage
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.InteractionHook
@@ -42,22 +40,26 @@ public class PublicFollowUpPaginator(
         if (!sent) {
             setup()
 
-            interaction.sendMessage(MessageCreate {
+            interaction.sendMessage(
+                MessageCreate {
                 embed { applyPage() }
                 with(this@PublicFollowUpPaginator.components) {
                     this@MessageCreate.applyToMessage()
                 }
-            }).await()
+            }
+            ).await()
         } else {
             updateButtons()
 
-            interaction.editOriginal(MessageEdit {
+            interaction.editOriginal(
+                MessageEdit {
                 embed { applyPage() }
 
                 with(this@PublicFollowUpPaginator.components) {
                     this@MessageEdit.applyToMessage()
                 }
-            }).await()
+            }
+            ).await()
         }
     }
 
@@ -71,11 +73,13 @@ public class PublicFollowUpPaginator(
         if (!keepEmbed) {
             interaction.deleteOriginal().await()
         } else {
-            interaction.editOriginal(MessageEdit{
+            interaction.editOriginal(
+                MessageEdit {
                 embed { applyPage() }
 
                 this.builder.setComponents(mutableListOf())
-            }).await()
+            }
+            ).await()
         }
 
         super.destroy()

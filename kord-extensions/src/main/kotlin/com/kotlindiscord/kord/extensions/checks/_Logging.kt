@@ -9,8 +9,8 @@
 package com.kotlindiscord.kord.extensions.checks
 
 import dev.kord.common.entity.Snowflake
-import net.dv8tion.jda.api.events.Event
 import mu.KLogger
+import net.dv8tion.jda.api.events.Event
 
 /** Convenience wrapper for a "failing check" log message. **/
 public inline fun KLogger.failed(reason: String): Unit =

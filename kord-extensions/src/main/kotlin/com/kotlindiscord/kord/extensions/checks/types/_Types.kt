@@ -8,10 +8,10 @@
 
 package com.kotlindiscord.kord.extensions.checks.types
 
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
-import dev.kord.core.event.interaction.UserCommandInteractionCreateEvent
-import dev.kord.core.event.message.MessageCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 /** Types alias representing a check function for a specific event type. **/
 public typealias Check<T> = suspend CheckContext<T>.() -> Unit
@@ -20,13 +20,13 @@ public typealias Check<T> = suspend CheckContext<T>.() -> Unit
 public typealias CheckWithCache<T> = suspend CheckContextWithCache<T>.() -> Unit
 
 /** Check type for chat commands. **/
-public typealias ChatCommandCheck = CheckWithCache<MessageCreateEvent>
+public typealias ChatCommandCheck = CheckWithCache<MessageReceivedEvent>
 
 /** Check type for message commands. **/
-public typealias MessageCommandCheck = CheckWithCache<MessageCommandInteractionCreateEvent>
+public typealias MessageCommandCheck = CheckWithCache<MessageContextInteractionEvent>
 
 /** Check type for slash commands. **/
-public typealias SlashCommandCheck = CheckWithCache<ChatInputCommandInteractionCreateEvent>
+public typealias SlashCommandCheck = CheckWithCache<SlashCommandInteractionEvent>
 
 /** Check type for user commands. **/
-public typealias UserCommandCheck = CheckWithCache<UserCommandInteractionCreateEvent>
+public typealias UserCommandCheck = CheckWithCache<UserContextInteractionEvent>

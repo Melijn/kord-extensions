@@ -5,7 +5,6 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
 
 package com.kotlindiscord.kord.extensions.commands.application.message
 
@@ -18,27 +17,23 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
-
-public typealias InitialEphemeralMessageResponseBuilder =
-    (suspend InteractionResponseCreateBuilder.(MessageCommandInteractionCreateEvent) -> Unit)?
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 
 /** Ephemeral message command. **/
 public class EphemeralMessageCommand(
     extension: Extension,
 ) : MessageCommand<EphemeralMessageCommandContext>(extension) {
     /** @suppress Internal guilder **/
-    public var initialResponseBuilder: InitialEphemeralMessageResponseBuilder = null
+    public var initialResponseBuilder: InitialMessageResponseBuilder = null
 
     /** Call this to open with a response, omit it to ack instead. **/
-    public fun initialResponse(body: InitialEphemeralMessageResponseBuilder) {
+    public fun initialResponse(body: InitialMessageResponseBuilder) {
         initialResponseBuilder = body
     }
 
-    override suspend fun call(event: MessageCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: MessageContextInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         val invocationEvent = EphemeralMessageCommandInvocationEvent(this, event)
         emitEventAsync(invocationEvent)
 
@@ -59,9 +54,11 @@ public class EphemeralMessageCommand(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
+            event.interaction.reply(
+                MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
             }
+            ).setEphemeral(true).await()
 
             emitEventAsync(EphemeralMessageCommandFailedChecksEvent(this, event, e.reason))
 
@@ -69,14 +66,12 @@ public class EphemeralMessageCommand(
         }
 
         val response = if (initialResponseBuilder != null) {
-            event.interaction.respondEphemeral { initialResponseBuilder!!(event) }
+           event.interaction.reply(MessageCreate { initialResponseBuilder!!(event) }).setEphemeral(true).await()
         } else {
-            event.interaction.deferEphemeralResponseUnsafe()
+            event.interaction.deferReply(true).await()
         }
 
         val context = EphemeralMessageCommandContext(event, this, response, cache)
-
-        context.populate()
 
         firstSentryBreadcrumb(context)
 

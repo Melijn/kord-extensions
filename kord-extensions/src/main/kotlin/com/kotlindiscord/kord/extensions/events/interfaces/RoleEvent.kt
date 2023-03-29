@@ -8,7 +8,6 @@ package com.kotlindiscord.kord.extensions.events.interfaces
 
 import net.dv8tion.jda.api.entities.Role
 
-
 /** Generic interface for custom events that can contain role behaviors. Mostly used by checks. **/
 public interface RoleEvent {
     /** The role behavior for this event, if any. **/

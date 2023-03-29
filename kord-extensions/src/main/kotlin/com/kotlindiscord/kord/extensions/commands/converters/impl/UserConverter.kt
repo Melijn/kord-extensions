@@ -87,8 +87,10 @@ public class UserConverter(
                 kord.retrieveUserById(arg).await()
             } catch (e: IllegalArgumentException) { // It's not an ID, let's try the tag
                 if (!arg.contains("#")) {
-                    (context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, false) } ?:
-                    context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, true) }) ?.user
+                    (
+                        context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, false) }
+                    ?: context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, true) }
+                    ) ?.user
                 } else {
                     kord.users.firstOrNull { user ->
                         user.asTag.equals(arg, true)

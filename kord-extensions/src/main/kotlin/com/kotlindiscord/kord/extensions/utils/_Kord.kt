@@ -6,15 +6,14 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import net.dv8tion.jda.api.events.Event
 import dev.minn.jda.ktx.events.listener
 import kotlinx.coroutines.withTimeoutOrNull
+import net.dv8tion.jda.api.events.Event
 import net.dv8tion.jda.api.sharding.ShardManager
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-
 
 /**
  * Return the first received event that matches the condition.

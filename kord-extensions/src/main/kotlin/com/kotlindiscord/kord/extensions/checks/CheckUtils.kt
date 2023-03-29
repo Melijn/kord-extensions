@@ -8,7 +8,6 @@ package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.events.interfaces.*
-import kotlinx.coroutines.flow.first
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
@@ -23,7 +22,10 @@ import net.dv8tion.jda.api.events.guild.invite.GenericGuildInviteEvent
 import net.dv8tion.jda.api.events.guild.member.GenericGuildMemberEvent
 import net.dv8tion.jda.api.events.interaction.GenericInteractionCreateEvent
 import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent
-import net.dv8tion.jda.api.events.message.*
+import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import net.dv8tion.jda.api.events.message.react.GenericMessageReactionEvent
 import net.dv8tion.jda.api.events.role.GenericRoleEvent
 import net.dv8tion.jda.api.events.thread.GenericThreadEvent

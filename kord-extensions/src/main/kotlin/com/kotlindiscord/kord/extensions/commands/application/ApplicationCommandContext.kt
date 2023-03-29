@@ -9,10 +9,8 @@ package com.kotlindiscord.kord.extensions.commands.application
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 import org.koin.core.component.inject
-import java.util.*
 
 /**
  * Base class representing the shared functionality for an application command's context.
@@ -27,11 +25,4 @@ public abstract class ApplicationCommandContext(
 ) : CommandContext(genericCommand, genericEvent, genericCommand.name, cache) {
     /** Current bot setting object. **/
     public val botSettings: ExtensibleBotBuilder by inject()
-
-    /**
-     * The permissions applicable to your bot in this execution context (guild, roles, channels), or null if
-     * this command wasn't executed on a guild.
-     */
-    public val appPermissions: EnumSet<Permission>? = (genericEvent.interaction as? GuildApplicationCommandInteraction)
-        ?.appPermissions
 }

@@ -8,13 +8,13 @@ package com.kotlindiscord.kord.extensions.commands.application.message
 
 import com.kotlindiscord.kord.extensions.types.PublicInteractionContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Public-only message command context. **/
 public class PublicMessageCommandContext(
-    override val event: MessageCommandInteractionCreateEvent,
+    event: MessageContextInteractionEvent,
     override val command: MessageCommand<PublicMessageCommandContext>,
-    override val interactionResponse: PublicMessageInteractionResponseBehavior,
+    override val interactionResponse: InteractionHook,
     cache: MutableStringKeyedMap<Any>
 ) : MessageCommandContext<PublicMessageCommandContext>(event, command, cache), PublicInteractionContext

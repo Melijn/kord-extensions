@@ -17,11 +17,10 @@ import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converte
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.parsers.ColorParser
-import dev.kord.common.Color
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import java.awt.Color
 
 /**
  * Argument converter for colours, converting them into [Color] objects.
@@ -34,7 +33,7 @@ import dev.kord.rest.builder.interaction.StringChoiceBuilder
     types = [ConverterType.DEFAULTING, ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE],
 )
 public class ColorConverter(
-    override var validator: Validator<Color> = null
+    override var validator: Validator<Color> = null,
 ) : SingleConverter<Color>() {
     override val signatureTypeString: String = "converters.color.signatureType"
 
@@ -47,9 +46,10 @@ public class ColorConverter(
                 arg.startsWith("0x") -> this.parsed = Color(arg.substring(2).toInt(16))
                 arg.all { it.isDigit() } -> this.parsed = Color(arg.toInt())
 
-                else -> this.parsed = ColorParser.parse(arg, context.getLocale()) ?: throw DiscordRelayedException(
-                    context.translate("converters.color.error.unknown", replacements = arrayOf(arg))
-                )
+                else -> this.parsed =
+                    ColorParser.parse(arg, context.resolvedLocale.await()) ?: throw DiscordRelayedException(
+                        context.translate("converters.color.error.unknown", replacements = arrayOf(arg))
+                    )
             }
         } catch (e: DiscordRelayedException) {
             throw e
@@ -62,11 +62,11 @@ public class ColorConverter(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? StringOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.STRING) option.asString else return false
 
         try {
             when {
@@ -80,7 +80,7 @@ public class ColorConverter(
                     this.parsed = Color(optionValue.toInt())
 
                 else ->
-                    this.parsed = ColorParser.parse(optionValue, context.getLocale())
+                    this.parsed = ColorParser.parse(optionValue, context.resolvedLocale.await())
                         ?: throw DiscordRelayedException(
                             context.translate("converters.color.error.unknown", replacements = arrayOf(optionValue))
                         )

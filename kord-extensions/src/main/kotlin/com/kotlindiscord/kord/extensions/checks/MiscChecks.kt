@@ -8,8 +8,8 @@ package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import dev.kord.core.behavior.channel.threads.ThreadChannelBehavior
-import net.dv8tion.jda.api.events.Event
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.Event
 
 /**
  * Check asserting the user for an [Event] is a bot. Will fail if the event doesn't concern a user.

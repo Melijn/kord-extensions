@@ -9,13 +9,12 @@
 package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import com.kotlindiscord.kord.extensions.utils.hasPermission
 import com.kotlindiscord.kord.extensions.utils.permissionsForMember
 import com.kotlindiscord.kord.extensions.utils.translate
-import dev.kord.common.entity.Permission
-import dev.kord.core.entity.channel.GuildChannel
-import net.dv8tion.jda.api.events.Event
 import mu.KotlinLogging
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.events.Event
 
 /**
  * Check asserting that the user an [Event] fired for has a given permission, or the Administrator permission.
@@ -39,11 +38,11 @@ public suspend fun CheckContext<*>.hasPermission(perm: Permission) {
 
         fail()
     } else {
-        val memberObj = member.asMember()
+        val memberObj = member
 
         val result = when {
-            memberObj.hasPermission(Permission.Administrator) -> true
-            channel != null -> channel.permissionsForMember(member.id).contains(perm)
+            memberObj.hasPermission(Permission.ADMINISTRATOR) -> true
+            channel != null -> channel.permissionsForMember(member).contains(perm)
 
             else -> memberObj.hasPermission(perm)
         }
@@ -88,11 +87,11 @@ public suspend fun CheckContext<*>.notHasPermission(perm: Permission) {
 
         pass()
     } else {
-        val memberObj = member.asMember()
+        val memberObj = member
 
         val result = when {
-            memberObj.hasPermission(Permission.Administrator) -> true
-            channel != null -> channel.permissionsForMember(member.id).contains(perm)
+            memberObj.hasPermission(Permission.ADMINISTRATOR) -> true
+            channel != null -> channel.permissionsForMember(member.idLong).contains(perm)
 
             else -> memberObj.hasPermission(perm)
         }

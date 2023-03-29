@@ -12,7 +12,6 @@ import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.MessageCreate
 import dev.minn.jda.ktx.messages.MessageEdit
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import java.util.*
@@ -53,24 +52,28 @@ public class MessageButtonPaginator(
         if (message == null) {
             setup()
 
-            message = channel.sendMessage(MessageCreate {
+            message = channel.sendMessage(
+                MessageCreate {
                 this.builder.mentionRepliedUser(pingInReply)
                 embed { applyPage() }
 
                 with(this@MessageButtonPaginator.components) {
                     this@MessageCreate.applyToMessage()
                 }
-            }).setMessageReference(targetMessage?.id).await()
+            }
+            ).setMessageReference(targetMessage?.id).await()
         } else {
             updateButtons()
 
-            message!!.editMessage(MessageEdit {
+            message!!.editMessage(
+                MessageEdit {
                 embed { applyPage() }
 
                 with(this@MessageButtonPaginator.components) {
                     this@MessageEdit.applyToMessage()
                 }
-            })
+            }
+            )
         }
     }
 
@@ -84,11 +87,13 @@ public class MessageButtonPaginator(
         if (!keepEmbed) {
             message!!.delete()
         } else {
-            message!!.editMessage(MessageEdit {
+            message!!.editMessage(
+                MessageEdit {
                 embed { applyPage() }
 
                 this.builder.setComponents(mutableListOf())
-            }).mentionRepliedUser(pingInReply).await()
+            }
+            ).mentionRepliedUser(pingInReply).await()
         }
 
         super.destroy()

@@ -13,10 +13,7 @@ import com.kotlindiscord.kord.extensions.pagination.pages.Page
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import dev.minn.jda.ktx.messages.InlineEmbed
 import mu.KotlinLogging
-import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.emoji.Emoji
-import net.dv8tion.jda.api.entities.emoji.EmojiUnion
 import net.dv8tion.jda.api.entities.emoji.UnicodeEmoji
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject

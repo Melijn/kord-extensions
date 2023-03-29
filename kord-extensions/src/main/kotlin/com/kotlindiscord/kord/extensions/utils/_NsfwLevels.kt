@@ -13,7 +13,6 @@ import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import net.dv8tion.jda.api.entities.Guild.NSFWLevel
 import java.util.*
 
-
 /** Given a [NsfwLevel], return a string representing its translation key. **/
 public fun NSFWLevel.toTranslationKey(): String? = when (this) {
     NSFWLevel.AGE_RESTRICTED -> "nsfwLevel.ageRestricted"

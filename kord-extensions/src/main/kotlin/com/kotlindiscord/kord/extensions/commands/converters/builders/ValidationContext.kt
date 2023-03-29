@@ -157,7 +157,7 @@ public class ValidationContext<out T>(public val value: T, public val context: C
         bundle: String? = defaultBundle,
         replacements: Array<Any?> = arrayOf()
     ): String =
-        translations.translate(key, context.getLocale(), bundleName = bundle, replacements = replacements)
+        translations.translate(key, context.resolvedLocale.await(), bundleName = bundle, replacements = replacements)
 
     /**
      * If this validator has failed, throw a [DiscordRelayedException] with the translated message, if any.

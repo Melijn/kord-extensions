@@ -14,10 +14,9 @@ import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converte
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.utils.parseBoolean
-import dev.kord.core.entity.interaction.BooleanOptionValue
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.rest.builder.interaction.BooleanBuilder
-import dev.kord.rest.builder.interaction.OptionsBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Argument converter for [Boolean] arguments.
@@ -45,11 +44,11 @@ public class BooleanConverter(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        BooleanBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.ATTACHMENT, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? BooleanOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.BOOLEAN) option.asBoolean else return false
         this.parsed = optionValue
 
         return true

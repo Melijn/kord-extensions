@@ -6,7 +6,8 @@
 
 package com.kotlindiscord.kord.extensions.utils
 
-import kotlinx.datetime.*
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toKotlinInstant
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
 

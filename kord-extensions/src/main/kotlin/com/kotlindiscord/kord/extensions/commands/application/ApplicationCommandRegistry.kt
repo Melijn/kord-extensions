@@ -20,8 +20,14 @@ import com.kotlindiscord.kord.extensions.commands.application.user.UserCommand
 import com.kotlindiscord.kord.extensions.commands.converters.SlashCommandConverter
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
+import dev.minn.jda.ktx.coroutines.await
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import java.util.*
@@ -99,16 +105,16 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
     public abstract suspend fun register(command: UserCommand<*>): UserCommand<*>?
 
     /** Event handler for slash commands. **/
-    public abstract suspend fun handle(event: ChatInputCommandInteractionCreateEvent)
+    public abstract suspend fun handle(event: SlashCommandInteractionEvent)
 
     /** Event handler for message commands. **/
-    public abstract suspend fun handle(event: MessageCommandInteractionCreateEvent)
+    public abstract suspend fun handle(event: MessageContextInteractionEvent)
 
     /** Event handler for user commands. **/
-    public abstract suspend fun handle(event: UserCommandInteractionCreateEvent)
+    public abstract suspend fun handle(event: UserContextInteractionEvent)
 
-    /** Event handler for autocomplete interactions. **/
-    public abstract suspend fun handle(event: AutoCompleteInteractionCreateEvent)
+    /** Event handler for command autocomplete interactions. **/
+    public abstract suspend fun handle(event: CommandAutoCompleteInteractionEvent)
 
     /** Unregister a slash command. **/
     public abstract suspend fun unregister(command: SlashCommand<*, *>, delete: Boolean = true): SlashCommand<*, *>?
@@ -140,23 +146,16 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
         discordCommandId: Long,
     ) {
         try {
-            if (command.guildId != null) {
-                kord.guildApplicationCommand(
-                    command.guildId!!,
-                    kord.resources.applicationId,
-                    discordCommandId
-                ).delete()
-            } else {
-                kord.unsafe.globalApplicationCommand(kord.resources.applicationId, discordCommandId).delete()
+            val guildId = command.guildId
+            if (guildId != null) {
+                kord.getGuildById(guildId)?.deleteCommandById(discordCommandId)?.await()
+             } else {
+                kord.shards.firstOrNull()?.deleteCommandById(discordCommandId)?.await()
             }
-        } catch (e: KtorRequestException) {
+        } catch (e: ErrorResponseException) {
             logger.warn(e) {
                 "Failed to delete ${command.type.name} command ${command.name}" +
-                    if (e.error?.message != null) {
-                        "\n        Discord error message: ${e.error?.message}"
-                    } else {
-                        ""
-                    }
+                    "\n        Discord error message: ${e.errorResponse}"
             }
         }
     }
@@ -174,14 +173,10 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                         "The registry does not know about this type of ApplicationCommand"
                     )
                 }
-            } catch (e: KtorRequestException) {
+            } catch (e: ErrorResponseException) {
                 logger.warn(e) {
                     "Failed to register ${it.type.name} command: ${it.name}" +
-                        if (e.error?.message != null) {
-                            "\n        Discord error message: ${e.error?.message}"
-                        } else {
-                            ""
-                        }
+                        "\n        Discord error message: ${e.errorResponse}"
                 }
 
                 null
@@ -193,9 +188,9 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
         }
 
     /**
-     * Creates a KordEx [ApplicationCommand] as discord command and returns the created command's id as [Snowflake].
+     * Creates a KordEx [ApplicationCommand] as discord command and returns the created command's id as [Long].
      */
-    public open suspend fun createDiscordCommand(command: ApplicationCommand<*>): Snowflake? = when (command) {
+    public open suspend fun createDiscordCommand(command: ApplicationCommand<*>): Long? = when (command) {
         is SlashCommand<*, *> -> createDiscordSlashCommand(command)
         is UserCommand<*> -> createDiscordUserCommand(command)
         is MessageCommand<*> -> createDiscordMessageCommand(command)
@@ -204,16 +199,13 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
     }
 
     /**
-     * Creates a KordEx [SlashCommand] as discord command and returns the created command's id as [Snowflake].
+     * Creates a KordEx [SlashCommand] as discord command and returns the created command's id as [Long].
      */
-    public open suspend fun createDiscordSlashCommand(command: SlashCommand<*, *>): Snowflake? {
+    public open suspend fun createDiscordSlashCommand(command: SlashCommand<*, *>): Long? {
         val locale = bot.settings.i18nBuilder.defaultLocale
 
-        val guild = if (command.guildId != null) {
-            kord.getGuildOrNull(command.guildId!!)
-        } else {
-            null
-        }
+        val guild = command.guildId?.let { kord.getGuildById(it) }
+        val gwSession = kord.shards.firstOrNull()
 
         val (name, nameLocalizations) = command.localizedName
         val (description, descriptionLocalizations) = command.localizedDescription
@@ -221,7 +213,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
         val response = if (guild == null) {
             // We're registering global commands here, if the guild is null
 
-            kord.createGlobalChatInputCommand(name, description) {
+            gwSession.command(name, description) {
                 logger.trace { "Adding/updating global ${command.type.name} command: $name" }
 
                 this.nameLocalizations = nameLocalizations
@@ -248,11 +240,12 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
     /**
      * Creates a KordEx [UserCommand] as discord command and returns the created command's id as [Snowflake].
      */
-    public open suspend fun createDiscordUserCommand(command: UserCommand<*>): Snowflake? {
+    public open suspend fun createDiscordUserCommand(command: UserCommand<*>): Long? {
         val locale = bot.settings.i18nBuilder.defaultLocale
 
-        val guild = if (command.guildId != null) {
-            kord.getGuildOrNull(command.guildId!!)
+        val guildId = command.guildId
+        val guild = if (guildId != null) {
+            kord.getGuildById(guildId)
         } else {
             null
         }
@@ -283,9 +276,9 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
     }
 
     /**
-     * Creates a KordEx [MessageCommand] as discord command and returns the created command's id as [Snowflake].
+     * Creates a KordEx [MessageCommand] as discord command and returns the created command's id as [Long].
      */
-    public open suspend fun createDiscordMessageCommand(command: MessageCommand<*>): Snowflake? {
+    public open suspend fun createDiscordMessageCommand(command: MessageCommand<*>): Long? {
         val locale = bot.settings.i18nBuilder.defaultLocale
 
         val guild = if (command.guildId != null) {
@@ -500,7 +493,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
     /** Check whether the type and name of an extension-registered application command matches a Discord one. **/
     public open fun ApplicationCommand<*>.matches(
         locale: Locale,
-        other: dev.kord.core.entity.application.ApplicationCommand,
+        other: ApplicationCommand<*>,
     ): Boolean = type == other.type && localizedName.default.equals(other.name, true)
 
     // endregion

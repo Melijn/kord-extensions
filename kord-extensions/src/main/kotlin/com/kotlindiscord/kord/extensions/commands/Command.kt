@@ -162,8 +162,10 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
         }
 
         val guild = context.guild ?: return
-        val perms = (context
-            .channel as GuildChannel)
+        val perms = (
+            context
+            .channel as GuildChannel
+        )
             .permissionsForMember(guild.selfMember)
 
         val missingPerms = requiredPerms.filter { !perms.contains(it) }

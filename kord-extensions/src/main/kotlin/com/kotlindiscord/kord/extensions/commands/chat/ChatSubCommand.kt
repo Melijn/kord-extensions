@@ -10,7 +10,7 @@ import com.kotlindiscord.kord.extensions.annotations.ExtensionDSL
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.event.message.MessageCreateEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 /**
  * Class representing a subcommand.
@@ -28,7 +28,7 @@ public open class ChatSubCommand<T : Arguments>(
 ) : ChatCommand<T>(extension, arguments) {
 
     override suspend fun runChecks(
-        event: MessageCreateEvent,
+        event: MessageReceivedEvent,
         sendMessage: Boolean,
         cache: MutableStringKeyedMap<Any>,
     ): Boolean =

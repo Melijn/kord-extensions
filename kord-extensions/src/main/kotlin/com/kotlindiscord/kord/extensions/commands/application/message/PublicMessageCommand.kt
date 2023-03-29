@@ -18,23 +18,18 @@ import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
 import dev.minn.jda.ktx.coroutines.await
-import dev.minn.jda.ktx.messages.InlineMessage
 import dev.minn.jda.ktx.messages.MessageCreate
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
-import net.dv8tion.jda.api.utils.messages.MessageCreateData
-
-public typealias InitialPublicMessageResponseBuilder =
-    (suspend InlineMessage<MessageCreateData>.(MessageContextInteractionEvent) -> Unit)?
 
 /** Public message command. **/
 public class PublicMessageCommand(
     extension: Extension
 ) : MessageCommand<PublicMessageCommandContext>(extension) {
     /** @suppress Internal guilder **/
-    public var initialResponseBuilder: InitialPublicMessageResponseBuilder = null
+    public var initialResponseBuilder: InitialMessageResponseBuilder = null
 
     /** Call this to open with a response, omit it to ack instead. **/
-    public fun initialResponse(body: InitialPublicMessageResponseBuilder) {
+    public fun initialResponse(body: InitialMessageResponseBuilder) {
         initialResponseBuilder = body
     }
 
@@ -59,9 +54,11 @@ public class PublicMessageCommand(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.reply(MessageCreate {
+            event.interaction.reply(
+                MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }).await()
+            }
+            ).await()
 
             emitEventAsync(PublicMessageCommandFailedChecksEvent(this, event, e.reason))
 

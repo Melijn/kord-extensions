@@ -38,10 +38,6 @@ import dev.minn.jda.ktx.messages.InlineMessage
 import mu.KLogger
 import mu.KotlinLogging
 import net.dv8tion.jda.api.entities.Activity
-import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.ISnowflake
-import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.DiscordLocale
 import net.dv8tion.jda.api.interactions.Interaction
@@ -236,7 +232,9 @@ public open class ExtensibleBotBuilder {
      * @see Kord
      */
     @BotBuilderDSL
-    public fun customKordBuilder(builder: suspend (String, suspend DefaultShardManagerBuilder.() -> Unit) -> ShardManager) {
+    public fun customKordBuilder(
+        builder: suspend (String, suspend DefaultShardManagerBuilder.() -> Unit) -> ShardManager
+    ) {
         kordBuilder = builder
     }
 

@@ -10,7 +10,7 @@ package com.kotlindiscord.kord.extensions.commands.converters
 
 import com.kotlindiscord.kord.extensions.commands.converters.builders.ValidationContext
 import net.dv8tion.jda.api.events.interaction.GenericAutoCompleteInteractionEvent
-import net.dv8tion.jda.api.interactions.InteractionHook
+import net.dv8tion.jda.api.interactions.commands.CommandAutoCompleteInteraction
 
 /** Type alias representing a validator callable. Keeps things relatively maintainable. **/
 public typealias Validator<T> = (suspend ValidationContext<T>.() -> Unit)?
@@ -20,4 +20,4 @@ public typealias Mutator<T> = ((T) -> T)?
 
 /** Type alias representing an autocomplete callable. **/
 public typealias AutoCompleteCallback =
-    (suspend InteractionHook.(event: GenericAutoCompleteInteractionEvent) -> Unit)?
+    (suspend CommandAutoCompleteInteraction.(event: GenericAutoCompleteInteractionEvent) -> Unit)?

@@ -6,7 +6,6 @@
 
 package com.kotlindiscord.kord.extensions.events.interfaces
 
-
 import net.dv8tion.jda.api.entities.Guild
 
 /** Generic interface for custom events that can contain guild behaviors. Mostly used by checks. **/

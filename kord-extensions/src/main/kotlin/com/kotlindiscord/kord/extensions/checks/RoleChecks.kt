@@ -12,9 +12,9 @@ import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.utils.getTopRole
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.RoleBehavior
-import net.dv8tion.jda.api.events.Event
 import kotlinx.coroutines.flow.toList
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.Event
 
 // region: Entity DSL versions
 

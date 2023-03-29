@@ -18,13 +18,15 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.types.Snowflake
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import net.dv8tion.jda.api.interactions.commands.Command.Type as ApplicationCommandType
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.GenericInteractionCreateEvent
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import org.koin.core.component.inject
 import java.util.*
 import net.dv8tion.jda.api.interactions.DiscordLocale as KLocale
+import net.dv8tion.jda.api.interactions.commands.Command.Type as ApplicationCommandType
 
 /**
  * Abstract class representing an application command - extend this for actual implementations.
@@ -32,7 +34,7 @@ import net.dv8tion.jda.api.interactions.DiscordLocale as KLocale
  * @param extension Extension this application command belongs to.
  */
 public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
-    extension: Extension
+    extension: Extension,
 ) : Command(extension), KordExKoinComponent {
     /** Translations provider, for retrieving translations. **/
     protected val bot: ExtensibleBot by inject()
@@ -65,7 +67,7 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
         }
 
     /**
-     * Default set of [Permissions] required to use the command on a guild.
+     * Default EnumSet of [Permission]'s required to use the command on a guild.
      *
      * **Not enforced, read [requirePermission] for more information**
      */
@@ -84,6 +86,11 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
 
             return field
         }
+
+    /**
+     * Whether this command can only be used in NSFW channels
+     */
+    public open var isNSFW: Boolean = false
 
     /** Permissions required to be able to run this command. **/
     public override val requiredPerms: MutableSet<Permission> = mutableSetOf()
@@ -145,6 +152,11 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
         perms.forEach(requiredPerms::add)
     }
 
+    /** Registers this command as nsfw only, discord should then only show it in nsfw channels **/
+    public open fun nsfwOnly() {
+        this.isNSFW = true
+    }
+
     /** Specify a specific guild for this application command to be locked to. **/
     public open fun guild(guild: Snowflake) {
         this.guildId = guild.id
@@ -158,6 +170,16 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
     /** Specify a specific guild for this application command to be locked to. **/
     public open fun guild(guild: Guild) {
         this.guildId = guild.idLong
+    }
+
+    context(CommandData)
+    public open fun fillCommandData() {
+        val appCmd = this@ApplicationCommand
+        isGuildOnly = !appCmd.allowInDms
+        isNSFW = appCmd.isNSFW
+        appCmd.defaultMemberPermissions?.let {
+            setDefaultPermissions(DefaultMemberPermissions.enabledFor(it))
+        }
     }
 
     /**

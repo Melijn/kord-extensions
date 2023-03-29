@@ -6,7 +6,6 @@
 
 package com.kotlindiscord.kord.extensions.events.interfaces
 
-
 import net.dv8tion.jda.api.entities.User
 
 /** Generic interface for custom events that can contain user behaviors. Mostly used by checks. **/

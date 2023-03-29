@@ -17,8 +17,9 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
-
 
 /** Public user command. **/
 public class PublicUserCommand(
@@ -53,9 +54,11 @@ public class PublicUserCommand(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
+            event.interaction.reply(
+                MessageCreate {
                 settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
             }
+            ).await()
 
             emitEventAsync(PublicUserCommandFailedChecksEvent(this, event, e.reason))
 
@@ -63,14 +66,12 @@ public class PublicUserCommand(
         }
 
         val response = if (initialResponseBuilder != null) {
-            event.interaction.respondPublic { initialResponseBuilder!!(event) }
+            event.interaction.reply(MessageCreate { initialResponseBuilder!!(event) }).await()
         } else {
-            event.interaction.deferPublicResponseUnsafe()
+            event.interaction.deferReply().await()
         }
 
         val context = PublicUserCommandContext(event, this, response, cache)
-
-        context.populate()
 
         firstSentryBreadcrumb(context)
 

@@ -17,31 +17,27 @@ import com.kotlindiscord.kord.extensions.commands.application.message.MessageCom
 import com.kotlindiscord.kord.extensions.commands.application.slash.SlashCommand
 import com.kotlindiscord.kord.extensions.commands.application.user.UserCommand
 import com.kotlindiscord.kord.extensions.commands.getDefaultTranslatedDisplayName
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.createApplicationCommands
-import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
-import dev.kord.core.event.interaction.UserCommandInteractionCreateEvent
-import dev.kord.rest.builder.interaction.MultiApplicationCommandBuilder
-import dev.kord.rest.builder.interaction.input
-import dev.kord.rest.builder.interaction.message
-import dev.kord.rest.builder.interaction.user
-import dev.kord.rest.json.JsonErrorCode
-import dev.kord.rest.request.KtorRequestException
-import kotlinx.coroutines.flow.toList
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.interactions.commands.updateCommands
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.requests.ErrorResponse
 
 /** Registry for all Discord application commands. **/
 public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry() {
 
     /** Mapping of Discord-side command ID to a message command object. **/
-    public open val messageCommands: MutableMap<Snowflake, MessageCommand<*>> = mutableMapOf()
+    public open val messageCommands: MutableMap<Long, MessageCommand<*>> = mutableMapOf()
 
     /** Mapping of Discord-side command ID to a slash command object. **/
-    public open val slashCommands: MutableMap<Snowflake, SlashCommand<*, *>> = mutableMapOf()
+    public open val slashCommands: MutableMap<Long, SlashCommand<*, *>> = mutableMapOf()
 
     /** Mapping of Discord-side command ID to a user command object. **/
-    public open val userCommands: MutableMap<Snowflake, UserCommand<*>> = mutableMapOf()
+    public open val userCommands: MutableMap<Long, UserCommand<*>> = mutableMapOf()
 
     public override suspend fun initialize(commands: List<ApplicationCommand<*>>) {
         if (!bot.settings.applicationCommandsBuilder.register) {
@@ -70,7 +66,7 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
         groupedCommands.forEach {
             try {
                 sync(removeOthers, it.key, it.value)
-            } catch (e: KtorRequestException) {
+            } catch (e: ErrorResponseException) {
                 logger.error(e) {
                     buildString {
                         if (it.key == null) {
@@ -78,12 +74,9 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
                         } else {
                             append("Failed to synchronise application commands for guild with ID: ${it.key}")
                         }
+                        append("\n        Discord error message: ${e.errorResponse}")
 
-                        if (e.error?.message != null) {
-                            append("\n        Discord error message: ${e.error?.message}")
-                        }
-
-                        if (e.error?.code == JsonErrorCode.MissingAccess) {
+                        if (e.errorResponse == ErrorResponse.MISSING_ACCESS) {
                             append(
                                 "\n        Double-check that the bot was added to this guild with the " +
                                     "`application.commands` scope enabled"
@@ -112,25 +105,26 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
     /** Register multiple generic application commands. **/
     public open suspend fun sync(
         removeOthers: Boolean = false,
-        guildId: Snowflake?,
+        guildId: Long?,
         commands: List<ApplicationCommand<*>>,
     ) {
         // NOTE: Someday, discord will make real i18n possible, we hope...
         val locale = bot.settings.i18nBuilder.defaultLocale
 
         val guild = if (guildId != null) {
-            kord.getGuildOrNull(guildId)
+            kord.getGuildById(guildId)
                 ?: return logger.debug {
                     "Cannot register application commands for guild ID $guildId, " +
-                        "as it seems to be missing."
+                        "as the guild seems to be missing."
                 }
         } else {
             null
         }
 
         // Get guild commands if we're registering them (guild != null), otherwise get global commands
-        val registered = guild?.getApplicationCommands()?.toList()
-            ?: kord.getGlobalApplicationCommands().toList()
+        val gwSessions = kord.shards.firstOrNull() ?: return logger.error { "No gw session." }
+        val registered = guild?.retrieveCommands()?.await()
+            ?: gwSessions.retrieveCommands().await()
 
         if (!bot.settings.applicationCommandsBuilder.register) {
             commands.forEach { commandObj ->
@@ -138,9 +132,9 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
 
                 if (existingCommand != null) {
                     when (commandObj) {
-                        is MessageCommand<*> -> messageCommands[existingCommand.id] = commandObj
-                        is SlashCommand<*, *> -> slashCommands[existingCommand.id] = commandObj
-                        is UserCommand<*> -> userCommands[existingCommand.id] = commandObj
+                        is MessageCommand<*> -> messageCommands[existingCommand.idLong] = commandObj
+                        is SlashCommand<*, *> -> slashCommands[existingCommand.idLong] = commandObj
+                        is UserCommand<*> -> userCommands[existingCommand.idLong] = commandObj
                     }
                 }
             }
@@ -148,115 +142,132 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
             return  // We're only syncing them up, there's no other API work to do
         }
 
-        // Extension commands that haven't been registered yet
-        val toAdd = commands.filter { aC -> registered.all { dC -> !aC.matches(locale, dC) } }
+//        // Extension commands that haven't been registered yet
+//        val toAdd = commands.filter { aC -> registered.all { dC -> !aC.matches(locale, dC) } }
+//
+//        // Extension commands that were previously registered
+//        val toUpdate = commands.filter { aC -> registered.any { dC -> aC.matches(locale, dC) } }
+//
+//        // Registered Discord commands that haven't been provided by extensions
+//        val toRemove = if (removeOthers) {
+//            registered.filter { dC -> commands.all { aC -> !aC.matches(locale, dC) } }
+//        } else {
+//            listOf()
+//        }
+//
+//        logger.info {
+//            buildString {
+//                if (guild == null) {
+//                    append(
+//                        "Global application commands: ${toAdd.size} to add / " +
+//                            "${toUpdate.size} to update / " +
+//                            "${toRemove.size} to remove"
+//                    )
+//                } else {
+//                    append(
+//                        "Application commands for guild ${guild.name}: ${toAdd.size} to add / " +
+//                            "${toUpdate.size} to update / " +
+//                            "${toRemove.size} to remove"
+//                    )
+//                }
+//
+//                if (!removeOthers) {
+//                    append("\nThe `removeOthers` parameter is `false`, so no commands will be removed.")
+//                }
+//            }
+//        }
 
-        // Extension commands that were previously registered
-        val toUpdate = commands.filter { aC -> registered.any { dC -> aC.matches(locale, dC) } }
-
-        // Registered Discord commands that haven't been provided by extensions
-        val toRemove = if (removeOthers) {
-            registered.filter { dC -> commands.all { aC -> !aC.matches(locale, dC) } }
-        } else {
-            listOf()
-        }
-
-        logger.info {
-            buildString {
-                if (guild == null) {
-                    append(
-                        "Global application commands: ${toAdd.size} to add / " +
-                            "${toUpdate.size} to update / " +
-                            "${toRemove.size} to remove"
-                    )
-                } else {
-                    append(
-                        "Application commands for guild ${guild.name}: ${toAdd.size} to add / " +
-                            "${toUpdate.size} to update / " +
-                            "${toRemove.size} to remove"
-                    )
+        val discordCommandList = gwSessions.updateCommands {
+            for (cmd in commands) {
+                val commandData = when (cmd) {
+                    is MessageCommand<*> -> Commands.message(cmd.name)
+                    is SlashCommand<*, *> -> Commands.slash(cmd.name, cmd.description)
+                    is UserCommand<*> -> Commands.user(cmd.name)
+                    else -> return logger.error { "Cannot register: $cmd because it is an unknown command implementation." }
                 }
-
-                if (!removeOthers) {
-                    append("\nThe `removeOthers` parameter is `false`, so no commands will be removed.")
+                this.addCommands(
+                    commandData.apply {
+                    cmd.fillCommandData()
                 }
+                )
+            }
+        }.await()
+
+        for (appCmd in commands) {
+            val match = discordCommandList.first { appCmd.matches(locale, it) }
+
+            when (appCmd) {
+                is MessageCommand<*> -> messageCommands[match.idLong] = appCmd
+                is SlashCommand<*, *> -> slashCommands[match.idLong] = appCmd
+                is UserCommand<*> -> userCommands[match.idLong] = appCmd
             }
         }
+//        val toCreate = toAdd + toUpdate
+//
+//        val builder: suspend MultiApplicationCommandBuilder.() -> Unit = {
+//            toCreate.forEach {
+//                val (name, nameLocalizations) = it.localizedName
+//
+//                logger.trace { "Adding/updating ${it.type.name} command: $name" }
+//
+//                when (it) {
+//                    is MessageCommand<*> -> message(name) {
+//                        this.nameLocalizations = nameLocalizations
+//                        this.register(locale, it)
+//                    }
+//                    is UserCommand<*> -> user(name) {
+//                        this.nameLocalizations = nameLocalizations
+//                        this.register(locale, it)
+//                    }
+//
+//                    is SlashCommand<*, *> -> {
+//                        val (description, descriptionLocalizations) = it.localizedDescription
+//                        input(name, description) {
+//                            this.nameLocalizations = nameLocalizations
+//                            this.descriptionLocalizations = descriptionLocalizations
+//                            this.register(locale, it)
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        @Suppress("IfThenToElvis")  // Ultimately, this is far more readable
+//        val response = if (guild == null) {
+//            // We're registering global commands here, if the guild is null
+//
+//            kord.createGlobalApplicationCommands { builder() }.toList()
+//        } else {
+//            // We're registering guild-specific commands here, if the guild is available
+//            guild.createApplicationCommands { builder() }.toList()
+//        }
+//
+//        // Next, we need to associate all the commands we just registered with the commands in our extensions
 
-        val toCreate = toAdd + toUpdate
-
-        val builder: suspend MultiApplicationCommandBuilder.() -> Unit = {
-            toCreate.forEach {
-                val (name, nameLocalizations) = it.localizedName
-
-                logger.trace { "Adding/updating ${it.type.name} command: $name" }
-
-                when (it) {
-                    is MessageCommand<*> -> message(name) {
-                        this.nameLocalizations = nameLocalizations
-                        this.register(locale, it)
-                    }
-                    is UserCommand<*> -> user(name) {
-                        this.nameLocalizations = nameLocalizations
-                        this.register(locale, it)
-                    }
-
-                    is SlashCommand<*, *> -> {
-                        val (description, descriptionLocalizations) = it.localizedDescription
-                        input(name, description) {
-                            this.nameLocalizations = nameLocalizations
-                            this.descriptionLocalizations = descriptionLocalizations
-                            this.register(locale, it)
-                        }
-                    }
-                }
-            }
-        }
-
-        @Suppress("IfThenToElvis")  // Ultimately, this is far more readable
-        val response = if (guild == null) {
-            // We're registering global commands here, if the guild is null
-
-            kord.createGlobalApplicationCommands { builder() }.toList()
-        } else {
-            // We're registering guild-specific commands here, if the guild is available
-            guild.createApplicationCommands { builder() }.toList()
-        }
-
-        // Next, we need to associate all the commands we just registered with the commands in our extensions
-        toCreate.forEach { command ->
-            val match = response.first { command.matches(locale, it) }
-
-            when (command) {
-                is MessageCommand<*> -> messageCommands[match.id] = command
-                is SlashCommand<*, *> -> slashCommands[match.id] = command
-                is UserCommand<*> -> userCommands[match.id] = command
-            }
-        }
-
-        if (toAdd.isEmpty() && toUpdate.isEmpty()) {
-            // Finally, we can remove anything that needs to be removed
-            toRemove.forEach {
-                logger.trace { "Removing ${it.type.name} command: ${it.name}" }
-
-                @Suppress("MagicNumber")  // not today, Detekt
-                try {
-                    it.delete()
-                } catch (e: KtorRequestException) {
-                    if (e.status.code != 404) {
-                        throw e
-                    }
-                }
-            }
-        }
-
-        logger.info {
-            if (guild == null) {
-                "Finished synchronising global application commands"
-            } else {
-                "Finished synchronising application commands for guild ${guild.name}"
-            }
-        }
+//
+//        if (toAdd.isEmpty() && toUpdate.isEmpty()) {
+//            // Finally, we can remove anything that needs to be removed
+//            toRemove.forEach {
+//                logger.trace { "Removing ${it.type.name} command: ${it.name}" }
+//
+//                @Suppress("MagicNumber")  // not today, Detekt
+//                try {
+//                    it.delete()
+//                } catch (e: KtorRequestException) {
+//                    if (e.status.code != 404) {
+//                        throw e
+//                    }
+//                }
+//            }
+//        }
+//
+//        logger.info {
+//            if (guild == null) {
+//                "Finished synchronising global application commands"
+//            } else {
+//                "Finished synchronising application commands for guild ${guild.name}"
+//            }
+//        }
     }
 
     // endregion
@@ -335,8 +346,8 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
     // region: Event handlers
 
     /** Event handler for message commands. **/
-    public override suspend fun handle(event: MessageCommandInteractionCreateEvent) {
-        val commandId = event.interaction.invokedCommandId
+    public override suspend fun handle(event: MessageContextInteractionEvent) {
+        val commandId = event.interaction.commandIdLong
         val command = messageCommands[commandId]
 
         command ?: return logger.warn { "Received interaction for unknown message command: $commandId" }
@@ -345,8 +356,8 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
     }
 
     /** Event handler for slash commands. **/
-    public override suspend fun handle(event: ChatInputCommandInteractionCreateEvent) {
-        val commandId = event.interaction.command.rootId
+    public override suspend fun handle(event: SlashCommandInteractionEvent) {
+        val commandId = event.interaction.commandIdLong
         val command = slashCommands[commandId]
 
         command ?: return logger.warn { "Received interaction for unknown slash command: $commandId" }
@@ -355,8 +366,8 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
     }
 
     /** Event handler for user commands. **/
-    public override suspend fun handle(event: UserCommandInteractionCreateEvent) {
-        val commandId = event.interaction.invokedCommandId
+    public override suspend fun handle(event: UserContextInteractionEvent) {
+        val commandId = event.interaction.commandIdLong
         val command = userCommands[commandId]
 
         command ?: return logger.warn { "Received interaction for unknown user command: $commandId" }
@@ -364,8 +375,8 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
         command.doCall(event)
     }
 
-    override suspend fun handle(event: AutoCompleteInteractionCreateEvent) {
-        val commandId = event.interaction.command.rootId
+    override suspend fun handle(event: CommandAutoCompleteInteractionEvent) {
+        val commandId = event.interaction.commandIdLong
         val command = slashCommands[commandId]?.findCommand(event)
 
         command ?: return logger.warn { "Received autocomplete interaction for unknown command: $commandId" }
@@ -374,22 +385,20 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
             return logger.trace { "Command $command doesn't have any arguments." }
         }
 
-        val option = event.interaction.command.options.filterValues { it.focused }.toList().firstOrNull()
-
-        option ?: return logger.trace { "Autocomplete event for command $command doesn't have a focused option." }
+        val option = event.interaction.focusedOption
 
         val arg = command.arguments!!().args.firstOrNull {
-            it.getDefaultTranslatedDisplayName(translationsProvider, command) == option.first
+            it.getDefaultTranslatedDisplayName(translationsProvider, command) == option.name
         }
 
         arg ?: return logger.warn {
-            "Autocomplete event for command $command has an unknown focused option: ${option.first}."
+            "Autocomplete event for command $command has an unknown focused option: ${option.name}."
         }
 
         val callback = arg.converter.genericBuilder.autoCompleteCallback
 
         callback ?: return logger.trace {
-            "Autocomplete event for command $command has an focused option without a callback: ${option.first}."
+            "Autocomplete event for command $command has an focused option without a callback: ${option.name}."
         }
 
         callback(event.interaction, event)
