@@ -21,11 +21,7 @@ public interface KordExEvent : KordExKoinComponent, GenericEvent {
         return shardManager.getShardById(0)!!
     }
 
-    override fun getRawData(): DataObject? {
-        return null
-    }
+    override fun getRawData(): DataObject? = null
 
-    override fun getResponseNumber(): Long {
-        return 5
-    }
+    override fun getResponseNumber(): Long = 5
 }

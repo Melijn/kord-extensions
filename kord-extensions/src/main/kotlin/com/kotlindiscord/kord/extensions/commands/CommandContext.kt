@@ -45,7 +45,7 @@ public abstract class CommandContext(
     public open val command: Command,
     public open val eventObj: Event,
     public open val commandName: String,
-    public open val cache: MutableStringKeyedMap<Any>
+    public open val cache: MutableStringKeyedMap<Any>,
 ) : KordExKoinComponent {
     /** Translations provider, for retrieving translations. **/
     public val translationsProvider: TranslationsProvider by inject()
@@ -54,9 +54,10 @@ public abstract class CommandContext(
     public val sentry: SentryContext = SentryContext()
 
     /** Cached locale variable, stored and retrieved by [getLocale]. **/
-    public val resolvedLocale: Deferred<Locale> = TaskConfig.coroutineScope.async(TaskConfig.dispatcher, CoroutineStart.LAZY) {
-        getLocale()
-    }
+    public val resolvedLocale: Deferred<Locale> =
+        TaskConfig.coroutineScope.async(TaskConfig.dispatcher, CoroutineStart.LAZY) {
+            getLocale()
+        }
 
     /**
      * Progressive cooldown counters, can be set using [incCooldown], [decCooldown], [setCooldown]
@@ -102,7 +103,7 @@ public abstract class CommandContext(
     public suspend fun translate(
         key: String,
         bundleName: String?,
-        replacements: Array<Any?> = arrayOf()
+        replacements: Array<Any?> = arrayOf(),
     ): String {
         val locale = getLocale()
 

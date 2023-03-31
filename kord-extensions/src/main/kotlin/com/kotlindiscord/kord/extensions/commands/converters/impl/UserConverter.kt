@@ -70,9 +70,11 @@ public class UserConverter(
         return true
     }
 
-    private suspend fun findUser(arg: String, context: CommandContext): User? =
-        if (arg.length > 40) null
-        else if (arg.startsWith("<@") && arg.endsWith(">")) { // It's a mention
+    private suspend fun findUser(arg: String, context: CommandContext): User? {
+        @Suppress("MagicNumber")
+        return if (arg.length > 40) {
+            null
+        } else if (arg.startsWith("<@") && arg.endsWith(">")) { // It's a mention
             val id: String = arg.substring(2, arg.length - 1).replace("!", "")
 
             try {
@@ -89,8 +91,8 @@ public class UserConverter(
                 if (!arg.contains("#")) {
                     (
                         context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, false) }
-                    ?: context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, true) }
-                    ) ?.user
+                            ?: context.guild?.members?.firstOrNull { it.effectiveName.startsWith(arg, true) }
+                        ) ?.user
                 } else {
                     kord.users.firstOrNull { user ->
                         user.asTag.equals(arg, true)
@@ -98,6 +100,7 @@ public class UserConverter(
                 }
             }
         }
+    }
 
     override suspend fun toSlashOption(arg: Argument<*>): OptionData =
         OptionData(OptionType.USER, arg.displayName, arg.description, required)

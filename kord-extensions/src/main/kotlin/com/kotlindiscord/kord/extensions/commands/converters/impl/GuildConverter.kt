@@ -14,13 +14,10 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.Guild
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
-import kotlinx.coroutines.flow.firstOrNull
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Argument converter for Discord [Guild] arguments.
@@ -47,7 +44,7 @@ public class GuildConverter(
         val arg: String = named ?: parser?.parseNext()?.data ?: return false
 
         if (arg.equals("this", true)) {
-            val guild = context.getGuild()?.asGuildOrNull()
+            val guild = context.guild
 
             if (guild != null) {
                 this.parsed = guild
@@ -56,7 +53,7 @@ public class GuildConverter(
             }
         }
 
-        this.parsed = findGuild(arg)
+        this.parsed = kord.getGuildById(arg)
             ?: throw DiscordRelayedException(
                 context.translate("converters.guild.error.missing", replacements = arrayOf(arg))
             )
@@ -64,22 +61,13 @@ public class GuildConverter(
         return true
     }
 
-    private suspend fun findGuild(arg: String): Guild? =
-        try { // Try for a guild ID first
-            val id = Snowflake(arg)
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.INTEGER, arg.displayName, arg.description, required)
 
-            kord.getGuildOrNull(id)
-        } catch (e: NumberFormatException) { // It's not an ID, let's try the name
-            kord.guilds.firstOrNull { it.name.equals(arg, true) }
-        }
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.INTEGER) option.asLong else return false
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
-
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? StringOptionValue)?.value ?: return false
-
-        this.parsed = findGuild(optionValue)
+        this.parsed = kord.getGuildById(optionValue)
             ?: throw DiscordRelayedException(
                 context.translate("converters.guild.error.missing", replacements = arrayOf(optionValue))
             )

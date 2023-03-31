@@ -7,8 +7,8 @@
 package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import dev.kord.core.behavior.channel.threads.ThreadChannelBehavior
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 import net.dv8tion.jda.api.events.Event
 
 /**
@@ -20,7 +20,7 @@ public suspend fun CheckContext<*>.isBot() {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.isBot")
-    val user = userFor(event)?.asUserOrNull()
+    val user = userFor(event)
 
     if (user == null) {
         logger.failed("Event did not concern a user.")
@@ -48,7 +48,7 @@ public suspend fun CheckContext<*>.isNotBot() {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.isNotBot")
-    val user = userFor(event)?.asUserOrNull()
+    val user = userFor(event)
 
     if (user == null) {
         logger.failed("Event did not concern a user.")
@@ -77,13 +77,13 @@ public suspend fun CheckContext<*>.isInThread() {
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.isInThread")
 
-    when (channelFor(event)?.asChannelOrNull()) {
+    when (channelFor(event)) {
         null -> {
             logger.failed("Event did not concern a channel.")
 
             fail()
         }
-        is ThreadChannelBehavior -> {
+        is ThreadChannel -> {
             logger.passed()
 
             pass()
@@ -109,13 +109,13 @@ public suspend fun CheckContext<*>.isNotInThread() {
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.isNotInThread")
 
-    when (channelFor(event)?.asChannelOrNull()) {
+    when (channelFor(event)) {
         null -> {
             logger.passed("Event did not concern a channel.")
 
             pass()
         }
-        !is ThreadChannelBehavior -> {
+        !is ThreadChannel -> {
             logger.passed()
 
             pass()

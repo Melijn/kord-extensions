@@ -45,7 +45,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
     types = [ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE],
 
-    imports = ["dev.kord.common.entity.ChannelType", "dev.kord.common.entity.Snowflake"],
+    imports = ["net.dv8tion.jda.api.entities.channel.ChannelType"],
 
     builderExtraStatements = [
         "/** Add a channel type to the set of types the given channel must match. **/",
@@ -56,7 +56,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
     builderFields = [
         "public var requireSameGuild: Boolean = true",
-        "public var requiredGuild: (suspend () -> Snowflake)? = null",
+        "public var requiredGuild: (suspend () -> Long)? = null",
         "public var requiredChannelTypes: MutableSet<ChannelType> = mutableSetOf()",
     ],
 )
@@ -108,6 +108,7 @@ public class ChannelConverter(
             val string: String = if (arg.startsWith("#")) arg.substring(1) else arg
             val potentialTargets = context.guild?.channels?.filter { it.name.startsWith(string, true) }
             val bestTarget = potentialTargets?.minByOrNull {
+                @Suppress("MagicNumber")
                 when {
                     it.name.equals(string, false) -> 0
                     it.name.equals(string, true) -> 1

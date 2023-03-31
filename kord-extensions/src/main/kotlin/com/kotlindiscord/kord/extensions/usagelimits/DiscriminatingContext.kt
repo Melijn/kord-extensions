@@ -31,9 +31,9 @@ public data class DiscriminatingContext(
     public constructor(
         event: ChatCommandInvocationEvent,
     ) : this(
-        event.event.message.data.author,
+        event.event.message.author,
         event.event.message.channel,
-        event.event.message.data.guildId.value,
+        event.event.member?.guild?.idLong,
         event,
         { event.event.getLocale() },
     )

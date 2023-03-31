@@ -58,7 +58,7 @@ public val EXPAND_EMOJI: UnicodeEmoji = Emoji.fromUnicode("\u2139\uFE0F")
  */
 public abstract class BasePaginator(
     public open val pages: Pages,
-    /** userId of the pagination owenber **/
+    /** UserId of the pagination owner. **/
     public open val owner: Long? = null,
     public open val timeoutSeconds: Long? = null,
     public open val keepEmbed: Boolean = true,

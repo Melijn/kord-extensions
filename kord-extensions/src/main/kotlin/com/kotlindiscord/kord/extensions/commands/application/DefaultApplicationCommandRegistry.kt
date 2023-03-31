@@ -183,7 +183,9 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
                     is MessageCommand<*> -> Commands.message(cmd.name)
                     is SlashCommand<*, *> -> Commands.slash(cmd.name, cmd.description)
                     is UserCommand<*> -> Commands.user(cmd.name)
-                    else -> return logger.error { "Cannot register: $cmd because it is an unknown command implementation." }
+                    else -> return logger.error {
+                        "Cannot register: $cmd because it is an unknown command implementation."
+                    }
                 }
                 this.addCommands(
                     commandData.apply {

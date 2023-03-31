@@ -10,10 +10,8 @@ package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.utils.getTopRole
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.RoleBehavior
-import kotlinx.coroutines.flow.toList
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.events.Event
 
 // region: Entity DSL versions
@@ -26,7 +24,7 @@ import net.dv8tion.jda.api.events.Event
  *
  * @param builder Lambda returning the role to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.hasRole(builder: suspend (T) -> RoleBehavior) {
+public suspend fun <T : Event> CheckContext<T>.hasRole(builder: suspend (T) -> Role) {
     if (!passed) {
         return
     }
@@ -41,7 +39,7 @@ public suspend fun <T : Event> CheckContext<T>.hasRole(builder: suspend (T) -> R
     } else {
         val role = builder(event)
 
-        if (member.asMember().roles.toList().contains(role)) {
+        if (member.roles.toList().contains(role)) {
             logger.passed()
 
             pass()
@@ -51,7 +49,7 @@ public suspend fun <T : Event> CheckContext<T>.hasRole(builder: suspend (T) -> R
             fail(
                 translate(
                     "checks.hasRole.failed",
-                    replacements = arrayOf(role.mention),
+                    replacements = arrayOf(role.asMention),
                 )
             )
         }
@@ -66,7 +64,7 @@ public suspend fun <T : Event> CheckContext<T>.hasRole(builder: suspend (T) -> R
  *
  * @param builder Lambda returning the role to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.notHasRole(builder: suspend (T) -> RoleBehavior) {
+public suspend fun <T : Event> CheckContext<T>.notHasRole(builder: suspend (T) -> Role) {
     if (!passed) {
         return
     }
@@ -81,13 +79,13 @@ public suspend fun <T : Event> CheckContext<T>.notHasRole(builder: suspend (T) -
     } else {
         val role = builder(event)
 
-        if (member.asMember().roles.toList().contains(role)) {
+        if (member.roles.toList().contains(role)) {
             logger.failed("Member $member has role $role")
 
             fail(
                 translate(
                     "checks.notHasRole.failed",
-                    replacements = arrayOf(role.mention),
+                    replacements = arrayOf(role.asMention),
                 )
             )
         } else {
@@ -106,7 +104,7 @@ public suspend fun <T : Event> CheckContext<T>.notHasRole(builder: suspend (T) -
  *
  * @param builder Lambda returning the role to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleEqual(builder: suspend (T) -> RoleBehavior) {
+public suspend fun <T : Event> CheckContext<T>.topRoleEqual(builder: suspend (T) -> Role) {
     if (!passed) {
         return
     }
@@ -120,7 +118,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleEqual(builder: suspend (T)
         fail()
     } else {
         val role = builder(event)
-        val topRole = member.asMember().getTopRole()
+        val topRole = member.getTopRole()
 
         when {
             topRole == null -> {
@@ -129,7 +127,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleEqual(builder: suspend (T)
                 fail(
                     translate(
                         "checks.topRoleEqual.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -140,7 +138,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleEqual(builder: suspend (T)
                 fail(
                     translate(
                         "checks.topRoleEqual.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -162,7 +160,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleEqual(builder: suspend (T)
  *
  * @param builder Lambda returning the role to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleNotEqual(builder: suspend (T) -> RoleBehavior) {
+public suspend fun <T : Event> CheckContext<T>.topRoleNotEqual(builder: suspend (T) -> Role) {
     if (!passed) {
         return
     }
@@ -177,7 +175,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleNotEqual(builder: suspend 
     } else {
         val role = builder(event)
 
-        when (member.asMember().getTopRole()) {
+        when (member.getTopRole()) {
             null -> {
                 logger.passed("Member $member has no top role")
 
@@ -190,7 +188,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleNotEqual(builder: suspend 
                 fail(
                     translate(
                         "checks.topRoleNotEqual.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -212,7 +210,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleNotEqual(builder: suspend 
  *
  * @param builder Lambda returning the role to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleHigher(builder: suspend (T) -> RoleBehavior) {
+public suspend fun <T : Event> CheckContext<T>.topRoleHigher(builder: suspend (T) -> Role) {
     if (!passed) {
         return
     }
@@ -226,7 +224,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigher(builder: suspend (T
         fail()
     } else {
         val role = builder(event)
-        val topRole = member.asMember().getTopRole()
+        val topRole = member.getTopRole()
 
         when {
             topRole == null -> {
@@ -235,7 +233,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigher(builder: suspend (T
                 fail(
                     translate(
                         "checks.topRoleHigher.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -252,7 +250,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigher(builder: suspend (T
                 fail(
                     translate(
                         "checks.topRoleHigher.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -270,7 +268,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigher(builder: suspend (T
  *
  * @param builder Lambda returning the role to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleLower(builder: suspend (T) -> RoleBehavior) {
+public suspend fun <T : Event> CheckContext<T>.topRoleLower(builder: suspend (T) -> Role) {
     if (!passed) {
         return
     }
@@ -284,7 +282,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleLower(builder: suspend (T)
         fail()
     } else {
         val role = builder(event)
-        val topRole = member.asMember().getTopRole()
+        val topRole = member.getTopRole()
 
         when {
             topRole == null -> {
@@ -305,7 +303,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleLower(builder: suspend (T)
                 fail(
                     translate(
                         "checks.topRoleLower.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -322,7 +320,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleLower(builder: suspend (T)
  *
  * @param builder Lambda returning the role to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(builder: suspend (T) -> RoleBehavior) {
+public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(builder: suspend (T) -> Role) {
     if (!passed) {
         return
     }
@@ -336,7 +334,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(builder: sus
         fail()
     } else {
         val role = builder(event)
-        val topRole = member.asMember().getTopRole()
+        val topRole = member.getTopRole()
 
         when {
             topRole == null -> {
@@ -345,7 +343,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(builder: sus
                 fail(
                     translate(
                         "checks.topRoleHigherOrEqual.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -362,7 +360,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(builder: sus
                 fail(
                     translate(
                         "checks.topRoleHigherOrEqual.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -381,7 +379,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(builder: sus
  *
  * @param builder Lambda returning the role to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleLowerOrEqual(builder: suspend (T) -> RoleBehavior) {
+public suspend fun <T : Event> CheckContext<T>.topRoleLowerOrEqual(builder: suspend (T) -> Role) {
     if (!passed) {
         return
     }
@@ -395,7 +393,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleLowerOrEqual(builder: susp
         fail()
     } else {
         val role = builder(event)
-        val topRole = member.asMember().getTopRole()
+        val topRole = member.getTopRole()
 
         when {
             topRole == null -> {
@@ -416,7 +414,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleLowerOrEqual(builder: susp
                 fail(
                     translate(
                         "checks.topRoleLowerOrEqual.failed",
-                        replacements = arrayOf(role.mention),
+                        replacements = arrayOf(role.asMention),
                     )
                 )
             }
@@ -426,7 +424,7 @@ public suspend fun <T : Event> CheckContext<T>.topRoleLowerOrEqual(builder: susp
 
 // endregion
 
-// region: Snowflake versions
+// region: Long versions
 
 /**
  * Check asserting that the user an [Event] fired for has a given role.
@@ -434,15 +432,15 @@ public suspend fun <T : Event> CheckContext<T>.topRoleLowerOrEqual(builder: susp
  * Only events that can reasonably be associated with a guild member are supported. Please raise
  * an issue if an event you expected to be supported, isn't.
  *
- * @param id Role snowflake to compare to.
+ * @param id Role Long to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.hasRole(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.hasRole(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.hasRole")
-    val role = guildFor(event)?.getRoleOrNull(id)
+    val role = guildFor(event)?.getRoleById(id)
 
     if (role == null) {
         logger.noRoleId(id)
@@ -459,15 +457,15 @@ public suspend fun <T : Event> CheckContext<T>.hasRole(id: Snowflake) {
  * Only events that can reasonably be associated with a guild member are supported. Please raise
  * an issue if an event you expected to be supported, isn't.
  *
- * @param id Role snowflake to compare to.
+ * @param id Role Long to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.notHasRole(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.notHasRole(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.notHasRole")
-    val role = guildFor(event)?.getRoleOrNull(id)
+    val role = guildFor(event)?.getRoleById(id)
 
     if (role == null) {
         logger.noRoleId(id)
@@ -484,15 +482,15 @@ public suspend fun <T : Event> CheckContext<T>.notHasRole(id: Snowflake) {
  * Only events that can reasonably be associated with a guild member are supported. Please raise
  * an issue if an event you expected to be supported, isn't.
  *
- * @param id Role snowflake to compare to.
+ * @param id Role Long to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleEqual(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.topRoleEqual(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.topRoleEqual")
-    val role = guildFor(event)?.getRoleOrNull(id)
+    val role = guildFor(event)?.getRoleById(id)
 
     if (role == null) {
         logger.noRoleId(id)
@@ -509,15 +507,15 @@ public suspend fun <T : Event> CheckContext<T>.topRoleEqual(id: Snowflake) {
  * Only events that can reasonably be associated with a guild member are supported. Please raise
  * an issue if an event you expected to be supported, isn't.
  *
- * @param id Role snowflake to compare to.
+ * @param id Role Long to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleNotEqual(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.topRoleNotEqual(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.topRoleNotEqual")
-    val role = guildFor(event)?.getRoleOrNull(id)
+    val role = guildFor(event)?.getRoleById(id)
 
     if (role == null) {
         logger.noRoleId(id)
@@ -534,15 +532,15 @@ public suspend fun <T : Event> CheckContext<T>.topRoleNotEqual(id: Snowflake) {
  * Only events that can reasonably be associated with a guild member are supported. Please raise
  * an issue if an event you expected to be supported, isn't.
  *
- * @param id Role snowflake to compare to.
+ * @param id Role Long to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleHigher(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.topRoleHigher(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.topRoleHigher")
-    val role = guildFor(event)?.getRoleOrNull(id)
+    val role = guildFor(event)?.getRoleById(id)
 
     if (role == null) {
         logger.noRoleId(id)
@@ -561,15 +559,15 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigher(id: Snowflake) {
  *
  * Returns `CheckResult.Passed()` if the user doesn't have any roles.
  *
- * @param id Role snowflake to compare to.
+ * @param id Role Long to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleLower(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.topRoleLower(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.topRoleLower")
-    val role = guildFor(event)?.getRoleOrNull(id)
+    val role = guildFor(event)?.getRoleById(id)
 
     if (role == null) {
         logger.noRoleId(id)
@@ -587,15 +585,15 @@ public suspend fun <T : Event> CheckContext<T>.topRoleLower(id: Snowflake) {
  * an issue if an event you expected to be supported, isn't.
  * role.
  *
- * @param id Role snowflake to compare to.
+ * @param id Role Long to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.topRoleHigherOrEqual")
-    val role = guildFor(event)?.getRoleOrNull(id)
+    val role = guildFor(event)?.getRoleById(id)
 
     if (role == null) {
         logger.noRoleId(id)
@@ -615,15 +613,15 @@ public suspend fun <T : Event> CheckContext<T>.topRoleHigherOrEqual(id: Snowflak
  *
  * Returns `CheckResult.Passed()` if the user doesn't have any roles.
  *
- * @param id Role snowflake to compare to.
+ * @param id Role Long to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.topRoleLowerOrEqual(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.topRoleLowerOrEqual(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.topRoleLowerOrEqual")
-    val role = guildFor(event)?.getRoleOrNull(id)
+    val role = guildFor(event)?.getRoleById(id)
 
     if (role == null) {
         logger.noRoleId(id)

@@ -112,10 +112,7 @@ public open class ChatCommandRegistry : KordExKoinComponent {
     public open fun String.startsWithSelfMention(): String? {
         val mention = kord.shards.first().selfUser.asMention
 
-        return when {
-            startsWith(mention) -> mention
-            else -> null
-        }
+        return if (startsWith(mention)) mention else null
     }
 
     /**

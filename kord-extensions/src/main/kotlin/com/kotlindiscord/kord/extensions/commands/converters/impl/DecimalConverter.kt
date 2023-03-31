@@ -14,10 +14,9 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.core.entity.interaction.NumberOptionValue
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.rest.builder.interaction.NumberOptionBuilder
-import dev.kord.rest.builder.interaction.OptionsBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Argument converter for decimal arguments, converting them into [Double].
@@ -78,16 +77,14 @@ public class DecimalConverter(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        NumberOptionBuilder(arg.displayName, arg.description).apply {
-            this@apply.maxValue = this@DecimalConverter.maxValue
-            this@apply.minValue = this@DecimalConverter.minValue
-
-            required = true
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.NUMBER, arg.displayName, arg.description, required).apply {
+            this@DecimalConverter.maxValue?.let { this@apply.setMaxValue(it) }
+            this@DecimalConverter.minValue?.let { this@apply.setMinValue(it) }
         }
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? NumberOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.NUMBER) option.asDouble else return false
         this.parsed = optionValue
 
         return true

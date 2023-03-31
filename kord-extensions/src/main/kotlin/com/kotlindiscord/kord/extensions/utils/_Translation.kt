@@ -15,7 +15,7 @@ import java.util.*
 
 internal val localeCache: WeakHashMap<Event, Locale> = WeakHashMap()
 
-/** Attempt to resolve the locale for the given [MessageCreateEvent] object. **/
+/** Attempt to resolve the locale for the given [MessageReceivedEvent] object. **/
 public suspend fun MessageReceivedEvent.getLocale(): Locale {
     val existing = localeCache[this]
 
@@ -27,7 +27,7 @@ public suspend fun MessageReceivedEvent.getLocale(): Locale {
     var result = bot.settings.i18nBuilder.defaultLocale
 
     for (resolver in bot.settings.i18nBuilder.localeResolvers) {
-        val resolved = resolver(getGuild(), message.channel, message.author, null)
+        val resolved = resolver(guild.idLong, message.channel.idLong, message.author.idLong, null)
 
         if (resolved != null) {
             result = resolved
@@ -60,7 +60,7 @@ public suspend fun GenericInteractionCreateEvent.getLocale(): Locale {
             null
         }
 
-        val resolved = resolver(guild, interaction.channel, interaction.user, interaction)
+        val resolved = resolver(guild?.idLong, interaction.channel?.idLong, interaction.user.idLong, interaction)
 
         if (resolved != null) {
             result = resolved

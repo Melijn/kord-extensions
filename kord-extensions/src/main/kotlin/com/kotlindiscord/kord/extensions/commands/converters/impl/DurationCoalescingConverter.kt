@@ -19,12 +19,11 @@ import com.kotlindiscord.kord.extensions.parser.tokens.PositionalArgumentToken
 import com.kotlindiscord.kord.extensions.parsers.DurationParser
 import com.kotlindiscord.kord.extensions.parsers.DurationParserException
 import com.kotlindiscord.kord.extensions.parsers.InvalidTimeUnitException
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
 import kotlinx.datetime.*
 import mu.KotlinLogging
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Argument converter for Kotlin [DateTimePeriod] arguments. You can apply these to an `Instant` using `plus` and a
@@ -76,13 +75,14 @@ public class DurationCoalescingConverter(
 
         var skipNext = false
 
+        val locale = context.resolvedLocale.await()
         val args: List<String> = named ?: parser?.run {
             val tokens: MutableList<String> = mutableListOf()
 
             while (hasNext) {
                 val nextToken: PositionalArgumentToken? = peekNext()
 
-                if (nextToken!!.data.all { DurationParser.charValid(it, context.getLocale()) }) {
+                if (nextToken!!.data.all { DurationParser.charValid(it, locale) }) {
                     tokens.add(parseNext()!!.data)
                 } else {
                     break
@@ -106,8 +106,8 @@ public class DurationCoalescingConverter(
 
             try {
                 // We do it this way so that we stop parsing as soon as an invalid string is found
-                DurationParser.parse(arg, context.getLocale())
-                DurationParser.parse(durations.joinToString("") + arg, context.getLocale())
+                DurationParser.parse(arg, locale)
+                DurationParser.parse(durations.joinToString("") + arg, locale)
 
                 durations.add(arg)
             } catch (e: DurationParserException) {
@@ -121,8 +121,8 @@ public class DurationCoalescingConverter(
                     val nextArg: String = args[nextIndex]
                     val combined: String = arg + nextArg
 
-                    DurationParser.parse(combined, context.getLocale())
-                    DurationParser.parse(durations.joinToString("") + combined, context.getLocale())
+                    DurationParser.parse(combined, locale)
+                    DurationParser.parse(durations.joinToString("") + combined, locale)
 
                     durations.add(combined)
                     skipNext = true
@@ -141,7 +141,7 @@ public class DurationCoalescingConverter(
         try {
             val result: DateTimePeriod = DurationParser.parse(
                 durations.joinToString(""),
-                context.getLocale()
+                locale
             )
 
             checkPositive(context, result, positiveOnly)
@@ -190,14 +190,14 @@ public class DurationCoalescingConverter(
         }
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? StringOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.STRING) option.asString else return false
 
         try {
-            val result: DateTimePeriod = DurationParser.parse(optionValue, context.getLocale())
+            val result: DateTimePeriod = DurationParser.parse(optionValue, context.resolvedLocale.await())
 
             if (positiveOnly) {
                 val now: Instant = Clock.System.now()

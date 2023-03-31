@@ -8,7 +8,6 @@
 
 package com.kotlindiscord.kord.extensions.checks
 
-import dev.kord.common.entity.Snowflake
 import mu.KLogger
 import net.dv8tion.jda.api.events.Event
 
@@ -41,17 +40,17 @@ public inline fun KLogger.nullMessage(event: Event): Unit =
     debug { "Message for event $event is null. This type of event may not be supported." }
 
 /** Convenience wrapper for a "failing: no such channel" log message. **/
-public inline fun KLogger.noChannelId(id: Snowflake): Unit =
-    failed("No such channel: ${id.value}")
+public inline fun KLogger.noChannelId(id: Long): Unit =
+    failed("No such channel: $id")
 
 /** Convenience wrapper for a "failing: no such category" log message. **/
-public inline fun KLogger.noCategoryId(id: Snowflake): Unit =
-    failed("No such category: ${id.value}")
+public inline fun KLogger.noCategoryId(id: Long): Unit =
+    failed("No such category: $id")
 
 /** Convenience wrapper for a "failing: no such guild" log message. **/
-public inline fun KLogger.noGuildId(id: Snowflake): Unit =
-    failed("No such guild: ${id.value}")
+public inline fun KLogger.noGuildId(id: Long): Unit =
+    failed("No such guild: $id")
 
 /** Convenience wrapper for a "failing: no such role" log message. **/
-public inline fun KLogger.noRoleId(id: Snowflake): Unit =
-    failed("No such role: ${id.value}")
+public inline fun KLogger.noRoleId(id: Long): Unit =
+    failed("No such role: $id")

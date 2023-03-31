@@ -6,10 +6,10 @@
 
 package com.kotlindiscord.kord.extensions.storage
 
-import com.kotlindiscord.kord.extensions.checks.channelFor
+import com.kotlindiscord.kord.extensions.checks.channelIdFor
 import com.kotlindiscord.kord.extensions.checks.guildFor
-import com.kotlindiscord.kord.extensions.checks.messageFor
-import com.kotlindiscord.kord.extensions.checks.userFor
+import com.kotlindiscord.kord.extensions.checks.messageIdFor
+import com.kotlindiscord.kord.extensions.checks.userIdFor
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -136,7 +136,7 @@ public open class StorageUnit<T : Data>(
     public suspend fun withChannelFrom(event: Event): StorageUnit<T> {
         return copy().apply {
             if (guildFor(event) != null) {
-                channel = channelFor(event)?.id
+                channel = channelIdFor(event)
             }
         }
     }
@@ -164,7 +164,7 @@ public open class StorageUnit<T : Data>(
      */
     public suspend fun withGuildFrom(event: Event): StorageUnit<T> {
         return copy().apply {
-            guild = guildFor(event)?.id
+            guild = guildFor(event)?.idLong
         }
     }
 
@@ -189,9 +189,9 @@ public open class StorageUnit<T : Data>(
     /**
      * Copy this [StorageUnit], applying the message ID from the given event to its context, if present.
      */
-    public suspend fun withMessageFrom(event: Event): StorageUnit<T> {
+    public fun withMessageFrom(event: Event): StorageUnit<T> {
         return copy().apply {
-            message = messageFor(event)?.id
+            message = messageIdFor(event)
         }
     }
 
@@ -218,7 +218,7 @@ public open class StorageUnit<T : Data>(
      */
     public suspend fun withUserFrom(event: Event): StorageUnit<T> {
         return copy().apply {
-            user = userFor(event)?.id
+            user = userIdFor(event)
         }
     }
 

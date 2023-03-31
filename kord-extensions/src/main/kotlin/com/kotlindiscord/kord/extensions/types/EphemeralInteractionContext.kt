@@ -32,9 +32,7 @@ public interface EphemeralInteractionContext {
  */
 public suspend inline fun EphemeralInteractionContext.respond(
     builder: InlineMessage<MessageCreateData>.() -> Unit
-): Message {
-    return interactionResponse.sendMessage(MessageCreate { builder() }).setEphemeral(true).await()
-}
+): Message = interactionResponse.sendMessage(MessageCreate { builder() }).setEphemeral(true).await()
 
 /** Respond to the current interaction with a public followup. **/
 public suspend inline fun EphemeralInteractionContext.respondPublic(

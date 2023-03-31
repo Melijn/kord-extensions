@@ -17,11 +17,10 @@ import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.parsers.DurationParser
 import com.kotlindiscord.kord.extensions.parsers.DurationParserException
 import com.kotlindiscord.kord.extensions.parsers.InvalidTimeUnitException
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
 import kotlinx.datetime.*
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Argument converter for Kotlin [DateTimePeriod] arguments. You can apply these to an `Instant` using `plus` and a
@@ -55,7 +54,7 @@ public class DurationConverter(
             // Check if it's a discord-formatted timestamp first
             val timestamp = TimestampConverter.parseFromString(arg)
             val result: DateTimePeriod = if (timestamp == null) {
-                DurationParser.parse(arg, context.getLocale())
+                DurationParser.parse(arg, context.resolvedLocale.await())
             } else {
                 (timestamp.instant - Clock.System.now()).toDateTimePeriod()
             }
@@ -84,14 +83,14 @@ public class DurationConverter(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? StringOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.STRING) option.asString else return false
 
         try {
-            val result: DateTimePeriod = DurationParser.parse(optionValue, context.getLocale())
+            val result: DateTimePeriod = DurationParser.parse(optionValue, context.resolvedLocale.await())
 
             if (positiveOnly) {
                 val now: Instant = Clock.System.now()

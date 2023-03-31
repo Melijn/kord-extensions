@@ -13,8 +13,6 @@ import com.kotlindiscord.kord.extensions.checks.types.*
 import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommandRegistry
 import com.kotlindiscord.kord.extensions.commands.application.DefaultApplicationCommandRegistry
 import com.kotlindiscord.kord.extensions.commands.chat.ChatCommandRegistry
-import com.kotlindiscord.kord.extensions.components.ComponentRegistry
-import com.kotlindiscord.kord.extensions.components.callbacks.ComponentCallbackRegistry
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.i18n.ResourceBundleTranslations
 import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
@@ -37,6 +35,7 @@ import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.minn.jda.ktx.messages.InlineMessage
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.DiscordLocale
@@ -45,7 +44,6 @@ import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.messages.MessageCreateData
-import net.dv8tion.jda.internal.utils.config.sharding.PresenceProviderConfig
 import org.koin.core.logger.Level
 import org.koin.dsl.bind
 import org.koin.fileProperties
@@ -62,7 +60,7 @@ internal typealias LocaleResolver = suspend (
     guildId: Long?,
     channelId: Long?,
     userId: Long?,
-    interaction: Interaction?
+    interaction: Interaction?,
 ) -> Locale?
 
 internal typealias FailureResponseBuilder =
@@ -78,11 +76,11 @@ internal typealias FailureResponseBuilder =
 public open class ExtensibleBotBuilder {
     protected val logger: KLogger = KotlinLogging.logger {}
 
-    /** @suppress Builder that shouldn't be set directly by the user. **/
-    public val cacheBuilder: CacheBuilder = CacheBuilder()
-
-    /** @suppress Builder that shouldn't be set directly by the user. **/
-    public val componentsBuilder: ComponentsBuilder = ComponentsBuilder()
+//    /** @suppress Builder that shouldn't be set directly by the user. **/
+//    public val cacheBuilder: CacheBuilder = CacheBuilder()
+//
+//    /** @suppress Builder that shouldn't be set directly by the user. **/
+//    public val componentsBuilder: ComponentsBuilder = ComponentsBuilder()
 
     /** Data storage adapter to use for all extensions, modules and plugins. **/
     public var dataAdapterCallback: () -> DataAdapter<*> = ::TomlDataAdapter
@@ -132,7 +130,8 @@ public open class ExtensibleBotBuilder {
     public val chatCommandsBuilder: ChatCommandsBuilder = ChatCommandsBuilder()
 
     /** @suppress Builder that shouldn't be set directly by the user. **/
-    public var presenceBuilder: () -> Activity = { Activity.of(Activity.ActivityType.PLAYING, "5") }
+    public var presenceBuilder: Pair<(Int) -> OnlineStatus, (Int) -> Activity> =
+        { i: Int -> OnlineStatus.ONLINE } to { i -> Activity.of(Activity.ActivityType.PLAYING, "Shard $i") }
 
     /** @suppress Builder that shouldn't be set directly by the user. **/
 //    public var shardingBuilder: ((recommended: Int) -> Shards)? = null
@@ -144,9 +143,10 @@ public open class ExtensibleBotBuilder {
     public val kordHooks: MutableList<suspend DefaultShardManagerBuilder.() -> Unit> = mutableListOf()
 
     /** @suppress Kord builder, creates a Kord instance. **/
-    public var kordBuilder: suspend (String, suspend DefaultShardManagerBuilder.() -> Unit) -> ShardManager = { token, builder ->
-        DefaultShardManagerBuilder.createLight(token).apply { builder() }.build(false)
-    }
+    public var kordBuilder: suspend (String, suspend DefaultShardManagerBuilder.() -> Unit) -> ShardManager =
+        { token, builder ->
+            DefaultShardManagerBuilder.createLight(token).apply { builder() }.build(false)
+        }
 
     /** Logging level Koin should use, defaulting to ERROR. **/
     public var koinLogLevel: Level = Level.ERROR
@@ -156,10 +156,10 @@ public open class ExtensibleBotBuilder {
      *
      * @see CacheBuilder
      */
-    @BotBuilderDSL
-    public suspend fun cache(builder: suspend CacheBuilder.() -> Unit) {
-        builder(cacheBuilder)
-    }
+//    @BotBuilderDSL
+//    public suspend fun cache(builder: suspend CacheBuilder.() -> Unit) {
+//        builder(cacheBuilder)
+//    }
 
     /**
      * Call this to register a custom data adapter class. Generally you'd pass a constructor here, but you can
@@ -185,10 +185,10 @@ public open class ExtensibleBotBuilder {
      *
      * @see ComponentsBuilder
      */
-    @BotBuilderDSL
-    public suspend fun components(builder: suspend ComponentsBuilder.() -> Unit) {
-        builder(componentsBuilder)
-    }
+//    @BotBuilderDSL
+//    public suspend fun components(builder: suspend ComponentsBuilder.() -> Unit) {
+//        builder(componentsBuilder)
+//    }
 
     /**
      * Register the message builder responsible for formatting error responses, which are sent to users during command
@@ -233,7 +233,7 @@ public open class ExtensibleBotBuilder {
      */
     @BotBuilderDSL
     public fun customKordBuilder(
-        builder: suspend (String, suspend DefaultShardManagerBuilder.() -> Unit) -> ShardManager
+        builder: suspend (String, suspend DefaultShardManagerBuilder.() -> Unit) -> ShardManager,
     ) {
         kordBuilder = builder
     }
@@ -282,7 +282,7 @@ public open class ExtensibleBotBuilder {
     public fun intents(
         addDefaultIntents: Boolean = true,
         addExtensionIntents: Boolean = true,
-        builder: MutableList<GatewayIntent>.() -> Unit
+        builder: MutableList<GatewayIntent>.() -> Unit,
     ) {
         this.intentsBuilder = {
             if (addDefaultIntents) {
@@ -331,18 +331,8 @@ public open class ExtensibleBotBuilder {
      * @see PresenceBuilder
      */
     @BotBuilderDSL
-    public fun presence(builder: PresenceProviderConfig.() -> Unit) {
-        this.presenceBuilder = builder
-    }
-
-    /**
-     * DSL function used to configure the bot's sharding settings.
-     *
-     * @see dev.kord.core.builder.kord.KordBuilder.shardsBuilder
-     */
-    @BotBuilderDSL
-    public fun sharding(shards: (recommended: Int) -> Shards) {
-        this.shardingBuilder = shards
+    public fun presence(statusBuilder: (Int) -> OnlineStatus, builder: (Int) -> Activity) {
+        this.presenceBuilder = statusBuilder to builder
     }
 
     /** @suppress Internal function used to initially set up Koin. **/
@@ -390,8 +380,8 @@ public open class ExtensibleBotBuilder {
         loadModule { single { this@ExtensibleBotBuilder } bind ExtensibleBotBuilder::class }
         loadModule { single { i18nBuilder.translationsProvider } bind TranslationsProvider::class }
         loadModule { single { chatCommandsBuilder.registryBuilder() } bind ChatCommandRegistry::class }
-        loadModule { single { componentsBuilder.registryBuilder() } bind ComponentRegistry::class }
-        loadModule { single { componentsBuilder.callbackRegistryBuilder() } bind ComponentCallbackRegistry::class }
+//        loadModule { single { componentsBuilder.registryBuilder() } bind ComponentRegistry::class }
+//        loadModule { single { componentsBuilder.callbackRegistryBuilder() } bind ComponentCallbackRegistry::class }
 
         loadModule {
             single {
@@ -540,79 +530,10 @@ public open class ExtensibleBotBuilder {
         }
     }
 
-    /** Builder used for configuring the bot's caching options. **/
-    @BotBuilderDSL
-    public class CacheBuilder {
-        /**
-         * Number of messages to keep in the cache. Defaults to 10,000.
-         *
-         * To disable automatic configuration of the message cache, set this to `null` or `0`. You can configure the
-         * cache yourself using the [kordHook] function, and interact with the resulting [DataCache] object using the
-         * [transformCache] function.
-         */
-        @Suppress("MagicNumber")
-        public var cachedMessages: Int? = 10_000
-
-        /** The default Kord caching strategy - defaults to caching REST when an entity doesn't exist in the cache. **/
-        public var defaultStrategy: EntitySupplyStrategy<EntitySupplier> =
-            EntitySupplyStrategy.cacheWithCachingRestFallback
-
-        /** @suppress Builder that shouldn't be set directly by the user. **/
-        public var builder: (KordCacheBuilder.(resources: ClientResources) -> Unit) = {
-            if (cachedMessages != null && cachedMessages!! > 0) {
-                messages(lruCache(cachedMessages!!))
-            }
-        }
-
-        /** @suppress Builder that shouldn't be set directly by the user. **/
-        public var dataCacheBuilder: suspend ShardManager.(cache: DataCache) -> Unit = {}
-
-        /** DSL function allowing you to customize Kord's cache. **/
-        public fun kord(builder: KordCacheBuilder.(resources: ClientResources) -> Unit) {
-            this.builder = {
-                if (cachedMessages != null && cachedMessages!! > 0) {
-                    messages(lruCache(cachedMessages!!))
-                }
-
-                builder.invoke(this, it)
-            }
-        }
-
-        /** DSL function allowing you to interact with Kord's [DataCache] before it connects to Discord. **/
-        public fun transformCache(builder: suspend ShardManager.(cache: DataCache) -> Unit) {
-            this.dataCacheBuilder = builder
-        }
-    }
-
-    /** Builder used to configure the bot's components settings. **/
-    @BotBuilderDSL
-    public class ComponentsBuilder {
-        /** @suppress Component callback registry builder. **/
-        public var callbackRegistryBuilder: () -> ComponentCallbackRegistry = ::ComponentCallbackRegistry
-
-        /** @suppress Component registry builder. **/
-        public var registryBuilder: () -> ComponentRegistry = ::ComponentRegistry
-
-        /**
-         * Register a builder (usually a constructor) returning a [ComponentCallbackRegistry] instance, which may
-         * be useful if you need to register a custom subclass.
-         */
-        public fun callbackRegistry(builder: () -> ComponentCallbackRegistry) {
-            callbackRegistryBuilder = builder
-        }
-
-        /**
-         * Register a builder (usually a constructor) returning a [ComponentRegistry] instance, which may be useful
-         * if you need to register a custom subclass.
-         */
-        public fun registry(builder: () -> ComponentRegistry) {
-            registryBuilder = builder
-        }
-    }
-
     /** Builder used for configuring the bot's extension options, and registering custom extensions. **/
     @BotBuilderDSL
     public open class ExtensionsBuilder {
+
         /** @suppress Internal list that shouldn't be modified by the user directly. **/
         public open val extensions: MutableList<() -> Extension> = mutableListOf()
 

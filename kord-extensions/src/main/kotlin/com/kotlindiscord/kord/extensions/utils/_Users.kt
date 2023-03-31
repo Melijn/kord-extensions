@@ -14,6 +14,7 @@ import kotlinx.datetime.toKotlinInstant
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.utils.messages.MessageCreateData
+import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
 private const val DISCORD_USERS_URI = "https://discord.com/users"
@@ -36,9 +37,8 @@ public val User.createdAt: Instant
  * @param builder Builder lambda for populating the message fields.
  * @return The sent message, or `null` if the user has their DMs disabled.
  */
-public suspend inline fun User.dm(builder: InlineMessage<MessageCreateData>.() -> Unit): Message? {
-    return this.openPrivateChannel().await().sendMessage(MessageCreate { builder() }).await()
-}
+public suspend inline fun User.dm(builder: InlineMessage<MessageCreateData>.() -> Unit): Message? =
+    this.openPrivateChannel().await().sendMessage(MessageCreate { builder() }).await()
 
 /**
  * Send a private message to a user, if they have their DMs enabled.
@@ -54,6 +54,7 @@ public suspend fun User.dm(content: String): Message? = this.dm { this.content =
  * @receiver Nullable [User] to check.
  * @return `true` if the user is `null` or a bot, `false` otherwise.
  */
+@OptIn(ExperimentalContracts::class)
 public fun User?.isNullOrBot(): Boolean {
     contract {
         returns(false) implies (this@isNullOrBot !== null)

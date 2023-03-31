@@ -22,10 +22,7 @@ import net.dv8tion.jda.api.events.guild.invite.GenericGuildInviteEvent
 import net.dv8tion.jda.api.events.guild.member.GenericGuildMemberEvent
 import net.dv8tion.jda.api.events.interaction.GenericInteractionCreateEvent
 import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent
-import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent
-import net.dv8tion.jda.api.events.message.MessageDeleteEvent
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.events.message.MessageUpdateEvent
+import net.dv8tion.jda.api.events.message.*
 import net.dv8tion.jda.api.events.message.react.GenericMessageReactionEvent
 import net.dv8tion.jda.api.events.role.GenericRoleEvent
 import net.dv8tion.jda.api.events.thread.GenericThreadEvent
@@ -100,9 +97,7 @@ public fun topChannelFor(event: Event): Channel? {
  * @param event The event concerning to the channel to retrieve.
  * @return A [Long] representing the channel ID, or null if there isn't one.
  */
-public fun channelIdFor(event: Event): Long? {
-    return channelFor(event)?.idLong
-}
+public fun channelIdFor(event: Event): Long? = channelFor(event)?.idLong
 
 /**
  * Retrieves a guild that is the subject of a given event, if possible.
@@ -181,6 +176,26 @@ public fun messageFor(event: Event): Message? {
         is GenericComponentInteractionCreateEvent -> event.message
         is GenericMessageReactionEvent -> null
 
+        else -> null
+    }
+}
+
+/**
+ * Retrieves a messageId that is the subject of a given event, if possible.
+ *
+ * This function only supports a specific set of events - any unsupported events will
+ * simply result in a `null` value. Please note that some events may support a
+ * null value for this type of object, and this will also be reflected in the return
+ * value.
+ *
+ * @param event The event concerning to the channel to retrieve.
+ * @return A [Long] representing the messageId, or null if there isn't one.
+ */
+public fun messageIdFor(event: Event): Long? {
+    return when (event) {
+        is MessageEvent -> event.message?.idLong
+        is GenericMessageEvent -> event.messageIdLong
+        is GenericComponentInteractionCreateEvent -> event.message.idLong
         else -> null
     }
 }

@@ -9,9 +9,8 @@
 package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.GuildBehavior
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.Event
 
 /**
@@ -78,13 +77,13 @@ public suspend fun CheckContext<*>.noGuild() {
  *
  * @param builder Lambda returning the guild to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.inGuild(builder: suspend (T) -> GuildBehavior) {
+public suspend fun <T : Event> CheckContext<T>.inGuild(builder: suspend (T) -> Guild) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.inGuild")
-    val eventGuild = guildFor(event)?.asGuildOrNull()
+    val eventGuild = guildFor(event)
 
     if (eventGuild == null) {
         logger.nullGuild(event)
@@ -118,13 +117,13 @@ public suspend fun <T : Event> CheckContext<T>.inGuild(builder: suspend (T) -> G
  *
  * @param builder Lambda returning the guild to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.notInGuild(builder: suspend (T) -> GuildBehavior) {
+public suspend fun <T : Event> CheckContext<T>.notInGuild(builder: suspend (T) -> Guild) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.notInGuild")
-    val eventGuild = guildFor(event)?.asGuild()
+    val eventGuild = guildFor(event)
 
     if (eventGuild == null) {
         logger.nullGuild(event)
@@ -162,13 +161,13 @@ public suspend fun <T : Event> CheckContext<T>.notInGuild(builder: suspend (T) -
  *
  * @param id Guild snowflake to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.inGuild(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.inGuild(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.inGuild")
-    val guild = event.kord.getGuildOrNull(id)
+    val guild = event.jda.shardManager?.getGuildById(id)
 
     if (guild == null) {
         logger.noGuildId(id)
@@ -187,13 +186,13 @@ public suspend fun <T : Event> CheckContext<T>.inGuild(id: Snowflake) {
  *
  * @param id Guild snowflake to compare to.
  */
-public suspend fun <T : Event> CheckContext<T>.notInGuild(id: Snowflake) {
+public suspend fun <T : Event> CheckContext<T>.notInGuild(id: Long) {
     if (!passed) {
         return
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.notInGuild")
-    val guild = event.kord.getGuildOrNull(id)
+    val guild = event.jda.shardManager?.getGuildById(id)
 
     if (guild == null) {
         logger.noGuildId(id)

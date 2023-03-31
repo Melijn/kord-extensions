@@ -46,7 +46,8 @@ public class ColorConverter(
                 arg.startsWith("0x") -> this.parsed = Color(arg.substring(2).toInt(16))
                 arg.all { it.isDigit() } -> this.parsed = Color(arg.toInt())
 
-                else -> this.parsed =
+                else ->
+                    this.parsed =
                     ColorParser.parse(arg, context.resolvedLocale.await()) ?: throw DiscordRelayedException(
                         context.translate("converters.color.error.unknown", replacements = arrayOf(arg))
                     )

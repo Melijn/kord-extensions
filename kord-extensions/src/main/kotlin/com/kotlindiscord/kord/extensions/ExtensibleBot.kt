@@ -9,7 +9,6 @@ package com.kotlindiscord.kord.extensions
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommandRegistry
 import com.kotlindiscord.kord.extensions.commands.chat.ChatCommandRegistry
-import com.kotlindiscord.kord.extensions.components.ComponentRegistry
 import com.kotlindiscord.kord.extensions.events.EventHandler
 import com.kotlindiscord.kord.extensions.events.KordExEvent
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -30,6 +29,13 @@ import mu.KotlinLogging
 import net.dv8tion.jda.api.events.Event
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.session.SessionDisconnectEvent
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
@@ -141,6 +147,7 @@ public open class ExtensibleBot(
         KordExContext.stopKoin()
     }
 
+    @Suppress("UnnecessaryParentheses")
     /** This function sets up all of the bot's default event listeners. **/
     public open suspend fun registerListeners() {
         shardManager.listener<GuildReadyEvent> {
@@ -157,20 +164,20 @@ public open class ExtensibleBot(
             }
         }
 
-        on<DisconnectEvent.DiscordCloseEvent> {
+        on<SessionDisconnectEvent> {
             logger.warn { "Disconnected: $closeCode" }
         }
 
-        on<ButtonInteractionCreateEvent> {
-            getKoin().get<ComponentRegistry>().handle(this)
+        on<GenericComponentInteractionCreateEvent> {
+//            getKoin().get<ComponentRegistry>().handle(this)
         }
 
-        on<SelectMenuInteractionCreateEvent> {
-            getKoin().get<ComponentRegistry>().handle(this)
-        }
+//        on<SelectMenuInteractionCreateEvent> {
+//            getKoin().get<ComponentRegistry>().handle(this)
+//        }
 
         if (settings.chatCommandsBuilder.enabled) {
-            on<MessageCreateEvent> {
+            on<MessageReceivedEvent> {
                 getKoin().get<ChatCommandRegistry>().handleEvent(this)
             }
         } else {
@@ -181,19 +188,19 @@ public open class ExtensibleBot(
         }
 
         if (settings.applicationCommandsBuilder.enabled) {
-            on<ChatInputCommandInteractionCreateEvent> {
+            on<SlashCommandInteractionEvent> {
                 getKoin().get<ApplicationCommandRegistry>().handle(this)
             }
 
-            on<MessageCommandInteractionCreateEvent> {
+            on<MessageContextInteractionEvent> {
                 getKoin().get<ApplicationCommandRegistry>().handle(this)
             }
 
-            on<UserCommandInteractionCreateEvent> {
+            on<UserContextInteractionEvent> {
                 getKoin().get<ApplicationCommandRegistry>().handle(this)
             }
 
-            on<AutoCompleteInteractionCreateEvent> {
+            on<CommandAutoCompleteInteractionEvent> {
                 getKoin().get<ApplicationCommandRegistry>().handle(this)
             }
 
@@ -248,7 +255,7 @@ public open class ExtensibleBot(
             .filterIsInstance<T>()
             .onEach {
                 runCatching {
-                    consumer(it)
+                    if (launch) scope.launch { consumer(it) } else consumer(it)
                 }.onFailure { logger.catching(it) }
             }.catch { logger.catching(it) }
             .launchIn(scope)

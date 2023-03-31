@@ -14,10 +14,9 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.core.entity.interaction.IntegerOptionValue
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.rest.builder.interaction.IntegerOptionBuilder
-import dev.kord.rest.builder.interaction.OptionsBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 private const val DEFAULT_RADIX = 10
 
@@ -41,8 +40,8 @@ private const val DEFAULT_RADIX = 10
 )
 public class IntConverter(
     private val radix: Int = DEFAULT_RADIX,
-    public val maxValue: Int? = null,
-    public val minValue: Int? = null,
+    public val maxValue: Int? = Int.MAX_VALUE,
+    public val minValue: Int? = Int.MIN_VALUE,
 
     override var validator: Validator<Int> = null
 ) : SingleConverter<Int>() {
@@ -84,17 +83,15 @@ public class IntConverter(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        IntegerOptionBuilder(arg.displayName, arg.description).apply {
-            this@apply.maxValue = this@IntConverter.maxValue?.toLong()
-            this@apply.minValue = this@IntConverter.minValue?.toLong()
-
-            required = true
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.INTEGER, arg.displayName, arg.description, required).apply {
+            this@IntConverter.maxValue?.toLong()?.let { this.setMaxValue(it) }
+            this@IntConverter.minValue?.toLong()?.let { this.setMinValue(it) }
         }
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? IntegerOptionValue)?.value ?: return false
-        this.parsed = optionValue.toInt()
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.INTEGER) option.asInt else return false
+        this.parsed = optionValue
 
         return true
     }

@@ -88,7 +88,7 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
         }
 
     /**
-     * Whether this command can only be used in NSFW channels
+     * Whether this command can only be used in NSFW channels.
      */
     public open var isNSFW: Boolean = false
 
@@ -152,7 +152,7 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
         perms.forEach(requiredPerms::add)
     }
 
-    /** Registers this command as nsfw only, discord should then only show it in nsfw channels **/
+    /** Registers this command as nsfw only, discord should then only show it in nsfw channels. **/
     public open fun nsfwOnly() {
         this.isNSFW = true
     }
@@ -173,12 +173,13 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
     }
 
     context(CommandData)
+    /** Fills a commandData object with this command's information. **/
     public open fun fillCommandData() {
         val appCmd = this@ApplicationCommand
         isGuildOnly = !appCmd.allowInDms
         isNSFW = appCmd.isNSFW
         appCmd.defaultMemberPermissions?.let {
-            setDefaultPermissions(DefaultMemberPermissions.enabledFor(it))
+            defaultPermissions = DefaultMemberPermissions.enabledFor(it)
         }
     }
 

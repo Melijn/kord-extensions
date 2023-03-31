@@ -38,7 +38,7 @@ public fun String.splitOn(separator: (Char) -> Boolean): Pair<String, String> {
  *
  * Translations may contain commas, in which case any of the given values will be suitable.
  */
-public suspend fun String.parseBoolean(context: CommandContext): Boolean? = parseBoolean(context.getLocale())
+public suspend fun String.parseBoolean(context: CommandContext): Boolean? = parseBoolean(context.resolvedLocale.await())
 
 /**
  * Parse a string into a boolean, based on the provided locale object.

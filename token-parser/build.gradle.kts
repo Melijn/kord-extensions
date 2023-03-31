@@ -12,6 +12,7 @@ dependencies {
     detektPlugins(libs.detekt)
 
     testApi(libs.jda.lib)
+    testImplementation(libs.kx.cor)
     testImplementation(libs.groovy)  // For logback config
     testImplementation(libs.jansi)
     testImplementation(libs.junit)

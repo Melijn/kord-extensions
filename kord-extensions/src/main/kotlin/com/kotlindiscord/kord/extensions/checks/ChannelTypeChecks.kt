@@ -10,8 +10,8 @@ package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.utils.translate
-import dev.kord.common.entity.ChannelType
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.Event
 
 /**
@@ -35,7 +35,7 @@ public suspend fun CheckContext<*>.channelType(vararg channelTypes: ChannelType)
 
         fail()
     } else {
-        val type = eventChannel.asChannel().type
+        val type = eventChannel.type
 
         if (channelTypes.contains(type)) {
             logger.passed()
@@ -75,7 +75,7 @@ public suspend fun CheckContext<*>.notChannelType(vararg channelTypes: ChannelTy
 
         pass()
     } else {
-        val type = eventChannel.asChannel().type
+        val type = eventChannel.type
 
         if (channelTypes.contains(type)) {
             logger.failed("Types $type is within $channelTypes")

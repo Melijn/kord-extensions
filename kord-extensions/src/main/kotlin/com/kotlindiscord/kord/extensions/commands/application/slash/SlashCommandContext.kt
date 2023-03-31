@@ -28,13 +28,13 @@ public open class SlashCommandContext<C : SlashCommandContext<C, A>, A : Argumen
     /** Object representing this slash command's arguments, if any. **/
     public open lateinit var arguments: A
 
-    /** @suppress Internal function for copying args object in later. **/
-    public fun populateArgs(args: A) {
-        arguments = args
-    }
-
     override val channel: Channel = event.channel
     override val guild: Guild? = event.guild
     override val member: Member? = event.member
     override val user: User = event.user
+
+    /** @suppress Internal function for copying args object in later. **/
+    public fun populateArgs(args: A) {
+        arguments = args
+    }
 }

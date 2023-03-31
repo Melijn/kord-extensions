@@ -14,10 +14,9 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.core.entity.interaction.IntegerOptionValue
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.rest.builder.interaction.IntegerOptionBuilder
-import dev.kord.rest.builder.interaction.OptionsBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 private const val DEFAULT_RADIX = 10
 
@@ -84,16 +83,14 @@ public class LongConverter(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        IntegerOptionBuilder(arg.displayName, arg.description).apply {
-            this@apply.maxValue = this@LongConverter.maxValue
-            this@apply.minValue = this@LongConverter.minValue
-
-            required = true
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.INTEGER, arg.displayName, arg.description, required).apply {
+            this@LongConverter.maxValue?.let { this.setMaxValue(it) }
+            this@LongConverter.minValue?.let { this.setMinValue(it) }
         }
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? IntegerOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.INTEGER) option.asLong else return false
         this.parsed = optionValue
 
         return true

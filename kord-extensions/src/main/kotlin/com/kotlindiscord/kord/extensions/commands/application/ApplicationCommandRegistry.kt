@@ -21,6 +21,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.SlashCommandConvert
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.interactions.commands.upsertCommand
 import mu.KLogger
 import mu.KotlinLogging
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
@@ -28,6 +29,12 @@ import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionE
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.interactions.commands.Command
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import java.util.*
@@ -149,7 +156,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
             val guildId = command.guildId
             if (guildId != null) {
                 kord.getGuildById(guildId)?.deleteCommandById(discordCommandId)?.await()
-             } else {
+            } else {
                 kord.shards.firstOrNull()?.deleteCommandById(discordCommandId)?.await()
             }
         } catch (e: ErrorResponseException) {
@@ -205,7 +212,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
         val locale = bot.settings.i18nBuilder.defaultLocale
 
         val guild = command.guildId?.let { kord.getGuildById(it) }
-        val gwSession = kord.shards.firstOrNull()
+        val gwSession = kord.shards.first()
 
         val (name, nameLocalizations) = command.localizedName
         val (description, descriptionLocalizations) = command.localizedDescription
@@ -213,28 +220,27 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
         val response = if (guild == null) {
             // We're registering global commands here, if the guild is null
 
-            gwSession.command(name, description) {
+            gwSession.upsertCommand(name, description) {
                 logger.trace { "Adding/updating global ${command.type.name} command: $name" }
-
-                this.nameLocalizations = nameLocalizations
-                this.descriptionLocalizations = descriptionLocalizations
+                this.setNameLocalizations(nameLocalizations)
+                this.setDescriptionLocalizations(descriptionLocalizations)
 
                 this.register(locale, command)
-            }
+            }.await()
         } else {
             // We're registering guild-specific commands here, if the guild is available
 
-            guild.createChatInputCommand(name, description) {
+            guild.upsertCommand(name, description) {
                 logger.trace { "Adding/updating guild-specific ${command.type.name} command: $name" }
 
-                this.nameLocalizations = nameLocalizations
-                this.descriptionLocalizations = descriptionLocalizations
+                this.setNameLocalizations(nameLocalizations)
+                this.setDescriptionLocalizations(descriptionLocalizations)
 
                 this.register(locale, command)
-            }
+            }.await()
         }
 
-        return response.id
+        return response.idLong
     }
 
     /**
@@ -249,30 +255,35 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
         } else {
             null
         }
+        val gwSession = kord.shards.first()
 
         val (name, nameLocalizations) = command.localizedName
 
         val response = if (guild == null) {
             // We're registering global commands here, if the guild is null
 
-            kord.createGlobalUserCommand(name) {
+            gwSession.upsertCommand(
+                Commands.user(name).apply {
                 logger.trace { "Adding/updating global ${command.type.name} command: $name" }
-                this.nameLocalizations = nameLocalizations
+                this.setNameLocalizations(nameLocalizations)
 
                 this.register(locale, command)
             }
+            ).await()
         } else {
             // We're registering guild-specific commands here, if the guild is available
 
-            guild.createUserCommand(name) {
+            guild.upsertCommand(
+                Commands.user(name).apply {
                 logger.trace { "Adding/updating guild-specific ${command.type.name} command: $name" }
-                this.nameLocalizations = nameLocalizations
+                this.setNameLocalizations(nameLocalizations)
 
                 this.register(locale, command)
             }
+            ).await()
         }
 
-        return response.id
+        return response.idLong
     }
 
     /**
@@ -282,41 +293,45 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
         val locale = bot.settings.i18nBuilder.defaultLocale
 
         val guild = if (command.guildId != null) {
-            kord.getGuildOrNull(command.guildId!!)
+            kord.getGuildById(command.guildId!!)
         } else {
             null
         }
-
+        val gwSession = kord.shards.first()
         val (name, nameLocalizations) = command.localizedName
 
         val response = if (guild == null) {
             // We're registering global commands here, if the guild is null
 
-            kord.createGlobalMessageCommand(name) {
+            gwSession.upsertCommand(
+                Commands.message(name).apply {
                 logger.trace { "Adding/updating global ${command.type.name} command: $name" }
-                this.nameLocalizations = nameLocalizations
+                this.setNameLocalizations(nameLocalizations)
 
                 this.register(locale, command)
             }
+            ).await()
         } else {
             // We're registering guild-specific commands here, if the guild is available
 
-            guild.createMessageCommand(name) {
+            guild.upsertCommand(
+                Commands.message(name).apply {
                 logger.trace { "Adding/updating guild-specific ${command.type.name} command: $name" }
-                this.nameLocalizations = nameLocalizations
+                this.setNameLocalizations(nameLocalizations)
 
                 this.register(locale, command)
             }
+            ).await()
         }
 
-        return response.id
+        return response.idLong
     }
 
     // endregion
 
     // region: Extensions
     /** Registration logic for slash commands, extracted for clarity. **/
-    public open suspend fun ChatInputCreateBuilder.register(locale: Locale, command: SlashCommand<*, *>) {
+    public open suspend fun CommandData.register(locale: Locale, command: SlashCommand<*, *>) {
         if (this is GlobalChatInputCreateBuilder) {
             registerGlobalPermissions(locale, command)
         } else {
@@ -445,26 +460,14 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
 
     /** Registration logic for message commands, extracted for clarity. **/
     @Suppress("UnusedPrivateMember")  // Only for now...
-    public open fun MessageCommandCreateBuilder.register(locale: Locale, command: MessageCommand<*>) {
-        registerGuildPermissions(locale, command)
-    }
-
-    /** Registration logic for user commands, extracted for clarity. **/
-    @Suppress("UnusedPrivateMember")  // Only for now...
-    public open fun UserCommandCreateBuilder.register(locale: Locale, command: UserCommand<*>) {
-        registerGuildPermissions(locale, command)
-    }
-
-    /** Registration logic for message commands, extracted for clarity. **/
-    @Suppress("UnusedPrivateMember")  // Only for now...
-    public open fun GlobalMessageCommandCreateBuilder.register(locale: Locale, command: MessageCommand<*>) {
+    public open fun CommandData.register(locale: Locale, command: MessageCommand<*>) {
         registerGuildPermissions(locale, command)
         registerGlobalPermissions(locale, command)
     }
 
     /** Registration logic for user commands, extracted for clarity. **/
     @Suppress("UnusedPrivateMember")  // Only for now...
-    public open fun GlobalUserCommandCreateBuilder.register(locale: Locale, command: UserCommand<*>) {
+    public open fun CommandData.register(locale: Locale, command: UserCommand<*>) {
         registerGuildPermissions(locale, command)
         registerGlobalPermissions(locale, command)
     }
@@ -472,57 +475,52 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
     /**
      * Registers the global permissions of [command].
      */
-    public open fun GlobalApplicationCommandCreateBuilder.registerGlobalPermissions(
+    public open fun CommandData.registerGlobalPermissions(
         locale: Locale,
         command: ApplicationCommand<*>,
     ) {
         registerGuildPermissions(locale, command)
-        this.dmPermission = command.allowInDms
+        this.isGuildOnly = !command.allowInDms
     }
 
     /**
      * Registers the guild permission of [command].
      */
-    public open fun ApplicationCommandCreateBuilder.registerGuildPermissions(
+    public open fun CommandData.registerGuildPermissions(
         locale: Locale,
         command: ApplicationCommand<*>,
     ) {
-        this.defaultMemberPermissions = command.defaultMemberPermissions
+        command.defaultMemberPermissions?.let { this.setDefaultPermissions(DefaultMemberPermissions.enabledFor(it)) }
     }
 
     /** Check whether the type and name of an extension-registered application command matches a Discord one. **/
     public open fun ApplicationCommand<*>.matches(
         locale: Locale,
-        other: ApplicationCommand<*>,
+        other: Command,
     ): Boolean = type == other.type && localizedName.default.equals(other.name, true)
 
     // endregion
 
-    private fun OptionsBuilder.translate(command: ApplicationCommand<*>) {
+    private fun OptionData.translate(command: ApplicationCommand<*>) {
         val (name, nameLocalizations) = command.localize(name, true)
 
         this.name = name
-        this.nameLocalizations = nameLocalizations
+        this.setNameLocalizations(nameLocalizations)
 
         val (description, descriptionLocalizations) = command.localize(description)
 
         this.description = description
-        this.descriptionLocalizations = descriptionLocalizations
+        this.setDescriptionLocalizations(descriptionLocalizations)
 
-        if (this is BaseChoiceBuilder<*> && !choices.isNullOrEmpty()) {
-            translate(command)
+        if (type in arrayOf(OptionType.INTEGER, OptionType.NUMBER, OptionType.STRING) && choices.isNotEmpty()) {
+            val choicesList = choices
+            choices.clear()
+            choices.addAll(
+                choicesList.map {
+                val (_, choiceLocalizations) = command.localize(it.name)
+                it.setNameLocalizations(choiceLocalizations)
+            }.toMutableList()
+            )
         }
-    }
-
-    private fun BaseChoiceBuilder<*>.translate(command: ApplicationCommand<*>) {
-        choices = choices!!.map {
-            val (name, nameLocalizations) = command.localize(it.name)
-
-            when (it) {
-                is Choice.IntChoice -> Choice.IntChoice(name, Optional(nameLocalizations), it.value)
-                is Choice.NumberChoice -> Choice.NumberChoice(name, Optional(nameLocalizations), it.value)
-                is Choice.StringChoice -> Choice.StringChoice(name, Optional(nameLocalizations), it.value)
-            }
-        }.toMutableList()
     }
 }

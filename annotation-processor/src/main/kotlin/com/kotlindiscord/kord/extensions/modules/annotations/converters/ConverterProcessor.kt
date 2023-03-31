@@ -155,7 +155,6 @@ public class ConverterProcessor(
                 append(
                     """
                     @file:OptIn(
-                        KordPreview::class,
                         ConverterToDefaulting::class,
                         ConverterToMulti::class,
                         ConverterToOptional::class
@@ -171,7 +170,6 @@ public class ConverterProcessor(
                     import com.kotlindiscord.kord.extensions.commands.Arguments
                     import com.kotlindiscord.kord.extensions.commands.converters.*
                     import com.kotlindiscord.kord.extensions.commands.converters.builders.*
-                    import dev.kord.common.annotation.KordPreview
                     """.trimIndent()
                 )
 

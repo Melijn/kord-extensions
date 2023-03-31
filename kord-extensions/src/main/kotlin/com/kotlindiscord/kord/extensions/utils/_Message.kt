@@ -7,12 +7,13 @@
 package com.kotlindiscord.kord.extensions.utils
 
 import com.kotlindiscord.kord.extensions.commands.CommandContext
+import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.InlineMessage
 import dev.minn.jda.ktx.messages.MessageCreateBuilder
-import io.ktor.http.*
-import kotlinx.coroutines.*
-import mu.KotlinLogging
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Role
@@ -25,10 +26,10 @@ import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import java.util.concurrent.TimeUnit
 
-private val logger = KotlinLogging.logger {}
+// private val logger = KotlinLogging.logger {}
 
 private const val DELETE_DELAY = 1000L * 30L  // 30 seconds
-private const val DISCORD_CHANNEL_URI = "https://discord.com/channels"
+// private const val DISCORD_CHANNEL_URI = "https://discord.com/channels"
 
 /** Message author's ID. **/
 public val Message.authorId: Long
@@ -123,13 +124,14 @@ public suspend fun Message.requireChannel(
     deleteOriginal: Boolean = true,
     deleteResponse: Boolean = true,
 ): Boolean {
-    val topRoleDef = GlobalScope.async(Dispatchers.Default, start = CoroutineStart.LAZY) {
-        if (isFromGuild) {
-            guild.retrieveMemberById(authorId).await().getTopRole()
-        } else {
-            null
+    val topRoleDef =
+        TaskConfig.coroutineScope.async(Dispatchers.Default, start = CoroutineStart.LAZY) {
+            if (isFromGuild) {
+                guild.retrieveMemberById(authorId).await().getTopRole()
+            } else {
+                null
+            }
         }
-    }
 
     val messageChannel = this.channel
 

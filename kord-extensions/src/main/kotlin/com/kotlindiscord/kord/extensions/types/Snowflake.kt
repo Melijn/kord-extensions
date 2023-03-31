@@ -4,10 +4,13 @@ import net.dv8tion.jda.api.utils.TimeUtil
 import java.time.OffsetDateTime
 
 /**
- * Generic snowflake implementation
+ * Generic snowflake implementation.
  */
 @JvmInline
 public value class Snowflake(
+    /**
+     * Id of the snowflake.
+     */
     public val id: Long,
 ) {
     public constructor(id: ULong) : this(id.toLong())
@@ -25,9 +28,7 @@ public value class Snowflake(
      *
      * @return Never-null String containing the Id.
      */
-    public fun getId(): String {
-        return java.lang.Long.toUnsignedString(getIdLong())
-    }
+    public fun getId(): String = java.lang.Long.toUnsignedString(getIdLong())
 
     /**
      * The time this entity was created. Calculated through the Snowflake in [.getIdLong].
@@ -36,7 +37,5 @@ public value class Snowflake(
      *
      * @see TimeUtil.getTimeCreated
      */
-    public fun getTimeCreated(): OffsetDateTime {
-        return TimeUtil.getTimeCreated(getIdLong())
-    }
+    public fun getTimeCreated(): OffsetDateTime = TimeUtil.getTimeCreated(getIdLong())
 }

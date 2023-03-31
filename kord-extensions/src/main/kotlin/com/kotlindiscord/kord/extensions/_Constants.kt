@@ -8,7 +8,7 @@
 
 package com.kotlindiscord.kord.extensions
 
-import dev.kord.common.Color
+import java.awt.Color
 
 /** Colour representing Discord's new blurple colour. **/
 public val DISCORD_BLURPLE: Color = Color(0x5765F2)

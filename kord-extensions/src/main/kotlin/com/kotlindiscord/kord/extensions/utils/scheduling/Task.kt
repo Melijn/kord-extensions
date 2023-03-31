@@ -30,6 +30,8 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
+@Suppress("MagicNumber")
+/** Global configuration for [Task]. **/
 public object TaskConfig {
     private val threadFactory = { name: String ->
         var counter = 0
@@ -39,9 +41,15 @@ public object TaskConfig {
     }
 
     private val executorService: ExecutorService = ForkJoinPool()
+
+    /** Default dispatcher. **/
     public val dispatcher: ExecutorCoroutineDispatcher = executorService.asCoroutineDispatcher()
+
+    /** Default scheduledExecutorService. **/
     public val scheduledExecutorService: ScheduledExecutorService =
         Executors.newScheduledThreadPool(15, threadFactory.invoke("Repeater"))
+
+    /** Default coroutineScope. **/
     public val coroutineScope: CoroutineScope = CoroutineScope(dispatcher)
 }
 

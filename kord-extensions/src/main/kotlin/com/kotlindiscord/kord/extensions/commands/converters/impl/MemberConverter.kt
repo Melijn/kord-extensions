@@ -17,15 +17,11 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import com.kotlindiscord.kord.extensions.utils.users
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.Member
-import dev.kord.core.entity.User
-import dev.kord.core.entity.interaction.MemberOptionValue
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.UserBuilder
-import kotlinx.coroutines.flow.firstOrNull
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 /**
  * Argument converter for discord [Member] arguments.
@@ -47,13 +43,13 @@ import kotlinx.coroutines.flow.firstOrNull
     imports = ["dev.kord.common.entity.Snowflake"],
 
     builderFields = [
-        "public var requiredGuild: (suspend () -> Snowflake)? = null",
+        "public var requiredGuild: (suspend () -> Long)? = null",
         "public var useReply: Boolean = true",
         "public var requireSameGuild: Boolean = true",
     ]
 )
 public class MemberConverter(
-    private var requiredGuild: (suspend () -> Snowflake)? = null,
+    private var requiredGuild: (suspend () -> Long)? = null,
     private var useReply: Boolean = true,
     private var requireSameGuild: Boolean = true,
     override var validator: Validator<Member> = null,
@@ -61,17 +57,17 @@ public class MemberConverter(
     override val signatureTypeString: String = "converters.member.signatureType"
 
     override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
-        val guild = context.getGuild()
+        val guild = context.guild
 
         if (requireSameGuild && requiredGuild == null && guild != null) {
-            requiredGuild = { guild.id }
+            requiredGuild = { guild.idLong }
         }
 
         if (useReply && context is ChatCommandContext<*>) {
-            val messageReference = context.message.asMessage().messageReference
+            val messageReference = context.message.messageReference
 
             if (messageReference != null) {
-                val member = messageReference.message?.asMessage()?.getAuthorAsMember()
+                val member = messageReference.message?.member
 
                 if (member != null) {
                     parsed = member
@@ -83,7 +79,7 @@ public class MemberConverter(
         val arg: String = named ?: parser?.parseNext()?.data ?: return false
 
         if (arg.equals("me", true)) {
-            val member = context.getMember()?.asMemberOrNull()
+            val member = context.member
 
             if (member != null) {
                 this.parsed = member
@@ -105,7 +101,7 @@ public class MemberConverter(
             val id: String = arg.substring(2, arg.length - 1).replace("!", "")
 
             try {
-                kord.getUser(Snowflake(id))
+                kord.getUserById(id)
             } catch (e: NumberFormatException) {
                 throw DiscordRelayedException(
                     context.translate("converters.member.error.invalid", replacements = arrayOf(id))
@@ -113,53 +109,46 @@ public class MemberConverter(
             }
         } else {
             try { // Try for a user ID first
-                kord.getUser(Snowflake(arg))
+                kord.getUserById(arg)
             } catch (e: NumberFormatException) { // It's not an ID, let's try the tag
                 if (!arg.contains("#")) {
                     null
                 } else {
                     kord.users.firstOrNull { user ->
-                        user.tag.equals(arg, true)
+                        user.asTag.equals(arg, true)
                     }
                 }
             }
         }
 
-        val currentGuild = context.getGuild()
+        val currentGuild = context.guild ?: return null
+        val guildId: Long = requiredGuild?.invoke() ?: currentGuild.idLong
 
-        val guildId: Snowflake? = if (requiredGuild != null) {
-            requiredGuild!!.invoke()
-        } else {
-            currentGuild?.id
-        }
-
-        if (guildId != currentGuild?.id) {
+        if (guildId != currentGuild.idLong) {
             throw DiscordRelayedException(
-                context.translate("converters.member.error.invalid", replacements = arrayOf(user?.tag ?: arg))
+                context.translate("converters.member.error.invalid", replacements = arrayOf(user?.asTag ?: arg))
             )
         }
 
-        return user?.asMember(
-            guildId ?: return null
-        )
+        return user?.idLong?.let { currentGuild.getMemberById(it) }
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        UserBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? MemberOptionValue)?.resolvedObject ?: return false
-        val guild = context.getGuild()
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val optionValue = if (option.type == OptionType.USER) option.asMember ?: return false else return false
+        val guild = context.guild
 
         if (requireSameGuild && requiredGuild == null && guild != null) {
-            requiredGuild = { guild.id }
+            requiredGuild = { guild.idLong }
         }
 
         val requiredGuildId = requiredGuild?.invoke()
 
-        if (requiredGuildId != null && optionValue.guildId != requiredGuildId) {
+        if (requiredGuildId != null && optionValue.guild.idLong != requiredGuildId) {
             throw DiscordRelayedException(
-                context.translate("converters.member.error.invalid", replacements = arrayOf(optionValue.tag))
+                context.translate("converters.member.error.invalid", replacements = arrayOf(optionValue.user.asTag))
             )
         }
 

@@ -9,7 +9,6 @@ package com.kotlindiscord.kord.extensions.pagination
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import dev.minn.jda.ktx.messages.MessageEdit
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
@@ -21,7 +20,7 @@ import java.util.*
  */
 public class PublicResponsePaginator(
     pages: Pages,
-    owner: User? = null,
+    owner: Long? = null,
     timeoutSeconds: Long? = null,
     keepEmbed: Boolean = true,
     switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
