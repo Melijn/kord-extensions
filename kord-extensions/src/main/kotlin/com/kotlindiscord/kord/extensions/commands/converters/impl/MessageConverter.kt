@@ -15,16 +15,17 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.channel.ChannelBehavior
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.channel.DmChannel
-import dev.kord.core.entity.channel.GuildChannel
-import dev.kord.core.entity.channel.GuildMessageChannel
-import dev.kord.core.entity.channel.MessageChannel
-import dev.kord.core.exception.EntityNotFoundException
+import dev.minn.jda.ktx.coroutines.await
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.channel.Channel
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
 private val logger = KotlinLogging.logger {}
@@ -45,17 +46,17 @@ private val logger = KotlinLogging.logger {}
     "message",
 
     types = [ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE],
-    imports = ["dev.kord.common.entity.Snowflake"],
+    imports = [],
 
     builderFields = [
         "public var requireGuild: Boolean = false",
-        "public var requiredGuild: (suspend () -> Snowflake)? = null",
+        "public var requiredGuild: (suspend () -> Long)? = null",
         "public var useReply: Boolean = true",
     ]
 )
 public class MessageConverter(
     private var requireGuild: Boolean = false,
-    private var requiredGuild: (suspend () -> Snowflake)? = null,
+    private var requiredGuild: (suspend () -> Long)? = null,
     private var useReply: Boolean = true,
     override var validator: Validator<Message> = null
 ) : SingleConverter<Message>() {
@@ -63,10 +64,10 @@ public class MessageConverter(
 
     override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
         if (useReply && context is ChatCommandContext<*>) {
-            val messageReference = context.message.asMessage().messageReference
+            val messageReference = context.message.messageReference
 
             if (messageReference != null) {
-                val message = messageReference.message?.asMessageOrNull()
+                val message = messageReference.message
 
                 if (message != null) {
                     parsed = message
@@ -83,10 +84,10 @@ public class MessageConverter(
     }
 
     private suspend fun findMessage(arg: String, context: CommandContext): Message {
-        val requiredGid: Snowflake? = if (requiredGuild != null) {
+        val requiredGid: Long? = if (requiredGuild != null) {
             requiredGuild!!.invoke()
         } else {
-            context.getGuild()?.id
+            context.guild?.idLong
         }
 
         return if (arg.startsWith("https://")) { // It's a message URL
@@ -101,8 +102,8 @@ public class MessageConverter(
             }
 
             @Suppress("MagicNumber")
-            val gid: Snowflake = try {
-                Snowflake(split[0])
+            val gid: Long = try {
+                split[0].toLong()
             } catch (e: NumberFormatException) {
                 throw DiscordRelayedException(
                     context.translate("converters.message.error.invalidGuildId", replacements = arrayOf(split[0]))
@@ -116,8 +117,8 @@ public class MessageConverter(
             }
 
             @Suppress("MagicNumber")
-            val cid: Snowflake = try {
-                Snowflake(split[1])
+            val cid: Long = try {
+                split[1].toLong()
             } catch (e: NumberFormatException) {
                 throw DiscordRelayedException(
                     context.translate(
@@ -127,8 +128,7 @@ public class MessageConverter(
                 )
             }
 
-            val channel: GuildChannel? = kord.getGuildOrNull(gid)?.getChannel(cid)
-
+            val channel: GuildChannel? = kord.getGuildById(gid)?.getGuildChannelById(cid)
             if (channel == null) {
                 logger.trace { "Unable to find channel ($cid) for guild ($gid)." }
 
@@ -142,8 +142,8 @@ public class MessageConverter(
             }
 
             @Suppress("MagicNumber")
-            val mid: Snowflake = try {
-                Snowflake(split[2])
+            val mid: Long = try {
+                split[2].toLong()
             } catch (e: NumberFormatException) {
                 throw DiscordRelayedException(
                     context.translate(
@@ -154,14 +154,14 @@ public class MessageConverter(
             }
 
             try {
-                channel.getMessage(mid)
-            } catch (e: EntityNotFoundException) {
+                channel.retrieveMessageById(mid).await()
+            } catch (e: ErrorResponseException) {
                 errorNoMessage(mid.toString(), context)
             }
         } else { // Try a message ID
-            val channel: ChannelBehavior = context.getChannel()
+            val channel: Channel? = context.channel
 
-            if (channel !is GuildMessageChannel && channel !is DmChannel) {
+            if (channel !is GuildMessageChannel && channel !is PrivateChannel) {
                 logger.trace { "Current channel is not a guild message channel or DM channel." }
 
                 errorNoMessage(arg, context)
@@ -174,7 +174,7 @@ public class MessageConverter(
             }
 
             try {
-                channel.getMessage(Snowflake(arg))
+                channel.retrieveMessageById(arg.toLong()).await()
             } catch (e: NumberFormatException) {
                 throw DiscordRelayedException(
                     context.translate(
@@ -182,7 +182,7 @@ public class MessageConverter(
                         replacements = arrayOf(arg)
                     )
                 )
-            } catch (e: EntityNotFoundException) {
+            } catch (e: ErrorResponseException) {
                 errorNoMessage(arg, context)
             }
         }
@@ -198,7 +198,7 @@ public class MessageConverter(
         OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
     override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
-        val optionValue = if (option.type == OptionType.type) option.asType else return false
+        val optionValue = if (option.type == OptionType.STRING) option.asString else return false
 
         parsed = findMessage(optionValue, context)
 

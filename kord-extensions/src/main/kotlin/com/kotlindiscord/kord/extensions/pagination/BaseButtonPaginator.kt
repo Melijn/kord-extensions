@@ -7,16 +7,15 @@
 package com.kotlindiscord.kord.extensions.pagination
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckWithCache
-import com.kotlindiscord.kord.extensions.components.ComponentContainer
-import com.kotlindiscord.kord.extensions.components.buttons.PublicInteractionButton
-import com.kotlindiscord.kord.extensions.components.publicButton
-import com.kotlindiscord.kord.extensions.components.types.emoji
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import com.kotlindiscord.kord.extensions.utils.capitalizeWords
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.kotlindiscord.kord.extensions.utils.scheduling.Task
+import dev.minn.jda.ktx.messages.InlineMessage
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent
+import net.dv8tion.jda.api.interactions.components.buttons.Button
 import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle
 import java.util.*
 
@@ -32,8 +31,9 @@ public abstract class BaseButtonPaginator(
     bundle: String? = null,
     locale: Locale? = null,
 ) : BasePaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
-    /** [ComponentContainer] instance managing the buttons for this paginator. **/
-    public open var components: ComponentContainer = ComponentContainer()
+
+    /** Buttons of this paginator. **/
+    public var components: MutableList<Button> = mutableListOf()
 
     /** Scheduler used to schedule the paginator's timeout. **/
     public var scheduler: Scheduler = Scheduler()
@@ -45,26 +45,23 @@ public abstract class BaseButtonPaginator(
         null
     }
 
-    private val lastRowNumber by lazy { components.rows.size - 1 }
-    private val secondRowNumber = 1
-
     /** Button builder representing the button that switches to the first page. **/
-    public open var firstPageButton: PublicInteractionButton? = null
+    public open var firstPageButton: Button? = null
 
     /** Button builder representing the button that switches to the previous page. **/
-    public open var backButton: PublicInteractionButton? = null
+    public open var backButton: Button? = null
 
     /** Button builder representing the button that switches to the next page. **/
-    public open var nextButton: PublicInteractionButton? = null
+    public open var nextButton: Button? = null
 
     /** Button builder representing the button that switches to the last page. **/
-    public open var lastPageButton: PublicInteractionButton? = null
+    public open var lastPageButton: Button? = null
 
     /** Button builder representing the button that switches between groups. **/
-    public open var switchButton: PublicInteractionButton? = null
+    public open var switchButton: Button? = null
 
     /** Group-specific buttons, if any. **/
-    public open val groupButtons: MutableMap<String, PublicInteractionButton> = mutableMapOf()
+    public open val groupButtons: MutableMap<String, Button> = mutableMapOf()
 
     /** Whether it's possible for us to have a row of group-switching buttons. **/
     @Suppress("MagicNumber")
@@ -91,98 +88,72 @@ public abstract class BaseButtonPaginator(
     override suspend fun setup() {
         if (pages.groups.values.any { it.size > 1 }) {
             // Add navigation buttons...
-            firstPageButton = components.publicButton {
-                deferredAck = true
-                style = ButtonStyle.SECONDARY
-                disabled = pages.groups[currentGroup]!!.size <= 1
+            firstPageButton = Button.secondary("first-page", FIRST_PAGE_EMOJI).apply {
+                withDisabled(pages.groups[currentGroup]!!.size <= 1)
 
-                check(defaultCheck)
+//                check(defaultCheck)
 
-                emoji(FIRST_PAGE_EMOJI)
-
-                action {
-                    goToPage(0)
-
-                    send()
-                    task?.restart()
-                }
+//                action {
+//                    goToPage(0)
+//
+//                    send()
+//                    task?.restart()
+//                }
             }
 
-            backButton = components.publicButton {
-                deferredAck = true
-                style = ButtonStyle.SECONDARY
-                disabled = pages.groups[currentGroup]!!.size <= 1
+            backButton = Button.secondary("back", FIRST_PAGE_EMOJI).apply {
+                withDisabled(pages.groups[currentGroup]!!.size <= 1)
 
-                check(defaultCheck)
-
-                emoji(LEFT_EMOJI)
-
-                action {
-                    previousPage()
-
-                    send()
-                    task?.restart()
-                }
+//                check(defaultCheck)
+//
+//                action {
+//                    previousPage()
+//
+//                    send()
+//                    task?.restart()
+//                }
             }
 
-            nextButton = components.publicButton {
-                deferredAck = true
-                style = ButtonStyle.SECONDARY
-                disabled = pages.groups[currentGroup]!!.size <= 1
+            nextButton = Button.secondary("next", FIRST_PAGE_EMOJI).apply {
+                withDisabled(pages.groups[currentGroup]!!.size <= 1)
 
-                check(defaultCheck)
-
-                emoji(RIGHT_EMOJI)
-
-                action {
-                    nextPage()
-
-                    send()
-                    task?.restart()
-                }
+//                check(defaultCheck)
+//
+//                action {
+//                    nextPage()
+//
+//                    send()
+//                    task?.restart()
+//                }
             }
 
-            lastPageButton = components.publicButton {
-                deferredAck = true
-                style = ButtonStyle.SECONDARY
-                disabled = pages.groups[currentGroup]!!.size <= 1
+            lastPageButton = Button.secondary("last-page", FIRST_PAGE_EMOJI).apply {
+                withDisabled(pages.groups[currentGroup]!!.size <= 1)
 
-                check(defaultCheck)
-
-                emoji(LAST_PAGE_EMOJI)
-
-                action {
-                    goToPage(pages.groups[currentGroup]!!.size - 1)
-
-                    send()
-                    task?.restart()
-                }
+//                check(defaultCheck)
+//
+//                action {
+//                    goToPage(pages.groups[currentGroup]!!.size - 1)
+//
+//                    send()
+//                    task?.restart()
+//                }
             }
         }
 
         if (pages.groups.values.any { it.size > 1 } || !keepEmbed) {
             // Add the destroy button
-            components.publicButton(lastRowNumber) {
-                deferredAck = true
-
-                check(defaultCheck)
-
-                label = if (keepEmbed) {
-                    style = ButtonStyle.PRIMARY
-                    emoji(FINISH_EMOJI)
-
-                    translate("paginator.button.done")
-                } else {
-                    style = ButtonStyle.DANGER
-                    emoji(DELETE_EMOJI)
-
-                    translate("paginator.button.delete")
-                }
-
-                action {
-                    destroy()
-                }
+            if (keepEmbed) {
+                Button.of(ButtonStyle.PRIMARY, "finish", translate("paginator.button.done"), FINISH_EMOJI)
+            } else {
+                Button.of(ButtonStyle.DANGER, "delete", translate("paginator.button.delete"), DELETE_EMOJI)
             }
+
+//                check(defaultCheck)
+//
+//                action {
+//                    destroy()
+//                }
         }
 
         if (pages.groups.size > 1) {
@@ -190,46 +161,36 @@ public abstract class BaseButtonPaginator(
                 // Add group-switching buttons
 
                 allGroups.forEach { group ->
-                    groupButtons[group] = components.publicButton(secondRowNumber) {
-                        deferredAck = true
-                        label = translate(group).capitalizeWords(localeObj)
-                        style = ButtonStyle.SECONDARY
+                    groupButtons[group] =
+                        Button.of(ButtonStyle.SECONDARY, "group-switch", translate(group).capitalizeWords(localeObj))
 
-                        check(defaultCheck)
-
-                        action {
-                            switchGroup(group)
-                            task?.restart()
-                        }
-                    }
+//                        check(defaultCheck)
+//
+//                        action {
+//                            switchGroup(group)
+//                            task?.restart()
+//                        }
                 }
             } else {
                 // Add the singular switch button
-
-                switchButton = components.publicButton(lastRowNumber) {
-                    deferredAck = true
-
-                    check(defaultCheck)
-
-                    emoji(switchEmoji)
-
-                    label = if (allGroups.size == 2) {
-                        translate("paginator.button.more")
-                    } else {
-                        translate("paginator.button.group.switch")
-                    }
-
-                    action {
-                        nextGroup()
-
-                        send()
-                        task?.restart()
-                    }
+                val label = if (allGroups.size == 2) {
+                    translate("paginator.button.more")
+                } else {
+                    translate("paginator.button.group.switch")
                 }
+                switchButton = Button.of(ButtonStyle.SECONDARY, "switch", label, switchEmoji)
+
+//                    check(defaultCheck)
+//
+//                    action {
+//                        nextGroup()
+//
+//                        send()
+//                        task?.restart()
+//                    }
             }
         }
 
-        components.sort()
         updateButtons()
     }
 
@@ -279,52 +240,33 @@ public abstract class BaseButtonPaginator(
      * Convenience function that enables and disables buttons as necessary, depending on the current page number.
      */
     public fun updateButtons() {
-        if (currentPageNum <= 0) {
-            setDisabledButton(firstPageButton)
-            setDisabledButton(backButton)
-        } else {
-            setEnabledButton(firstPageButton)
-            setEnabledButton(backButton)
-        }
+        val reachedFront = currentPageNum <= 0
+        firstPageButton = firstPageButton?.withDisabled(reachedFront)
+        backButton = backButton?.withDisabled(reachedFront)
 
-        if (currentPageNum >= pages.groups[currentGroup]!!.size - 1) {
-            setDisabledButton(nextButton)
-            setDisabledButton(lastPageButton)
-        } else {
-            setEnabledButton(nextButton)
-            setEnabledButton(lastPageButton)
-        }
+        val reachedLast = currentPageNum >= pages.groups[currentGroup]!!.size - 1
+        lastPageButton = lastPageButton?.withDisabled(reachedLast)
+        nextButton = nextButton?.withDisabled(reachedLast)
 
         if (allGroups.size == 2) {
-            if (currentGroup == pages.defaultGroup) {
-                switchButton?.label = translate("paginator.button.more")
+            switchButton = if (currentGroup == pages.defaultGroup) {
+                switchButton?.withLabel(translate("paginator.button.more"))
             } else {
-                switchButton?.label = translate("paginator.button.less")
+                switchButton?.withLabel(translate("paginator.button.less"))
             }
         }
 
         if (canUseSwitchingButtons) {
-            groupButtons.forEach { (key, value) ->
-                if (key == currentGroup) {
-                    setDisabledButton(value)
-                } else {
-                    setEnabledButton(value)
-                }
+            groupButtons.map { (key, value) ->
+                key to value.withDisabled(key == currentGroup)
             }
         }
     }
 
-    /** Replace an enabled interactive button in [components] with a disabled button of the same ID. **/
-    public fun setDisabledButton(button: PublicInteractionButton?) {
-        button ?: return
-
-        button.disable()
-    }
-
-    /** Replace a disabled button in [components] with the given interactive button of the same ID. **/
-    public fun setEnabledButton(button: PublicInteractionButton?) {
-        button ?: return
-
-        button.enable()
+    /** Apply the components in this container to a message that's being created. **/
+    public fun InlineMessage<*>.applyToMessage() {
+        for (row in this@BaseButtonPaginator.components.chunked(Message.MAX_COMPONENT_COUNT)) {
+            actionRow(row)
+        }
     }
 }

@@ -13,8 +13,7 @@ public value class Snowflake(
      */
     public val id: Long,
 ) {
-    public constructor(id: ULong) : this(id.toLong())
-    public constructor(id: String) : this(id.toULong())
+    public constructor(id: String) : this(id.toLong())
 
     /**
      * The Snowflake id of this entity. This is unique to every entity and will never change.

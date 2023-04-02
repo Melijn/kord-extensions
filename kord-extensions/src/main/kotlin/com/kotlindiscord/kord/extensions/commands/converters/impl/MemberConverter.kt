@@ -40,7 +40,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData
     "member",
 
     types = [ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE],
-    imports = ["dev.kord.common.entity.Snowflake"],
+    imports = [],
 
     builderFields = [
         "public var requiredGuild: (suspend () -> Long)? = null",

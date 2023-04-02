@@ -1029,14 +1029,6 @@ public open class ExtensibleBotBuilder {
          *
          * Requires the `GUILD_MEMBERS` privileged intent. Make sure you've enabled it for your bot!
          */
-        public fun fill(id: ULong): Boolean? =
-            guildsToFill?.add(Snowflake(id))
-
-        /**
-         * Add a guild ID to request members for.
-         *
-         * Requires the `GUILD_MEMBERS` privileged intent. Make sure you've enabled it for your bot!
-         */
         public fun fill(id: String): Boolean? =
             guildsToFill?.add(Snowflake(id))
 
@@ -1204,7 +1196,7 @@ public open class ExtensibleBotBuilder {
         }
 
         /** Set a guild ID to use for all global application commands. Intended for testing. **/
-        public fun defaultGuild(id: ULong?) {
+        public fun defaultGuild(id: Long?) {
             defaultGuild = id?.let { Snowflake(it) }
         }
 

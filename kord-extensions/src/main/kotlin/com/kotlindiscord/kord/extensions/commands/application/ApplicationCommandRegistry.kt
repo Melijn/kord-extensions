@@ -21,6 +21,8 @@ import com.kotlindiscord.kord.extensions.commands.converters.SlashCommandConvert
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.interactions.commands.group
+import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.interactions.commands.upsertCommand
 import mu.KLogger
 import mu.KotlinLogging
@@ -35,6 +37,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 import java.util.*
@@ -331,38 +334,30 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
 
     // region: Extensions
     /** Registration logic for slash commands, extracted for clarity. **/
-    public open suspend fun CommandData.register(locale: Locale, command: SlashCommand<*, *>) {
-        if (this is GlobalChatInputCreateBuilder) {
-            registerGlobalPermissions(locale, command)
-        } else {
-            registerGuildPermissions(locale, command)
-        }
+    public open suspend fun SlashCommandData.register(locale: Locale, command: SlashCommand<*, *>) {
+        registerGlobalPermissions(locale, command)
 
         if (command.hasBody) {
             val args = command.arguments?.invoke()
 
-            if (args != null) {
-                args.args.forEach { arg ->
-                    val converter = arg.converter
+            args?.args?.forEach { arg ->
+                val converter = arg.converter
 
-                    if (converter !is SlashCommandConverter) {
-                        error("Argument ${arg.displayName} does not support slash commands.")
-                    }
-
-                    if (this.options == null) this.options = mutableListOf()
-
-                    val option = converter.toSlashOption(arg)
-
-                    option.translate(command)
-
-                    if (option is BaseChoiceBuilder<*> && arg.converter.genericBuilder.autoCompleteCallback != null) {
-                        option.choices?.clear()
-                    }
-
-                    option.autocomplete = arg.converter.genericBuilder.autoCompleteCallback != null
-
-                    this.options!! += option
+                if (converter !is SlashCommandConverter) {
+                    error("Argument ${arg.displayName} does not support slash commands.")
                 }
+
+                val option = converter.toSlashOption(arg)
+
+                option.translate(command)
+
+                if (arg.converter.genericBuilder.autoCompleteCallback != null) {
+                    option.choices.clear()
+                }
+
+                option.setAutoComplete(arg.converter.genericBuilder.autoCompleteCallback != null)
+
+                addOptions(option)
             }
         } else {
             command.subCommands.sortedByDescending { it.name }.forEach {
@@ -377,11 +372,11 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
 
                     option.translate(command)
 
-                    if (option is BaseChoiceBuilder<*> && arg.converter.genericBuilder.autoCompleteCallback != null) {
-                        option.choices?.clear()
+                    if (arg.converter.genericBuilder.autoCompleteCallback != null) {
+                        option.choices.clear()
                     }
 
-                    option.autocomplete = arg.converter.genericBuilder.autoCompleteCallback != null
+                    option.setAutoComplete(arg.converter.genericBuilder.autoCompleteCallback != null)
 
                     option
                 }
@@ -389,17 +384,15 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                 val (name, nameLocalizations) = it.localizedName
                 val (description, descriptionLocalizations) = it.localizedDescription
 
-                this.subCommand(
+                this.subcommand(
                     name,
                     description
                 ) {
-                    this.nameLocalizations = nameLocalizations
-                    this.descriptionLocalizations = descriptionLocalizations
+                    this.setNameLocalizations(nameLocalizations)
+                    this.setDescriptionLocalizations(descriptionLocalizations)
 
                     if (args != null) {
-                        if (this.options == null) this.options = mutableListOf()
-
-                        this.options!!.addAll(args)
+                        this.options.addAll(args)
                     }
                 }
             }
@@ -409,8 +402,8 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                 val (description, descriptionLocalizations) = group.localizedDescription
 
                 this.group(name, description) {
-                    this.nameLocalizations = nameLocalizations
-                    this.descriptionLocalizations = descriptionLocalizations
+                    this.setNameLocalizations(nameLocalizations)
+                    this.setDescriptionLocalizations(descriptionLocalizations)
 
                     group.subCommands.sortedByDescending { it.name }.forEach {
                         val args = it.arguments?.invoke()?.args?.map { arg ->
@@ -425,13 +418,12 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                             option.translate(command)
 
                             if (
-                                option is BaseChoiceBuilder<*> &&
                                 arg.converter.genericBuilder.autoCompleteCallback != null
                             ) {
-                                option.choices?.clear()
+                                option.choices.clear()
                             }
 
-                            option.autocomplete = arg.converter.genericBuilder.autoCompleteCallback != null
+                            option.setAutoComplete(arg.converter.genericBuilder.autoCompleteCallback != null)
 
                             option
                         }
@@ -439,17 +431,15 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                         val (name, nameLocalizations) = it.localizedName
                         val (description, descriptionLocalizations) = it.localizedDescription
 
-                        this.subCommand(
+                        this.subcommand(
                             name,
                             description
                         ) {
-                            this.nameLocalizations = nameLocalizations
-                            this.descriptionLocalizations = descriptionLocalizations
+                            this.setNameLocalizations(nameLocalizations)
+                            this.setDescriptionLocalizations(descriptionLocalizations)
 
                             if (args != null) {
-                                if (this.options == null) this.options = mutableListOf()
-
-                                this.options!!.addAll(args)
+                                this.options.addAll(args)
                             }
                         }
                     }
