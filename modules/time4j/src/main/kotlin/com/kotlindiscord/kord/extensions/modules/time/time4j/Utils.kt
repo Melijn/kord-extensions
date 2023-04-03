@@ -84,7 +84,7 @@ public fun Duration<IsoUnit>.toHuman(
 public suspend fun Duration<IsoUnit>.toHuman(
     context: CommandContext,
     relativeTo: PlainTimestamp = PlainTimestamp.nowInSystemTime()
-): String? = toHuman(context.getLocale(), relativeTo)
+): String? = toHuman(context.resolvedLocale.await(), relativeTo)
 
 /**
  * Format the given `Moment` to Discord's automatically-formatted timestamp format. This will return a String that

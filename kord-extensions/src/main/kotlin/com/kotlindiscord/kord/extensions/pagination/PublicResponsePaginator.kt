@@ -61,10 +61,10 @@ public class PublicResponsePaginator(
 
         interaction.editOriginal(
             MessageEdit {
-            embed { applyPage() }
+                embed { applyPage() }
 
-            this.builder.setComponents(mutableListOf())
-        }
+                this.builder.setComponents(mutableListOf())
+            }
         )
 
         super.destroy()
@@ -75,7 +75,7 @@ public class PublicResponsePaginator(
 @Suppress("FunctionNaming")  // Factory function
 public fun PublicResponsePaginator(
     builder: PaginatorBuilder,
-    interaction: InteractionHook
+    interaction: InteractionHook,
 ): PublicResponsePaginator = PublicResponsePaginator(
     pages = builder.pages,
     owner = builder.owner,

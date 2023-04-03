@@ -6,9 +6,10 @@
 
 package com.kotlindiscord.kord.extensions.modules.unsafe.types
 
-import com.kotlindiscord.kord.extensions.commands.application.slash.InitialEphemeralSlashResponseBuilder
-import com.kotlindiscord.kord.extensions.commands.application.slash.InitialPublicSlashResponseBehavior
 import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
+import dev.minn.jda.ktx.messages.InlineMessage
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 
 /** Sealed class representing the initial response types for an unsafe slash command. **/
 @UnsafeAPI
@@ -27,7 +28,9 @@ public sealed class InitialSlashCommandResponse {
      *
      * @param builder Response builder, containing the message content.
      */
-    public data class EphemeralResponse(val builder: InitialEphemeralSlashResponseBuilder) :
+    public data class EphemeralResponse(
+        val builder: InlineMessage<MessageCreateData>.(SlashCommandInteractionEvent) -> Unit
+    ) :
         InitialSlashCommandResponse()
 
     /**
@@ -35,6 +38,8 @@ public sealed class InitialSlashCommandResponse {
      *
      * @param builder Response builder, containing the message content.
      **/
-    public data class PublicResponse(val builder: InitialPublicSlashResponseBehavior) :
+    public data class PublicResponse(
+        val builder: InlineMessage<MessageCreateData>.(SlashCommandInteractionEvent) -> Unit
+    ) :
         InitialSlashCommandResponse()
 }

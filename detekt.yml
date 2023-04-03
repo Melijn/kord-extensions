@@ -1,5 +1,5 @@
 build:
-  maxIssues: 0
+  maxIssues: 500
   excludeCorrectable: false
   weights:
     # complexity: 2
@@ -245,7 +245,7 @@ formatting:
     active: true
     autoCorrect: true
   Filename:
-    active: true
+    active: false
   FinalNewline:
     active: true
     autoCorrect: true

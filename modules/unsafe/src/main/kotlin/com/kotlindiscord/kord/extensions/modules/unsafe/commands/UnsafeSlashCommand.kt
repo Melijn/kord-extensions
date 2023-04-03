@@ -5,7 +5,6 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
 
 package com.kotlindiscord.kord.extensions.modules.unsafe.commands
 
@@ -18,16 +17,13 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
 import com.kotlindiscord.kord.extensions.modules.unsafe.contexts.UnsafeSlashCommandContext
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.InitialSlashCommandResponse
-import com.kotlindiscord.kord.extensions.modules.unsafe.types.respondEphemeral
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.respondPublic
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.interaction.respondPublic
-import dev.kord.core.behavior.interaction.response.EphemeralMessageInteractionResponseBehavior
-import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Like a standard slash command, but with less safety features. **/
 @UnsafeAPI
@@ -36,16 +32,16 @@ public class UnsafeSlashCommand<A : Arguments>(
 
     public override val arguments: (() -> A)? = null,
     public override val parentCommand: SlashCommand<*, *>? = null,
-    public override val parentGroup: SlashGroup? = null
+    public override val parentGroup: SlashGroup? = null,
 ) : SlashCommand<UnsafeSlashCommandContext<A>, A>(extension) {
     /** Initial response type. Change this to decide what happens when this slash command is executed. **/
     public var initialResponse: InitialSlashCommandResponse = InitialSlashCommandResponse.EphemeralAck
 
-    override suspend fun call(event: ChatInputCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: SlashCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         findCommand(event).run(event, cache)
     }
 
-    override suspend fun run(event: ChatInputCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun run(event: SlashCommandInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         emitEventAsync(UnsafeSlashCommandInvocationEvent(this, event))
 
         try {
@@ -61,9 +57,11 @@ public class UnsafeSlashCommand<A : Arguments>(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
-                settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }
+            event.interaction.reply(
+                MessageCreate {
+                    settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
+                }
+            ).setEphemeral(true).await()
 
             emitEventAsync(UnsafeSlashCommandFailedChecksEvent(this, event, e.reason))
 
@@ -71,23 +69,25 @@ public class UnsafeSlashCommand<A : Arguments>(
         }
 
         val response = when (val r = initialResponse) {
-            is InitialSlashCommandResponse.EphemeralAck -> event.interaction.deferEphemeralResponseUnsafe()
-            is InitialSlashCommandResponse.PublicAck -> event.interaction.deferPublicResponseUnsafe()
+            is InitialSlashCommandResponse.EphemeralAck -> event.interaction.deferReply(true).await()
+            is InitialSlashCommandResponse.PublicAck -> event.interaction.deferReply(false).await()
 
-            is InitialSlashCommandResponse.EphemeralResponse -> event.interaction.respondEphemeral {
-                r.builder!!(event)
-            }
+            is InitialSlashCommandResponse.EphemeralResponse -> event.interaction.reply(
+                MessageCreate {
+                    r.builder(this, event)
+                }
+            ).setEphemeral(true).await()
 
-            is InitialSlashCommandResponse.PublicResponse -> event.interaction.respondPublic {
-                r.builder!!(event)
-            }
+            is InitialSlashCommandResponse.PublicResponse -> event.interaction.reply(
+                MessageCreate {
+                    r.builder(this, event)
+                }
+            ).setEphemeral(false).await()
 
             is InitialSlashCommandResponse.None -> null
         }
 
         val context = UnsafeSlashCommandContext(event, this, response, cache)
-
-        context.populate()
 
         firstSentryBreadcrumb(context, this)
 
@@ -132,14 +132,10 @@ public class UnsafeSlashCommand<A : Arguments>(
     override suspend fun respondText(
         context: UnsafeSlashCommandContext<A>,
         message: String,
-        failureType: FailureReason<*>
+        failureType: FailureReason<*>,
     ) {
         when (context.interactionResponse) {
-            is PublicMessageInteractionResponseBehavior -> context.respondPublic {
-                settings.failureResponseBuilder(this, message, failureType)
-            }
-
-            is EphemeralMessageInteractionResponseBehavior -> context.respondEphemeral {
+            is InteractionHook -> context.respondPublic {
                 settings.failureResponseBuilder(this, message, failureType)
             }
         }

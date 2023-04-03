@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     `kordex-module`
     `published-module`
@@ -22,6 +24,13 @@ dependencies {
     testImplementation(libs.jansi)
     testImplementation(libs.junit)
     testImplementation(libs.logback)
+}
+
+val compileKotlin: KotlinCompile by tasks
+
+compileKotlin.kotlinOptions {
+    languageVersion = "1.7"
+    freeCompilerArgs = listOf("-Xcontext-receivers")
 }
 
 dokkaModule {

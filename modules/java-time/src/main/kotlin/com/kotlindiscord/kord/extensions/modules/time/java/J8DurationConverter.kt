@@ -5,7 +5,6 @@
  */
 
 @file:OptIn(
-    KordPreview::class,
     ConverterToDefaulting::class,
     ConverterToMulti::class,
     ConverterToOptional::class
@@ -22,11 +21,9 @@ import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converte
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.parsers.DurationParserException
 import com.kotlindiscord.kord.extensions.parsers.InvalidTimeUnitException
-import dev.kord.common.annotation.KordPreview
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -49,7 +46,6 @@ import java.time.LocalDateTime
         "public var positiveOnly: Boolean = true",
     ],
 )
-@OptIn(KordPreview::class)
 public class J8DurationConverter(
     public val longHelp: Boolean = true,
     public val positiveOnly: Boolean = true,
@@ -61,7 +57,7 @@ public class J8DurationConverter(
         val arg: String = named ?: parser?.parseNext()?.data ?: return false
 
         try {
-            val result: ChronoContainer = J8DurationParser.parse(arg, context.getLocale())
+            val result: ChronoContainer = J8DurationParser.parse(arg, context.resolvedLocale.await())
 
             if (positiveOnly) {
                 val normalized: ChronoContainer = result.clone()
@@ -88,14 +84,14 @@ public class J8DurationConverter(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val arg: String = (option as? StringOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val arg: String = if (option.type == OptionType.STRING) option.asString else return false
 
         try {
-            val result: ChronoContainer = J8DurationParser.parse(arg, context.getLocale())
+            val result: ChronoContainer = J8DurationParser.parse(arg, context.resolvedLocale.await())
 
             if (positiveOnly) {
                 val normalized: ChronoContainer = result.clone()

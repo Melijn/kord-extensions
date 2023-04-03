@@ -182,7 +182,9 @@ public suspend fun Message.requireGuildChannel(
     if (
         (role != null && topRole != null && topRole >= role) ||
         channel !is PrivateChannel
-    ) return true
+    ) {
+        return true
+    }
 
     respond(context.translate("utils.message.commandNotAvailableInDm"))
     return false
@@ -214,7 +216,9 @@ public suspend fun Message.requireGuildChannel(
     if (
         (role != null && topRole != null && topRole >= role) ||
         channel !is PrivateChannel
-    ) return true
+    ) {
+        return true
+    }
 
     respond(context.translate("utils.message.commandNotAvailableInDm"))
     return false

@@ -9,11 +9,10 @@ package com.kotlindiscord.kord.extensions.modules.extra.mappings
 import com.kotlindiscord.kord.extensions.checks.channelFor
 import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.channel.CategorizableChannel
-import dev.kord.core.entity.channel.GuildChannel
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.channel.attribute.ICategorizableChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 
 /**
  * Check ensuring that a command was sent within an allowed category, or not within a banned one.
@@ -32,9 +31,9 @@ import mu.KotlinLogging
  * @param allowed List of allowed category IDs
  * @param banned List of banned category IDs
  */
-suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedCategory(
-    allowed: List<Snowflake>,
-    banned: List<Snowflake>
+suspend fun CheckContext<SlashCommandInteractionEvent>.allowedCategory(
+    allowed: List<Long>,
+    banned: List<Long>
 ) {
     val logger = KotlinLogging.logger { }
     val channel = channelFor(event)
@@ -43,19 +42,19 @@ suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedCategory
         logger.trace { "Passing: Event is not channel-related" }
 
         pass()
-    } else if (channel !is CategorizableChannel) {
+    } else if (channel !is ICategorizableChannel) {
         logger.trace { "Passing: Channel is not categorizable (eg, it's a DM)" }
 
         pass()
     } else {
-        val parent = channel.category
+        val parentId = channel.parentCategory?.idLong
 
         if (allowed.isNotEmpty()) {
-            if (parent == null) {
+            if (parentId == null) {
                 logger.debug { "Failing: We have allowed categories, but the command was sent outside of a category" }
 
                 fail()
-            } else if (allowed.contains(parent.id)) {
+            } else if (allowed.contains(parentId)) {
                 logger.trace { "Passing: Event happened in an allowed category" }
 
                 pass()
@@ -65,14 +64,14 @@ suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedCategory
                 fail()
             }
         } else {
-            if (parent == null) {
+            if (parentId == null) {
                 logger.trace {
                     "Passing: We have no allowed categories, and the command was sent outside of a category"
                 }
 
                 pass()
             } else if (banned.isNotEmpty()) {
-                if (!banned.contains(parent.id)) {
+                if (!banned.contains(parentId)) {
                     logger.trace { "Passing: Event did not happen in a banned category" }
 
                     pass()
@@ -106,9 +105,9 @@ suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedCategory
  * @param allowed List of allowed channel IDs
  * @param banned List of banned channel IDs
  */
-suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedChannel(
-    allowed: List<Snowflake>,
-    banned: List<Snowflake>
+suspend fun CheckContext<SlashCommandInteractionEvent>.allowedChannel(
+    allowed: List<Long>,
+    banned: List<Long>
 ) {
     val logger = KotlinLogging.logger { }
     val channel = channelFor(event)
@@ -122,7 +121,7 @@ suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedChannel(
 
         pass()  // It's a DM
     } else if (allowed.isNotEmpty()) {
-        if (allowed.contains(channel.id)) {
+        if (allowed.contains(channel.idLong)) {
             logger.trace { "Passing: Event happened in an allowed channel" }
 
             pass()
@@ -132,7 +131,7 @@ suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedChannel(
             fail()
         }
     } else if (banned.isNotEmpty()) {
-        if (!banned.contains(channel.id)) {
+        if (!banned.contains(channel.idLong)) {
             logger.trace { "Passing: Event did not happen in a banned channel" }
 
             pass()
@@ -163,19 +162,19 @@ suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedChannel(
  * @param allowed List of allowed guild IDs
  * @param banned List of banned guild IDs
  */
-suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedGuild(
-    allowed: List<Snowflake>,
-    banned: List<Snowflake>
+suspend fun CheckContext<SlashCommandInteractionEvent>.allowedGuild(
+    allowed: List<Long>,
+    banned: List<Long>
 ) {
     val logger = KotlinLogging.logger { }
-    val guild = guildFor(event)
+    val guild = guildFor(event)?.idLong
 
     if (guild == null) {
         logger.trace { "Passing: Event is not guild-related" }
 
         pass()
     } else if (allowed.isNotEmpty()) {
-        if (allowed.contains(guild.id)) {
+        if (allowed.contains(guild)) {
             logger.trace { "Passing: Event happened in an allowed guild" }
 
             pass()
@@ -185,7 +184,7 @@ suspend fun CheckContext<ChatInputCommandInteractionCreateEvent>.allowedGuild(
             fail()
         }
     } else if (banned.isNotEmpty()) {
-        if (!banned.contains(guild.id)) {
+        if (!banned.contains(guild)) {
             logger.trace { "Passing: Event did not happen in a banned guild" }
 
             pass()

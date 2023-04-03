@@ -41,7 +41,7 @@ public class TestPluginExtension : Extension() {
 
                 action {
                     TestPlugin.DATA_UNIT
-                        .withUser(event.interaction.user.id)
+                        .withUser(event.interaction.user)
                         .delete()
 
                     respond {
@@ -56,7 +56,7 @@ public class TestPluginExtension : Extension() {
 
                 action {
                     val value = TestPlugin.DATA_UNIT
-                        .withUser(event.interaction.user.id)
+                        .withUser(event.interaction.user)
                         .get()
                         ?.key
 

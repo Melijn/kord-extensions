@@ -5,7 +5,6 @@
  */
 
 @file:OptIn(
-    KordPreview::class,
     ConverterToDefaulting::class,
     ConverterToMulti::class,
     ConverterToOptional::class
@@ -22,11 +21,9 @@ import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converte
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.parsers.DurationParserException
 import com.kotlindiscord.kord.extensions.parsers.InvalidTimeUnitException
-import dev.kord.common.annotation.KordPreview
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.time4j.Duration
 import net.time4j.IsoUnit
 
@@ -41,7 +38,6 @@ import net.time4j.IsoUnit
  * @see t4jDurationList
  * @see parseT4JDuration
  */
-@OptIn(KordPreview::class)
 @Converter(
     names = ["t4JDuration"],
     types = [ConverterType.DEFAULTING, ConverterType.OPTIONAL, ConverterType.SINGLE],
@@ -61,7 +57,7 @@ public class T4JDurationConverter(
         val arg: String = named ?: parser?.parseNext()?.data ?: return false
 
         try {
-            this.parsed = T4JDurationParser.parse(arg, context.getLocale())
+            this.parsed = T4JDurationParser.parse(arg, context.resolvedLocale.await())
         } catch (e: InvalidTimeUnitException) {
             val message: String = context.translate(
                 "converters.duration.error.invalidUnit",
@@ -76,14 +72,14 @@ public class T4JDurationConverter(
         return true
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val arg: String = (option as? StringOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val arg: String = if (option.type == OptionType.STRING) option.asString else return false
 
         try {
-            this.parsed = T4JDurationParser.parse(arg, context.getLocale())
+            this.parsed = T4JDurationParser.parse(arg, context.resolvedLocale.await())
         } catch (e: InvalidTimeUnitException) {
             val message: String = context.translate(
                 "converters.duration.error.invalidUnit",

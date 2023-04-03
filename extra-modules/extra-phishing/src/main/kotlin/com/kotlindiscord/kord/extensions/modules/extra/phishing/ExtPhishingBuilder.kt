@@ -10,7 +10,7 @@
 package com.kotlindiscord.kord.extensions.modules.extra.phishing
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckWithCache
-import dev.kord.common.entity.Permission
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.Event
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
@@ -43,7 +43,7 @@ class ExtPhishingBuilder {
      * If you want to require a permission for the phishing check commands, supply it here. Alternatively, supply
      * `null` and everyone will be given access to them.
      */
-    var requiredCommandPermission: Permission? = Permission.ManageMessages
+    var requiredCommandPermission: Permission? = Permission.MANAGE_PERMISSIONS
 
     /**
      * What to do when a message creation/edit contains a phishing domain.

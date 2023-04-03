@@ -11,14 +11,14 @@ import com.kotlindiscord.kord.extensions.commands.application.message.MessageCom
 import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.UnsafeInteractionContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.behavior.interaction.response.MessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Command context for an unsafe message command. **/
 @UnsafeAPI
 public class UnsafeMessageCommandContext(
-    override val event: MessageCommandInteractionCreateEvent,
+    event: MessageContextInteractionEvent,
     override val command: MessageCommand<UnsafeMessageCommandContext>,
-    override var interactionResponse: MessageInteractionResponseBehavior?,
+    override var interactionResponse: InteractionHook?,
     cache: MutableStringKeyedMap<Any>
 ) : MessageCommandContext<UnsafeMessageCommandContext>(event, command, cache), UnsafeInteractionContext

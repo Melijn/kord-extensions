@@ -5,7 +5,6 @@
  */
 
 @file:OptIn(
-    KordPreview::class,
     ConverterToDefaulting::class,
     ConverterToMulti::class,
     ConverterToOptional::class
@@ -24,13 +23,11 @@ import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.parser.tokens.PositionalArgumentToken
 import com.kotlindiscord.kord.extensions.parsers.DurationParserException
 import com.kotlindiscord.kord.extensions.parsers.InvalidTimeUnitException
-import dev.kord.common.annotation.KordPreview
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.core.entity.interaction.StringOptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -76,13 +73,14 @@ public class J8DurationCoalescingConverter(
 
         var skipNext: Boolean = false
 
+        val locale = context.resolvedLocale.await()
         val args: List<String> = named ?: parser?.run {
             val tokens: MutableList<String> = mutableListOf()
 
             while (hasNext) {
                 val nextToken: PositionalArgumentToken? = peekNext()
 
-                if (nextToken!!.data.all { J8DurationParser.charValid(it, context.getLocale()) }) {
+                if (nextToken!!.data.all { J8DurationParser.charValid(it, locale) }) {
                     tokens.add(parseNext()!!.data)
                 } else {
                     break
@@ -106,8 +104,8 @@ public class J8DurationCoalescingConverter(
 
             try {
                 // We do it this way so that we stop parsing as soon as an invalid string is found
-                J8DurationParser.parse(arg, context.getLocale())
-                J8DurationParser.parse(durations.joinToString("") + arg, context.getLocale())
+                J8DurationParser.parse(arg, locale)
+                J8DurationParser.parse(durations.joinToString("") + arg, locale)
 
                 durations.add(arg)
             } catch (e: DurationParserException) {
@@ -121,8 +119,8 @@ public class J8DurationCoalescingConverter(
                     val nextArg: String = args[nextIndex]
                     val combined: String = arg + nextArg
 
-                    J8DurationParser.parse(combined, context.getLocale())
-                    J8DurationParser.parse(durations.joinToString("") + combined, context.getLocale())
+                    J8DurationParser.parse(combined, locale)
+                    J8DurationParser.parse(durations.joinToString("") + combined, locale)
 
                     durations.add(combined)
                     skipNext = true
@@ -141,7 +139,7 @@ public class J8DurationCoalescingConverter(
         try {
             val result: ChronoContainer = J8DurationParser.parse(
                 durations.joinToString(""),
-                context.getLocale()
+                locale
             )
 
             if (positiveOnly) {
@@ -187,14 +185,14 @@ public class J8DurationCoalescingConverter(
         logger.debug(e) { "Error thrown during duration parsing" }
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val arg: String = (option as? StringOptionValue)?.value ?: return false
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
+        val arg: String = if (option.type == OptionType.STRING) option.asString else return false
 
         try {
-            val result: ChronoContainer = J8DurationParser.parse(arg, context.getLocale())
+            val result: ChronoContainer = J8DurationParser.parse(arg, context.resolvedLocale.await())
 
             if (positiveOnly) {
                 val normalized: ChronoContainer = result.clone()

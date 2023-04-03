@@ -12,14 +12,14 @@ import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
 import com.kotlindiscord.kord.extensions.modules.unsafe.commands.UnsafeSlashCommand
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.UnsafeInteractionContext
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.core.behavior.interaction.response.MessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Command context for an unsafe slash command. **/
 @UnsafeAPI
 public class UnsafeSlashCommandContext<A : Arguments>(
-    override val event: ChatInputCommandInteractionCreateEvent,
+    event: SlashCommandInteractionEvent,
     override val command: UnsafeSlashCommand<A>,
-    override var interactionResponse: MessageInteractionResponseBehavior?,
+    override var interactionResponse: InteractionHook?,
     cache: MutableStringKeyedMap<Any>
 ) : SlashCommandContext<UnsafeSlashCommandContext<A>, A>(event, command, cache), UnsafeInteractionContext

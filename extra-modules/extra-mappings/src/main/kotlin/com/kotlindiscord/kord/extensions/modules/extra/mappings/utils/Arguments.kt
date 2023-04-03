@@ -10,11 +10,11 @@ import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.commands.converters.builders.ConverterBuilder
 import com.kotlindiscord.kord.extensions.utils.FilterStrategy
 import com.kotlindiscord.kord.extensions.utils.suggestStringMap
-import dev.kord.core.entity.interaction.AutoCompleteInteraction
 import me.shedaniel.linkie.Namespace
 import me.shedaniel.linkie.Namespaces
 import me.shedaniel.linkie.namespaces.MojangHashedNamespace
 import me.shedaniel.linkie.namespaces.QuiltMappingsNamespace
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 
 @PublishedApi
 internal const val MAX_RESULTS = 25 // set by Discord's API
@@ -24,17 +24,17 @@ internal const val MAX_RESULTS = 25 // set by Discord's API
  * [versions] is a supplier of the list of strings to autocomplete from.
  */
 inline fun <reified T> ConverterBuilder<T>.autocompleteVersions(
-    crossinline versions: AutoCompleteInteraction.() -> List<String>
+    crossinline versions: CommandAutoCompleteInteractionEvent.() -> List<String>
 ) {
-    autoComplete {
+    autoComplete { event ->
         val partiallyTyped = focusedOption.value as? String
 
-        val map = versions()
+        val map = versions(event)
             .filter { it.startsWith(partiallyTyped ?: "") }
             .take(MAX_RESULTS)
             .associateBy { it }
 
-        suggestStringMap(map, FilterStrategy.Contains)
+        event.suggestStringMap(map, FilterStrategy.Contains)
     }
 }
 

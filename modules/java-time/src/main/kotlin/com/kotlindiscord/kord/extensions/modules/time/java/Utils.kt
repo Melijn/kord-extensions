@@ -74,7 +74,7 @@ public fun ChronoContainer.toHuman(
 public suspend fun ChronoContainer.toHuman(
     context: CommandContext,
     relativeTo: LocalDateTime = LocalDateTime.now()
-): String? = toHuman(context.getLocale(), relativeTo)
+): String? = toHuman(context.resolvedLocale.await(), relativeTo)
 
 /**
  * Format the given `Instant` to Discord's automatically-formatted timestamp format. This will return a String that

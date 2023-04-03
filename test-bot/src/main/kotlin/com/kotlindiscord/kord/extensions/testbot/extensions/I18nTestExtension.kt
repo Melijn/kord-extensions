@@ -15,7 +15,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
-import dev.kord.core.behavior.interaction.suggestString
+import java.util.Locale
 
 public class I18nTestExtension : Extension() {
     override val name: String = "test-i18n"
@@ -27,8 +27,8 @@ public class I18nTestExtension : Extension() {
             description = "Translated banana"
 
             action {
-                val commandLocale = getLocale()
-                val interactionLocale = event.interaction.locale?.asJavaLocale()
+                val commandLocale = resolvedLocale.await()
+                val interactionLocale = Locale(event.interaction.userLocale.locale)
 
                 assert(commandLocale == interactionLocale) {
                     "Command locale (`$commandLocale`) does not match interaction locale (`$interactionLocale`)"
@@ -47,8 +47,8 @@ public class I18nTestExtension : Extension() {
                 description = "Translated banana"
 
                 action {
-                    val commandLocale = getLocale()
-                    val interactionLocale = event.interaction.locale?.asJavaLocale()
+                    val commandLocale = resolvedLocale.await()
+                    val interactionLocale = Locale(event.interaction.userLocale.locale)
 
                     assert(commandLocale == interactionLocale) {
                         "Command locale (`$commandLocale`) does not match interaction locale (`$interactionLocale`)"
@@ -71,8 +71,8 @@ public class I18nTestExtension : Extension() {
                     description = "Translated banana"
 
                     action {
-                        val commandLocale = getLocale()
-                        val interactionLocale = event.interaction.locale?.asJavaLocale()
+                        val commandLocale = resolvedLocale.await()
+                        val interactionLocale = Locale(event.interaction.userLocale.locale)
 
                         assert(commandLocale == interactionLocale) {
                             "Command locale (`$commandLocale`) does not match interaction locale (`$interactionLocale`)"
@@ -102,9 +102,7 @@ internal class I18nTestArguments : Arguments() {
         name = "command.fruit"
         description = "command.fruit"
         autoComplete {
-            suggestString {
-                listOf("Banana", "Apple", "Cherry").forEach { choice(it, it) }
-            }
+            replyChoiceStrings("Banana", "Apple", "Cherry")
         }
     }
 }

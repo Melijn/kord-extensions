@@ -5,7 +5,6 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
 
 package com.kotlindiscord.kord.extensions.modules.unsafe.commands
 
@@ -15,26 +14,23 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
 import com.kotlindiscord.kord.extensions.modules.unsafe.contexts.UnsafeUserCommandContext
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.InitialUserCommandResponse
-import com.kotlindiscord.kord.extensions.modules.unsafe.types.respondEphemeral
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.respondPublic
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.interaction.respondPublic
-import dev.kord.core.behavior.interaction.response.EphemeralMessageInteractionResponseBehavior
-import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.UserCommandInteractionCreateEvent
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Like a standard user command, but with less safety features. **/
 @UnsafeAPI
 public class UnsafeUserCommand(
-    extension: Extension
+    extension: Extension,
 ) : UserCommand<UnsafeUserCommandContext>(extension) {
     /** Initial response type. Change this to decide what happens when this user command action is executed. **/
     public var initialResponse: InitialUserCommandResponse = InitialUserCommandResponse.EphemeralAck
 
-    override suspend fun call(event: UserCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: UserContextInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         emitEventAsync(UnsafeUserCommandInvocationEvent(this, event))
 
         try {
@@ -50,9 +46,11 @@ public class UnsafeUserCommand(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
-                settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }
+            event.interaction.reply(
+                MessageCreate {
+                    settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
+                }
+            ).setEphemeral(true).await()
 
             emitEventAsync(UnsafeUserCommandFailedChecksEvent(this, event, e.reason))
 
@@ -60,23 +58,25 @@ public class UnsafeUserCommand(
         }
 
         val response = when (val r = initialResponse) {
-            is InitialUserCommandResponse.EphemeralAck -> event.interaction.deferEphemeralResponseUnsafe()
-            is InitialUserCommandResponse.PublicAck -> event.interaction.deferPublicResponseUnsafe()
+            is InitialUserCommandResponse.EphemeralAck -> event.interaction.deferReply(true).await()
+            is InitialUserCommandResponse.PublicAck -> event.interaction.deferReply(false).await()
 
-            is InitialUserCommandResponse.EphemeralResponse -> event.interaction.respondEphemeral {
-                r.builder!!(event)
-            }
+            is InitialUserCommandResponse.EphemeralResponse -> event.interaction.reply(
+                MessageCreate {
+                    r.builder(this, event)
+                }
+            ).setEphemeral(true).await()
 
-            is InitialUserCommandResponse.PublicResponse -> event.interaction.respondPublic {
-                r.builder!!(event)
-            }
+            is InitialUserCommandResponse.PublicResponse -> event.interaction.reply(
+                MessageCreate {
+                    r.builder(this, event)
+                }
+            ).setEphemeral(true).await()
 
             is InitialUserCommandResponse.None -> null
         }
 
         val context = UnsafeUserCommandContext(event, this, response, cache)
-
-        context.populate()
 
         firstSentryBreadcrumb(context)
 
@@ -108,14 +108,10 @@ public class UnsafeUserCommand(
     override suspend fun respondText(
         context: UnsafeUserCommandContext,
         message: String,
-        failureType: FailureReason<*>
+        failureType: FailureReason<*>,
     ) {
         when (context.interactionResponse) {
-            is PublicMessageInteractionResponseBehavior -> context.respondPublic {
-                settings.failureResponseBuilder(this, message, failureType)
-            }
-
-            is EphemeralMessageInteractionResponseBehavior -> context.respondEphemeral {
+            is InteractionHook -> context.respondPublic {
                 settings.failureResponseBuilder(this, message, failureType)
             }
         }

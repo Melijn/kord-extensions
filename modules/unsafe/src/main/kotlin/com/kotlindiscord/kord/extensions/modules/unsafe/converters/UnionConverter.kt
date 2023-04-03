@@ -5,7 +5,6 @@
  */
 
 @file:OptIn(
-    KordPreview::class,
     ConverterToDefaulting::class,
     ConverterToMulti::class,
     ConverterToOptional::class
@@ -22,10 +21,9 @@ import com.kotlindiscord.kord.extensions.commands.converters.*
 import com.kotlindiscord.kord.extensions.i18n.TranslationsProvider
 import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
 import com.kotlindiscord.kord.extensions.parser.StringParser
-import dev.kord.common.annotation.KordPreview
-import dev.kord.core.entity.interaction.OptionValue
-import dev.kord.rest.builder.interaction.OptionsBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import org.koin.core.component.inject
 
 @UnsafeAPI
@@ -36,7 +34,6 @@ private typealias GenericConverter = Converter<*, *, *, *>
  *
  * This converter does not support optional or defaulting converters.
  */
-@OptIn(KordPreview::class)
 @UnsafeAPI
 public class UnionConverter(
     private val converters: Collection<GenericConverter>,
@@ -183,10 +180,10 @@ public class UnionConverter(
         return 0
     }
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+    override suspend fun toSlashOption(arg: Argument<*>): OptionData =
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
+    override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
         for (converter in converters) {
             @Suppress("TooGenericExceptionCaught")
             when (converter) {
@@ -330,6 +327,7 @@ public fun Arguments.union(
  *
  * @see UnionConverter
  */
+@OptIn(ConverterToOptional::class)
 @UnsafeAPI
 public fun Arguments.optionalUnion(
     displayName: String,

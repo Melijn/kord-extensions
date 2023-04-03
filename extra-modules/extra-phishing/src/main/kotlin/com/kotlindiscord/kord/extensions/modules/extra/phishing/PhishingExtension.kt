@@ -8,7 +8,6 @@
 
 package com.kotlindiscord.kord.extensions.modules.extra.phishing
 
-import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.isNotBot
@@ -20,27 +19,28 @@ import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.getJumpUrl
-import dev.kord.core.behavior.ban
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.channel.GuildMessageChannel
-import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.event.message.MessageUpdateEvent
-import dev.kord.rest.builder.message.create.embed
+import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.network.sockets.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.MessageUpdateEvent
+import net.dv8tion.jda.api.utils.AttachedFile
 import org.jsoup.Jsoup
+import java.awt.Color
+import java.util.concurrent.TimeUnit
 
 /** The maximum number of redirects to attempt to follow for a URL. **/
 const val MAX_REDIRECTS = 5
@@ -66,7 +66,7 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
 
         domainCache.addAll(api.getAllDomains())
 
-        event<MessageCreateEvent> {
+        event<MessageReceivedEvent> {
             check { isNotBot() }
             check { anyGuild() }
 
@@ -92,7 +92,7 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
             }
 
             action {
-                handleMessage(event.message.asMessage())
+                handleMessage(event.message)
             }
         }
 
@@ -104,17 +104,15 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
             }
 
             action {
-                for (message in targetMessages) {
-                    val matches = parseDomains(message.content)
+                val matches = parseDomains(targetMessage.contentRaw)
 
-                    respond {
-                        content = if (matches.isNotEmpty()) {
-                            "⚠️ [Message ${message.id.value}](${message.getJumpUrl()}) " +
-                                "**contains ${matches.size} phishing link/s**."
-                        } else {
-                            "✅ [Message ${message.id.value}](${message.getJumpUrl()}) " +
-                                "**does not contain any phishing links**."
-                        }
+                respond {
+                    content = if (matches.isNotEmpty()) {
+                        "⚠️ [Message ${targetMessage.id}](${targetMessage.jumpUrl}) " +
+                            "**contains ${matches.size} phishing link/s**."
+                    } else {
+                        "✅ [Message ${targetMessage.id}](${targetMessage.jumpUrl}) " +
+                            "**does not contain any phishing links**."
                     }
                 }
             }
@@ -141,41 +139,41 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
     }
 
     internal suspend fun handleMessage(message: Message) {
-        val matches = parseDomains(message.content)
+        val matches = parseDomains(message.contentRaw)
 
         if (matches.isNotEmpty()) {
             logger.debug { "Found a message with ${matches.size} phishing domains." }
 
             if (settings.notifyUser) {
-                message.kord.launch {
-                    message.author!!.dm {
+                TaskConfig.coroutineScope.launch {
+                    message.author.dm {
                         content = "We've detected that the following message contains a phishing domain. For this " +
                             "reason, **${settings.detectionAction.message}**."
 
                         embed {
                             title = "Phishing domain detected"
-                            description = message.content
-                            color = DISCORD_RED
+                            description = message.contentRaw
+                            color = Color.RED.rgb
 
                             field {
                                 inline = true
 
                                 name = "Channel"
-                                value = message.channel.mention
+                                value = message.channel.asMention
                             }
 
                             field {
                                 inline = true
 
                                 name = "Message ID"
-                                value = "`${message.id.value}`"
+                                value = "`${message.id}`"
                             }
 
                             field {
                                 inline = true
 
                                 name = "Server"
-                                value = message.getGuild().name
+                                value = message.guild.name
                             }
                         }
                     }
@@ -184,18 +182,19 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
 
             when (settings.detectionAction) {
                 DetectionAction.Ban -> {
-                    message.getAuthorAsMember()!!.ban {
-                        reason = "Message contained a phishing domain"
-                    }
-
-                    message.delete("Message contained a phishing domain")
+                    message.member?.guild
+                        ?.ban(message.author, 10, TimeUnit.MINUTES)
+                        ?.reason("Message contained a phishing domain")
+                        ?.await()
                 }
 
-                DetectionAction.Delete -> message.delete("Message contained a phishing domain")
+                DetectionAction.Delete -> message.delete().reason("Message contained a phishing domain").queue()
 
                 DetectionAction.Kick -> {
-                    message.getAuthorAsMember()!!.kick("Message contained a phishing domain")
-                    message.delete("Message contained a phishing domain")
+                    message.member?.guild
+                        ?.kick(message.author)
+                        ?.reason("Message contained a phishing domain")
+                        ?.await()
                 }
 
                 DetectionAction.LogOnly -> {
@@ -207,19 +206,15 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
         }
     }
 
-    internal suspend fun logDeletion(message: Message, matches: Set<String>) {
-        val guild = message.getGuild()
+    internal fun logDeletion(message: Message, matches: Set<String>) {
+        val guild = message.guild
 
-        val channel = message
-            .getGuild()
-            .channels
-            .filter { it.name == settings.logChannelName }
-            .lastOrNull()
-            ?.asChannelOrNull() as? GuildMessageChannel
+        val channel = guild
+            .channels.lastOrNull { it.name == settings.logChannelName } as? GuildMessageChannel
 
         if (channel == null) {
             logger.warn {
-                "Unable to find a channel named ${settings.logChannelName} on ${guild.name} (${guild.id.value})"
+                "Unable to find a channel named ${settings.logChannelName} on ${guild.name} (${guild.id})"
             }
 
             return
@@ -229,24 +224,22 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
             "**Total:** ${matches.size}\n\n" +
             matches.joinToString("\n") { "* `$it`" }
 
-        channel.createMessage {
-            addFile(
-                "matches.md",
-                ChannelProvider { matchList.byteInputStream().toByteReadChannel() }
-            )
+        channel.sendMessage(
+            MessageCreate {
+            files += AttachedFile.fromData(matchList.byteInputStream(), "matches.md")
 
             embed {
                 title = "Phishing domain detected"
-                description = message.content
-                color = DISCORD_RED
+                description = message.contentRaw
+                color = Color.RED.rgb
 
                 field {
                     inline = true
 
                     name = "Author"
-                    value = "${message.author!!.mention} (" +
-                        "`${message.author!!.tag}` / " +
-                        "`${message.author!!.id.value}`" +
+                    value = "${message.author.asMention} (" +
+                        "`${message.author.asTag}` / " +
+                        "`${message.author.id}`" +
                         ")"
                 }
 
@@ -254,14 +247,14 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
                     inline = true
 
                     name = "Channel"
-                    value = "${message.channel.mention} (`${message.channelId.value}`)"
+                    value = "${message.channel.asMention} (`${message.channel.id}`)"
                 }
 
                 field {
                     inline = true
 
                     name = "Message"
-                    value = "[`${message.id.value}`](${message.getJumpUrl()})"
+                    value = "[`${message.id}`](${message.jumpUrl})"
                 }
 
                 field {
@@ -272,6 +265,7 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
                 }
             }
         }
+        )
     }
 
     internal suspend fun parseDomains(content: String): MutableSet<String> {

@@ -5,7 +5,6 @@
  */
 
 @file:Suppress("TooGenericExceptionCaught")
-@file:OptIn(KordUnsafe::class)
 
 package com.kotlindiscord.kord.extensions.modules.unsafe.commands
 
@@ -19,22 +18,20 @@ import com.kotlindiscord.kord.extensions.modules.unsafe.types.respondEphemeral
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.respondPublic
 import com.kotlindiscord.kord.extensions.types.FailureReason
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
-import dev.kord.common.annotation.KordUnsafe
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.interaction.respondPublic
-import dev.kord.core.behavior.interaction.response.EphemeralMessageInteractionResponseBehavior
-import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
-import dev.kord.core.event.interaction.MessageCommandInteractionCreateEvent
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 /** Like a standard message command, but with less safety features. **/
 @UnsafeAPI
 public class UnsafeMessageCommand(
-    extension: Extension
+    extension: Extension,
 ) : MessageCommand<UnsafeMessageCommandContext>(extension) {
     /** Initial response type. Change this to decide what happens when this message command action is executed. **/
     public var initialResponse: InitialMessageCommandResponse = InitialMessageCommandResponse.EphemeralAck
 
-    override suspend fun call(event: MessageCommandInteractionCreateEvent, cache: MutableStringKeyedMap<Any>) {
+    override suspend fun call(event: MessageContextInteractionEvent, cache: MutableStringKeyedMap<Any>) {
         emitEventAsync(UnsafeMessageCommandInvocationEvent(this, event))
 
         try {
@@ -49,9 +46,11 @@ public class UnsafeMessageCommand(
                 return
             }
         } catch (e: DiscordRelayedException) {
-            event.interaction.respondEphemeral {
-                settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
-            }
+            event.interaction.reply(
+                MessageCreate {
+                    settings.failureResponseBuilder(this, e.reason, FailureReason.ProvidedCheckFailure(e))
+                }
+            ).setEphemeral(true).await()
 
             emitEventAsync(UnsafeMessageCommandFailedChecksEvent(this, event, e.reason))
 
@@ -59,23 +58,25 @@ public class UnsafeMessageCommand(
         }
 
         val response = when (val r = initialResponse) {
-            is InitialMessageCommandResponse.EphemeralAck -> event.interaction.deferEphemeralResponseUnsafe()
-            is InitialMessageCommandResponse.PublicAck -> event.interaction.deferPublicResponseUnsafe()
+            is InitialMessageCommandResponse.EphemeralAck -> event.interaction.deferReply(true).await()
+            is InitialMessageCommandResponse.PublicAck -> event.interaction.deferReply(false).await()
 
-            is InitialMessageCommandResponse.EphemeralResponse -> event.interaction.respondEphemeral {
-                r.builder!!(event)
-            }
+            is InitialMessageCommandResponse.EphemeralResponse -> event.interaction.reply(
+                MessageCreate {
+                    r.builder(this, event)
+                }
+            ).setEphemeral(true).await()
 
-            is InitialMessageCommandResponse.PublicResponse -> event.interaction.respondPublic {
-                r.builder!!(event)
-            }
+            is InitialMessageCommandResponse.PublicResponse -> event.interaction.reply(
+                MessageCreate {
+                    r.builder(this, event)
+                }
+            ).await()
 
             is InitialMessageCommandResponse.None -> null
         }
 
         val context = UnsafeMessageCommandContext(event, this, response, cache)
-
-        context.populate()
 
         firstSentryBreadcrumb(context)
 
@@ -107,14 +108,14 @@ public class UnsafeMessageCommand(
     override suspend fun respondText(
         context: UnsafeMessageCommandContext,
         message: String,
-        failureType: FailureReason<*>
+        failureType: FailureReason<*>,
     ) {
         when (context.interactionResponse) {
-            is PublicMessageInteractionResponseBehavior -> context.respondPublic {
+            is InteractionHook -> context.respondPublic {
                 settings.failureResponseBuilder(this, message, failureType)
             }
 
-            is EphemeralMessageInteractionResponseBehavior -> context.respondEphemeral {
+            else -> context.respondEphemeral {
                 settings.failureResponseBuilder(this, message, failureType)
             }
         }

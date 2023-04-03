@@ -6,30 +6,28 @@
 
 package com.kotlindiscord.kord.extensions.modules.extra.mappings.configuration
 
-import dev.kord.common.entity.Snowflake
-
 /**
  * Simple config adapter interface, which you can implement yourself if you need some kind of alternative config
  * backend.
  */
 interface MappingsConfigAdapter {
     /** Get a list of category IDs mappings commands are explicitly allowed in. **/
-    suspend fun getAllowedCategories(): List<Snowflake>
+    suspend fun getAllowedCategories(): List<Long>
 
     /** Get a list of category IDs mappings commands are explicitly disallowed in. **/
-    suspend fun getBannedCategories(): List<Snowflake>
+    suspend fun getBannedCategories(): List<Long>
 
     /** Get a list of channel IDs mappings commands are explicitly allowed in. **/
-    suspend fun getAllowedChannels(): List<Snowflake>
+    suspend fun getAllowedChannels(): List<Long>
 
     /** Get a list of channel IDs mappings commands are explicitly disallowed in. **/
-    suspend fun getBannedChannels(): List<Snowflake>
+    suspend fun getBannedChannels(): List<Long>
 
     /** Get a list of guild IDs mappings commands are explicitly allowed in. **/
-    suspend fun getAllowedGuilds(): List<Snowflake>
+    suspend fun getAllowedGuilds(): List<Long>
 
     /** Get a list of guild IDs mappings commands are explicitly disallowed in. **/
-    suspend fun getBannedGuilds(): List<Snowflake>
+    suspend fun getBannedGuilds(): List<Long>
 
     /** Get a list of enabled mappings namespaces. **/
     suspend fun getEnabledNamespaces(): List<String>

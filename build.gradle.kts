@@ -58,6 +58,7 @@ subprojects {
     tasks.withType<KotlinCompile> {
         kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
         kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.contracts.ExperimentalContracts"
+        kotlinOptions.freeCompilerArgs += "-Xskip-prerelease-check"
     }
 
     repositories {

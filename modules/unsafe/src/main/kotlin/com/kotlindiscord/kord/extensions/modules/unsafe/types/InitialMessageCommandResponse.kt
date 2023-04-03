@@ -6,9 +6,10 @@
 
 package com.kotlindiscord.kord.extensions.modules.unsafe.types
 
-import com.kotlindiscord.kord.extensions.commands.application.message.InitialEphemeralMessageResponseBuilder
-import com.kotlindiscord.kord.extensions.commands.application.message.InitialPublicMessageResponseBuilder
 import com.kotlindiscord.kord.extensions.modules.unsafe.annotations.UnsafeAPI
+import dev.minn.jda.ktx.messages.InlineMessage
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 
 /** Sealed class representing the initial response types for an unsafe message command. **/
 @UnsafeAPI
@@ -27,7 +28,9 @@ public sealed class InitialMessageCommandResponse {
      *
      * @param builder Response builder, containing the message content.
      */
-    public data class EphemeralResponse(val builder: InitialEphemeralMessageResponseBuilder) :
+    public data class EphemeralResponse(
+        val builder: InlineMessage<MessageCreateData>.(MessageContextInteractionEvent) -> Unit
+    ) :
         InitialMessageCommandResponse()
 
     /**
@@ -35,6 +38,8 @@ public sealed class InitialMessageCommandResponse {
      *
      * @param builder Response builder, containing the message content.
      **/
-    public data class PublicResponse(val builder: InitialPublicMessageResponseBuilder) :
+    public data class PublicResponse(
+        val builder: InlineMessage<MessageCreateData>.(MessageContextInteractionEvent) -> Unit
+    ) :
         InitialMessageCommandResponse()
 }

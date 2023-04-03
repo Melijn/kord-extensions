@@ -14,8 +14,8 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.utils.suggestStringMap
-import dev.kord.core.entity.Attachment
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.interactions.commands.Command
 
 public class ArgumentTestExtension : Extension() {
     override val name: String = "test-args"
@@ -55,10 +55,10 @@ public class ArgumentTestExtension : Extension() {
             action {
                 respond {
                     content = buildString {
-                        append("You attached: ${arguments.file.filename}.")
+                        append("You attached: ${arguments.file.fileName}.")
 
                         arguments.optionalFile?.let {
-                            append("\nYou also attached: ${it.filename}")
+                            append("\nYou also attached: ${it.fileName}")
                         }
                     }
                 }
@@ -72,12 +72,10 @@ public class ArgumentTestExtension : Extension() {
             description = "Text to receive"
 
             autoComplete {
-                suggestStringMap(
-                    mapOf(
-                        "one" to "One",
-                        "two" to "Two",
-                        "three" to "Three"
-                    )
+                this.replyChoices(
+                    Command.Choice("one", "one"),
+                    Command.Choice("two", "Two"),
+                    Command.Choice("three", "Three"),
                 )
             }
         }
@@ -100,12 +98,12 @@ public class ArgumentTestExtension : Extension() {
     }
 
     public inner class AttachmentArguments : Arguments() {
-        public val file: Attachment by attachment {
+        public val file: Message.Attachment by attachment {
             name = "file"
             description = "An attached file."
         }
 
-        public val optionalFile: Attachment? by optionalAttachment {
+        public val optionalFile: Message.Attachment? by optionalAttachment {
             name = "optional_file"
             description = "An optional file."
         }

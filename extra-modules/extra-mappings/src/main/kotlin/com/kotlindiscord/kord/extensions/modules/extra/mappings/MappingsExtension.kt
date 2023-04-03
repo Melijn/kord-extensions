@@ -28,7 +28,6 @@ import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import com.kotlindiscord.kord.extensions.plugins.extra.MappingsPlugin
 import com.kotlindiscord.kord.extensions.sentry.BreadcrumbType
 import com.kotlindiscord.kord.extensions.types.respond
-import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.withContext
@@ -36,6 +35,7 @@ import me.shedaniel.linkie.*
 import me.shedaniel.linkie.namespaces.*
 import me.shedaniel.linkie.utils.*
 import mu.KotlinLogging
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import kotlin.collections.set
 import kotlin.error
 import kotlin.io.path.Path
@@ -229,8 +229,8 @@ class MappingsExtension : Extension() {
                                     title = pageTitle
 
                                     footer {
-                                        text = PAGE_FOOTER
-                                        icon = PAGE_FOOTER_ICON
+                                        name = PAGE_FOOTER
+                                        iconUrl = PAGE_FOOTER_ICON
                                     }
                                 }
                             )
@@ -239,9 +239,9 @@ class MappingsExtension : Extension() {
                         val paginator = PublicResponsePaginator(
                             pages = pagesObj,
                             keepEmbed = true,
-                            owner = event.interaction.user,
+                            owner = event.interaction.user.idLong,
                             timeoutSeconds = getTimeout(),
-                            locale = getLocale(),
+                            locale = resolvedLocale.await(),
                             interaction = interactionResponse
                         )
 
@@ -323,8 +323,8 @@ class MappingsExtension : Extension() {
                             title = pageTitle
 
                             footer {
-                                text = PAGE_FOOTER
-                                icon = PAGE_FOOTER_ICON
+                                name = PAGE_FOOTER
+                                iconUrl = PAGE_FOOTER_ICON
                             }
                         }
                     )
@@ -333,9 +333,9 @@ class MappingsExtension : Extension() {
                 val paginator = PublicResponsePaginator(
                     pages = pagesObj,
                     keepEmbed = true,
-                    owner = event.interaction.user,
+                    owner = event.interaction.user.idLong,
                     timeoutSeconds = getTimeout(),
-                    locale = getLocale(),
+                    locale = resolvedLocale.await(),
                     interaction = interactionResponse
                 )
 
@@ -390,8 +390,8 @@ class MappingsExtension : Extension() {
                             title = pageTitle
 
                             footer {
-                                text = PAGE_FOOTER
-                                icon = PAGE_FOOTER_ICON
+                                name = PAGE_FOOTER
+                                iconUrl = PAGE_FOOTER_ICON
                             }
                         }
                     )
@@ -400,9 +400,9 @@ class MappingsExtension : Extension() {
                 val paginator = PublicResponsePaginator(
                     pages = pagesObj,
                     keepEmbed = true,
-                    owner = event.interaction.user,
+                    owner = event.interaction.user.idLong,
                     timeoutSeconds = getTimeout(),
-                    locale = getLocale(),
+                    locale = resolvedLocale.await(),
                     interaction = interactionResponse
                 )
 
@@ -491,8 +491,8 @@ class MappingsExtension : Extension() {
                             title = pageTitle
 
                             footer {
-                                text = PAGE_FOOTER
-                                icon = PAGE_FOOTER_ICON
+                                name = PAGE_FOOTER
+                                iconUrl = PAGE_FOOTER_ICON
                             }
                         }
                     )
@@ -501,9 +501,9 @@ class MappingsExtension : Extension() {
                 val paginator = PublicResponsePaginator(
                     pages = pagesObj,
                     keepEmbed = true,
-                    owner = event.interaction.user,
+                    owner = event.interaction.user.idLong,
                     timeoutSeconds = getTimeout(),
-                    locale = getLocale(),
+                    locale = resolvedLocale.await(),
                     interaction = interactionResponse
                 )
 
@@ -632,8 +632,8 @@ class MappingsExtension : Extension() {
                                 title = pageTitle
 
                                 footer {
-                                    text = PAGE_FOOTER
-                                    icon = PAGE_FOOTER_ICON
+                                    name = PAGE_FOOTER
+                                    iconUrl = PAGE_FOOTER_ICON
                                 }
                             }
                         )
@@ -642,9 +642,9 @@ class MappingsExtension : Extension() {
                     val paginator = PublicResponsePaginator(
                         pages = pagesObj,
                         keepEmbed = true,
-                        owner = event.interaction.user,
+                        owner = event.interaction.user.idLong,
                         timeoutSeconds = getTimeout(),
-                        locale = getLocale(),
+                        locale = resolvedLocale.await(),
                         interaction = interactionResponse
                     )
 
@@ -742,7 +742,7 @@ class MappingsExtension : Extension() {
                     return@withContext
                 }
 
-                val pagesObj = Pages("${EXPAND_EMOJI.mention} for more")
+                val pagesObj = Pages("${EXPAND_EMOJI.asCodepoints} for more")
 
                 val plural = if (type == "class") "es" else "s"
                 val pageTitle = "List of ${container.name} $type$plural: ${container.version}"
@@ -757,15 +757,15 @@ class MappingsExtension : Extension() {
 
                 shortPages.forEach {
                     pagesObj.addPage(
-                        "${EXPAND_EMOJI.mention} for more",
+                        "${EXPAND_EMOJI.formatted} for more",
 
                         Page {
                             description = it
                             title = pageTitle
 
                             footer {
-                                text = PAGE_FOOTER
-                                icon = PAGE_FOOTER_ICON
+                                name = PAGE_FOOTER
+                                iconUrl = PAGE_FOOTER_ICON
                             }
                         }
                     )
@@ -774,15 +774,15 @@ class MappingsExtension : Extension() {
                 if (shortPages != longPages) {
                     longPages.forEach {
                         pagesObj.addPage(
-                            "${EXPAND_EMOJI.mention} for less",
+                            "${EXPAND_EMOJI.formatted} for less",
 
                             Page {
                                 description = it
                                 title = pageTitle
 
                                 footer {
-                                    text = PAGE_FOOTER
-                                    icon = PAGE_FOOTER_ICON
+                                    name = PAGE_FOOTER
+                                    iconUrl = PAGE_FOOTER_ICON
                                 }
                             }
                         )
@@ -795,9 +795,9 @@ class MappingsExtension : Extension() {
 
                 val paginator = PublicResponsePaginator(
                     pages = pagesObj,
-                    owner = event.interaction.user,
+                    owner = event.interaction.user.idLong,
                     timeoutSeconds = getTimeout(),
-                    locale = getLocale(),
+                    locale = resolvedLocale.await(),
                     interaction = interactionResponse
                 )
 
@@ -994,8 +994,8 @@ class MappingsExtension : Extension() {
                             title = pageTitle
 
                             footer {
-                                text = PAGE_FOOTER
-                                icon = PAGE_FOOTER_ICON
+                                name = PAGE_FOOTER
+                                iconUrl = PAGE_FOOTER_ICON
                             }
                         }
                     )
@@ -1007,9 +1007,9 @@ class MappingsExtension : Extension() {
 
                 val paginator = PublicResponsePaginator(
                     pages = pagesObj,
-                    owner = event.interaction.user,
+                    owner = event.interaction.user.idLong,
                     timeoutSeconds = getTimeout(),
-                    locale = getLocale(),
+                    locale = resolvedLocale.await(),
                     interaction = interactionResponse
                 )
 
@@ -1042,7 +1042,7 @@ class MappingsExtension : Extension() {
 
     private suspend fun getTimeout() = builder.config.getTimeout()
 
-    private suspend fun CheckContextWithCache<ChatInputCommandInteractionCreateEvent>.customChecks(
+    private suspend fun CheckContextWithCache<SlashCommandInteractionEvent>.customChecks(
         command: String,
         namespace: Namespace
     ) {

@@ -9,7 +9,7 @@ package com.kotlindiscord.kord.extensions.testbot.utils
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.DISCORD_YELLOW
-import dev.kord.common.Color
+import java.awt.Color
 
 @Suppress("PropertyName")
 public sealed class LogLevel(

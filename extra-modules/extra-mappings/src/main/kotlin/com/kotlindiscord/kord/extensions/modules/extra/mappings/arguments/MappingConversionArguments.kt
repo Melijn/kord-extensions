@@ -44,8 +44,8 @@ class MappingConversionArguments(enabledNamespaces: Map<String, String>) : Argum
         description = "Minecraft version to use for this query"
 
         autocompleteVersions {
-            val inputNamespace = command.options["input"]?.value?.toString()?.toNamespace()
-            val outputNamespace = command.options["output"]?.value?.toString()?.toNamespace()
+            val inputNamespace = this.options.firstOrNull { it.name == "input" }?.asString?.toNamespace()
+            val outputNamespace = this.options.firstOrNull { it.name == "output" }?.asString?.toNamespace()
 
             if (inputNamespace == null || outputNamespace == null) {
                 emptyList()

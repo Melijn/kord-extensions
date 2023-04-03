@@ -15,9 +15,12 @@ import com.kotlindiscord.kord.extensions.testbot.extensions.PaginatorTestExtensi
 import com.kotlindiscord.kord.extensions.testbot.utils.LogLevel
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.envOrNull
+import net.dv8tion.jda.api.interactions.DiscordLocale
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.requests.GatewayIntent.ALL_INTENTS
 import org.koin.core.logger.Level
 
-public val TEST_SERVER_ID: Snowflake = Snowflake(env("TEST_SERVER"))
+public val TEST_SERVER_ID: Long = env("TEST_SERVER").toLong()
 
 public suspend fun main() {
     LogLevel.enabledLevel = LogLevel.fromString(envOrNull("LOG_LEVEL") ?: "INFO") ?: LogLevel.INFO
@@ -36,17 +39,17 @@ public suspend fun main() {
         }
 
         intents {
-            +Intents.all
+            this.addAll(GatewayIntent.getIntents(ALL_INTENTS))
         }
 
         i18n {
             interactionUserLocaleResolver()
 
-            applicationCommandLocale(Locale.CHINESE_CHINA)
-            applicationCommandLocale(Locale.ENGLISH_GREAT_BRITAIN)
-            applicationCommandLocale(Locale.ENGLISH_UNITED_STATES)
-            applicationCommandLocale(Locale.GERMAN)
-            applicationCommandLocale(Locale.JAPANESE)
+            applicationCommandLocale(DiscordLocale.CHINESE_CHINA)
+            applicationCommandLocale(DiscordLocale.ENGLISH_UK)
+            applicationCommandLocale(DiscordLocale.ENGLISH_US)
+            applicationCommandLocale(DiscordLocale.GERMAN)
+            applicationCommandLocale(DiscordLocale.JAPANESE)
         }
 
         members {
@@ -63,14 +66,9 @@ public suspend fun main() {
                 logChannelName = "alerts"
             }
 
-            if (envOrNull("PLURALKIT_TESTING") != null) {
-                extPluralKit()
-            }
-
             add(::ArgumentTestExtension)
             add(::I18nTestExtension)
             add(::PaginatorTestExtension)
-            add(::PKTestExtension)
         }
 
         plugins {

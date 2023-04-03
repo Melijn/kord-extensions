@@ -10,26 +10,28 @@ import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.events.EventContext
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.testbot.TEST_SERVER_ID
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.channel.TextChannel
-import dev.kord.rest.builder.message.create.MessageCreateBuilder
-import dev.kord.rest.builder.message.create.embed
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.InlineMessage
+import dev.minn.jda.ktx.messages.MessageCreate
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 
 public typealias LogBody = (suspend () -> Any?)?
 
-public suspend fun Extension.logRaw(builder: MessageCreateBuilder.() -> Unit): Message? {
-    val channel = shardManager.getGuildOrNull(TEST_SERVER_ID)
+public suspend fun Extension.logRaw(builder: InlineMessage<MessageCreateData>.() -> Unit): Message? {
+    val channel = shardManager.getGuildById(TEST_SERVER_ID)
         ?.channels
         ?.filter { it is TextChannel }
         ?.first {
             it.name == "test-logs"
         }
 
-    return (channel as? TextChannel)?.createMessage(builder)
+    return (channel as? TextChannel)?.sendMessage(MessageCreate { builder() })?.await()
 }
 
 public suspend fun CommandContext.log(level: LogLevel, body: LogBody = null): Message? {
@@ -41,7 +43,7 @@ public suspend fun CommandContext.log(level: LogLevel, body: LogBody = null): Me
 
     return command.extension.logRaw {
         embed {
-            this.color = level.color
+            this.color = level.color?.rgb
 
             title = "[${level.name}] Command log: $commandName"
             description = desc
@@ -51,7 +53,7 @@ public suspend fun CommandContext.log(level: LogLevel, body: LogBody = null): Me
                 value = command.extension.name
             }
 
-            timestamp = Clock.System.now()
+            timestamp = Clock.System.now().toJavaInstant()
         }
     }
 }
@@ -81,7 +83,7 @@ public suspend fun EventContext<*>.log(
 
     return eventHandler.extension.logRaw {
         embed {
-            this.color = level.color
+            this.color = level.color?.rgb
 
             title = "[${level.name}] Event log: $eventClass"
             description = desc
@@ -91,7 +93,7 @@ public suspend fun EventContext<*>.log(
                 value = eventHandler.extension.name
             }
 
-            timestamp = Clock.System.now()
+            timestamp = Clock.System.now().toJavaInstant()
         }
     }
 }

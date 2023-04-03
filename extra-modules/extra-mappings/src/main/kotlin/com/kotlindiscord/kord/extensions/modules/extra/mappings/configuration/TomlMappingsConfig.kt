@@ -13,7 +13,6 @@ import com.kotlindiscord.kord.extensions.modules.extra.mappings.configuration.sp
 import com.uchuhimo.konf.Config
 import com.uchuhimo.konf.Feature
 import com.uchuhimo.konf.source.toml
-import dev.kord.common.entity.Snowflake
 import java.io.File
 
 /**
@@ -47,14 +46,14 @@ class TomlMappingsConfig : MappingsConfigAdapter {
             .from.prefixed("kordex.mappings").systemProperties()
     }
 
-    override suspend fun getAllowedCategories(): List<Snowflake> = config[CategoriesSpec.allowed]
-    override suspend fun getBannedCategories(): List<Snowflake> = config[CategoriesSpec.banned]
+    override suspend fun getAllowedCategories(): List<Long> = config[CategoriesSpec.allowed]
+    override suspend fun getBannedCategories(): List<Long> = config[CategoriesSpec.banned]
 
-    override suspend fun getAllowedChannels(): List<Snowflake> = config[ChannelsSpec.allowed]
-    override suspend fun getBannedChannels(): List<Snowflake> = config[ChannelsSpec.banned]
+    override suspend fun getAllowedChannels(): List<Long> = config[ChannelsSpec.allowed]
+    override suspend fun getBannedChannels(): List<Long> = config[ChannelsSpec.banned]
 
-    override suspend fun getAllowedGuilds(): List<Snowflake> = config[GuildsSpec.allowed]
-    override suspend fun getBannedGuilds(): List<Snowflake> = config[GuildsSpec.banned]
+    override suspend fun getAllowedGuilds(): List<Long> = config[GuildsSpec.allowed]
+    override suspend fun getBannedGuilds(): List<Long> = config[GuildsSpec.banned]
 
     override suspend fun getEnabledNamespaces(): List<String> = config[SettingsSpec.namespaces]
 

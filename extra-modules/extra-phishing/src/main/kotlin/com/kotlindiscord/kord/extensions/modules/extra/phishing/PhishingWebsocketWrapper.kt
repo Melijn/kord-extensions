@@ -9,7 +9,7 @@
 package com.kotlindiscord.kord.extensions.modules.extra.phishing
 
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import dev.kord.core.Kord
+import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.koin.core.component.inject
 
 /**
@@ -41,7 +42,7 @@ class PhishingWebsocketWrapper(
     private val logger = KotlinLogging.logger { }
     private var job: Job? = null
 
-    private val kord: Kord by inject()
+    private val kord: ShardManager by inject()
 
     internal val client = HttpClient {
         install(ContentNegotiation) {
@@ -59,7 +60,7 @@ class PhishingWebsocketWrapper(
     suspend fun start() {
         stop()
 
-        job = kord.launch {
+        job = TaskConfig.coroutineScope.launch {
             while (true) {
                 try {
                     websocket()
