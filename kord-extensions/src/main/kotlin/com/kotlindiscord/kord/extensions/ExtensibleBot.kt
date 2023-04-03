@@ -99,10 +99,6 @@ public open class ExtensibleBot(
 
 //        settings.cacheBuilder.dataCacheBuilder.invoke(kord, kord.cache)
 
-        builder.listener<Event> {
-            send(it)
-        }
-
         addDefaultExtensions()
     }
 
@@ -110,10 +106,12 @@ public open class ExtensibleBot(
     public open suspend fun start() {
         settings.hooksBuilder.runBeforeStart(this)
 
-        if (!initialized) registerListeners()
-
         val shardManager = getKoin().get<ShardManager>()
         shardManager.login()
+        if (!initialized) registerListeners()
+        shardManager.listener<Event> {
+            send(it)
+        }
 
         val (status, activity) = settings.presenceBuilder
         shardManager.setPresenceProvider(status, activity)

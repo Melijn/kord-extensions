@@ -60,6 +60,7 @@ ksp = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = 
 ktor-cn = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 kx-cor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kx-cor" }
 kx-ser = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kx-ser" }

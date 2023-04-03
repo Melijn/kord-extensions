@@ -26,6 +26,7 @@ dependencies {
     implementation(libs.ktor.logging)
     implementation(libs.ktor.cn)
     implementation(libs.ktor.json)
+    implementation(libs.ktor.okhttp)
 
     implementation(project(":kord-extensions"))
 }
