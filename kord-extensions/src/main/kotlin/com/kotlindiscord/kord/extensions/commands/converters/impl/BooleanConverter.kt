@@ -45,7 +45,7 @@ public class BooleanConverter(
     }
 
     override suspend fun toSlashOption(arg: Argument<*>): OptionData =
-        OptionData(OptionType.ATTACHMENT, arg.displayName, arg.description, required)
+        OptionData(OptionType.BOOLEAN, arg.displayName, arg.description, required)
 
     override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
         val optionValue = if (option.type == OptionType.BOOLEAN) option.asBoolean else return false
