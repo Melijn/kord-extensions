@@ -237,14 +237,14 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
         return when {
             subcommandGroup != null -> {
                 val group = this.groups[subcommandGroup] ?: error("Unknown command group: $subcommandGroup")
-                val firstSubCommandKey = eventCommand.name
+                val firstSubCommandKey = eventCommand.subcommandName
 
                 group.subCommands.firstOrNull { it.localizedName.default == firstSubCommandKey }
                     ?: error("Unknown subcommand: $firstSubCommandKey")
             }
 
             eventCommand.subcommandName != null -> {
-                val firstSubCommandKey = eventCommand.name
+                val firstSubCommandKey = eventCommand.subcommandName
 
                 this.subCommands.firstOrNull { it.localizedName.default == firstSubCommandKey }
                     ?: error("Unknown subcommand: $firstSubCommandKey")
