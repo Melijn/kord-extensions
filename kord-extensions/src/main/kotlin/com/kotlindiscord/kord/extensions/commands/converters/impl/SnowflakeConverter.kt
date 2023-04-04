@@ -50,10 +50,10 @@ public class SnowflakeConverter(
     }
 
     override suspend fun toSlashOption(arg: Argument<*>): OptionData =
-        OptionData(OptionType.INTEGER, arg.displayName, arg.description, required)
+        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
 
     override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
-        val optionValue = if (option.type == OptionType.INTEGER) option.asLong else return false
+        val optionValue = if (option.type == OptionType.STRING) option.asString else return false
 
         try {
             this.parsed = Snowflake(optionValue)
