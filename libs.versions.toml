@@ -16,7 +16,7 @@ koin = "3.2.0"
 konf = "1.1.2"
 
 jda-lib = "5.0.0-beta.6"
-jda-ktx = "17eb77a"
+jda-ktx = "9fc90f6"
 
 kotlinpoet = "1.12.0"
 ksp = "1.7.10-1.0.6"
