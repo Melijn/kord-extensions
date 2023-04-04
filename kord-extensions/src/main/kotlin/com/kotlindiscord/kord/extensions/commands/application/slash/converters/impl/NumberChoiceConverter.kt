@@ -60,7 +60,7 @@ public class NumberChoiceConverter(
     }
 
     override suspend fun toSlashOption(arg: Argument<*>): OptionData =
-        Option<String>(arg.displayName, arg.description, true).apply {
+        Option<Long>(arg.displayName, arg.description, true).apply {
             this@NumberChoiceConverter.choices.forEach { choice(it.key, it.value) }
         }
 

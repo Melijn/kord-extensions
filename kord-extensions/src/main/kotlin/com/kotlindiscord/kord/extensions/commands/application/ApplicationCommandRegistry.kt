@@ -13,6 +13,7 @@
 package com.kotlindiscord.kord.extensions.commands.application
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import com.kotlindiscord.kord.extensions.commands.Argument
 import com.kotlindiscord.kord.extensions.commands.application.message.MessageCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.SlashCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.SlashCommandParser
@@ -33,7 +34,6 @@ import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEven
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
-import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -68,11 +68,14 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
 
     /** Whether the initial sync has been finished, and commands should be registered directly. **/
     public var initialised: Boolean = false
+    public var initializing: Boolean = false
 
     /** Handles the initial registration of commands, after extensions have been loaded. **/
     public suspend fun initialRegistration() {
-        if (initialised) {
+        if (initialised || initializing) {
             return
+        } else {
+            initializing = true
         }
 
         val commands: MutableList<ApplicationCommand<*>> = mutableListOf()
@@ -90,6 +93,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
         }
 
         initialised = true
+        initializing = false
     }
 
     /** Called once the initial registration started and all extensions are loaded. **/
@@ -267,22 +271,22 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
 
             gwSession.upsertCommand(
                 Commands.user(name).apply {
-                logger.trace { "Adding/updating global ${command.type.name} command: $name" }
-                this.setNameLocalizations(nameLocalizations)
+                    logger.trace { "Adding/updating global ${command.type.name} command: $name" }
+                    this.setNameLocalizations(nameLocalizations)
 
-                this.register(locale, command)
-            }
+                    this.register(locale, command)
+                }
             ).await()
         } else {
             // We're registering guild-specific commands here, if the guild is available
 
             guild.upsertCommand(
                 Commands.user(name).apply {
-                logger.trace { "Adding/updating guild-specific ${command.type.name} command: $name" }
-                this.setNameLocalizations(nameLocalizations)
+                    logger.trace { "Adding/updating guild-specific ${command.type.name} command: $name" }
+                    this.setNameLocalizations(nameLocalizations)
 
-                this.register(locale, command)
-            }
+                    this.register(locale, command)
+                }
             ).await()
         }
 
@@ -308,22 +312,22 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
 
             gwSession.upsertCommand(
                 Commands.message(name).apply {
-                logger.trace { "Adding/updating global ${command.type.name} command: $name" }
-                this.setNameLocalizations(nameLocalizations)
+                    logger.trace { "Adding/updating global ${command.type.name} command: $name" }
+                    this.setNameLocalizations(nameLocalizations)
 
-                this.register(locale, command)
-            }
+                    this.register(locale, command)
+                }
             ).await()
         } else {
             // We're registering guild-specific commands here, if the guild is available
 
             guild.upsertCommand(
                 Commands.message(name).apply {
-                logger.trace { "Adding/updating guild-specific ${command.type.name} command: $name" }
-                this.setNameLocalizations(nameLocalizations)
+                    logger.trace { "Adding/updating guild-specific ${command.type.name} command: $name" }
+                    this.setNameLocalizations(nameLocalizations)
 
-                this.register(locale, command)
-            }
+                    this.register(locale, command)
+                }
             ).await()
         }
 
@@ -348,14 +352,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                 }
 
                 val option = converter.toSlashOption(arg)
-
-                option.translate(command)
-
-                if (arg.converter.genericBuilder.autoCompleteCallback != null) {
-                    option.choices.clear()
-                }
-
-                option.setAutoComplete(arg.converter.genericBuilder.autoCompleteCallback != null)
+                    .translatedWithAutocomplete(command, arg)
 
                 addOptions(option)
             }
@@ -369,14 +366,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                     }
 
                     val option = converter.toSlashOption(arg)
-
-                    option.translate(command)
-
-                    if (arg.converter.genericBuilder.autoCompleteCallback != null) {
-                        option.choices.clear()
-                    }
-
-                    option.setAutoComplete(arg.converter.genericBuilder.autoCompleteCallback != null)
+                        .translatedWithAutocomplete(command, arg)
 
                     option
                 }
@@ -392,7 +382,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                     this.setDescriptionLocalizations(descriptionLocalizations)
 
                     if (args != null) {
-                        this.options.addAll(args)
+                        this.addOptions(args)
                     }
                 }
             }
@@ -414,16 +404,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                             }
 
                             val option = converter.toSlashOption(arg)
-
-                            option.translate(command)
-
-                            if (
-                                arg.converter.genericBuilder.autoCompleteCallback != null
-                            ) {
-                                option.choices.clear()
-                            }
-
-                            option.setAutoComplete(arg.converter.genericBuilder.autoCompleteCallback != null)
+                                .translatedWithAutocomplete(command, arg)
 
                             option
                         }
@@ -439,7 +420,7 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
                             this.setDescriptionLocalizations(descriptionLocalizations)
 
                             if (args != null) {
-                                this.options.addAll(args)
+                                this.addOptions(args)
                             }
                         }
                     }
@@ -491,26 +472,24 @@ public abstract class ApplicationCommandRegistry : KordExKoinComponent {
 
     // endregion
 
-    private fun OptionData.translate(command: ApplicationCommand<*>) {
-        val (name, nameLocalizations) = command.localize(name, true)
+    private fun OptionData.translatedWithAutocomplete(command: ApplicationCommand<*>, arg: Argument<*>): OptionData {
+        val (localizedName, nameLocalizations) = command.localize(name, true)
+        val (localizedDescription, descriptionLocalizations) = command.localize(description)
 
-        this.name = name
-        this.setNameLocalizations(nameLocalizations)
+        val shouldAutoComplete = arg.converter.genericBuilder.autoCompleteCallback != null
+        val newData =
+            OptionData(this.type, localizedName, localizedDescription, this.isRequired, shouldAutoComplete).apply {
+                setNameLocalizations(nameLocalizations)
+                setDescriptionLocalizations(descriptionLocalizations)
 
-        val (description, descriptionLocalizations) = command.localize(description)
-
-        this.description = description
-        this.setDescriptionLocalizations(descriptionLocalizations)
-
-        if (type in arrayOf(OptionType.INTEGER, OptionType.NUMBER, OptionType.STRING) && choices.isNotEmpty()) {
-            val choicesList = choices
-            choices.clear()
-            choices.addAll(
-                choicesList.map {
-                val (_, choiceLocalizations) = command.localize(it.name)
-                it.setNameLocalizations(choiceLocalizations)
-            }.toMutableList()
-            )
-        }
+                if (!shouldAutoComplete) {
+                    val mappedChoices = this@translatedWithAutocomplete.choices.map {
+                        val (_, choiceLocalizations) = command.localize(it.name)
+                        it.setNameLocalizations(choiceLocalizations)
+                    }
+                    addChoices(mappedChoices)
+                }
+            }
+        return newData
     }
 }

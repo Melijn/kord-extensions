@@ -19,6 +19,7 @@ import com.kotlindiscord.kord.extensions.commands.application.user.UserCommand
 import com.kotlindiscord.kord.extensions.commands.getDefaultTranslatedDisplayName
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.updateCommands
+import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -26,6 +27,7 @@ import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEven
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.requests.ErrorResponse
+import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
 
 /** Registry for all Discord application commands. **/
 public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry() {
@@ -47,6 +49,7 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
         }
 
         try {
+            logger.debug { "Syncing all application commands.." }
             syncAll(true, commands)
         } catch (t: Throwable) {
             logger.error(t) { "Failed to synchronise application commands" }
@@ -65,6 +68,7 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
 
         groupedCommands.forEach {
             try {
+                logger.debug { "Syncing for: ${it.key?.toString() ?: "Global"}" }
                 sync(removeOthers, it.key, it.value)
             } catch (e: ErrorResponseException) {
                 logger.error(e) {
@@ -177,23 +181,50 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
 //            }
 //        }
 
-        val discordCommandList = gwSessions.updateCommands {
+        val builder: CommandListUpdateAction.() -> Unit = {
             for (cmd in commands) {
+                val (localizedName, nameLocalizations) = cmd.localizedName
+
                 val commandData = when (cmd) {
-                    is MessageCommand<*> -> Commands.message(cmd.name)
-                    is SlashCommand<*, *> -> Commands.slash(cmd.name, cmd.description)
-                    is UserCommand<*> -> Commands.user(cmd.name)
-                    else -> return logger.error {
-                        "Cannot register: $cmd because it is an unknown command implementation."
+                    is MessageCommand<*> -> Commands.message(localizedName).apply {
+                        this.setNameLocalizations(nameLocalizations)
+                        this.register(locale, cmd)
+                    }
+
+                    is SlashCommand<*, *> -> {
+                        val (localizedDescription, descriptionLocalizations) = cmd.localizedDescription
+                        Commands.slash(localizedName, localizedDescription).apply {
+                            this.setNameLocalizations(nameLocalizations)
+                            this.setDescriptionLocalizations(descriptionLocalizations)
+                            runBlocking { register(locale, cmd) }
+                        }
+                    }
+
+                    is UserCommand<*> -> Commands.user(cmd.name).apply {
+                        this.setNameLocalizations(nameLocalizations)
+                        this.register(locale, cmd)
+                    }
+                    else -> {
+                        logger.error {
+                            "Cannot register: $cmd because it is an unknown command implementation."
+                        }
+                        break
                     }
                 }
                 this.addCommands(
                     commandData.apply {
-                    cmd.fillCommandData()
-                }
+                        cmd.fillCommandData()
+                    }
                 )
             }
-        }.await()
+        }
+
+        val discordCommandList =
+            if (guild != null) {
+                guild.updateCommands(builder).await()
+            } else {
+                gwSessions.updateCommands(builder).await()
+            }
 
         for (appCmd in commands) {
             val match = discordCommandList.first { appCmd.matches(locale, it) }
@@ -263,13 +294,13 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
 //            }
 //        }
 //
-//        logger.info {
-//            if (guild == null) {
-//                "Finished synchronising global application commands"
-//            } else {
-//                "Finished synchronising application commands for guild ${guild.name}"
-//            }
-//        }
+        logger.info {
+            if (guild == null) {
+                "Finished synchronising global application commands"
+            } else {
+                "Finished synchronising application commands for guild ${guild.name}"
+            }
+        }
     }
 
     // endregion

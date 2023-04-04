@@ -40,14 +40,14 @@ public object TaskConfig {
         }
     }
 
-    private val executorService: ExecutorService = ForkJoinPool()
+    private val executorService: ExecutorService = ForkJoinPool(30)
 
     /** Default dispatcher. **/
     public val dispatcher: ExecutorCoroutineDispatcher = executorService.asCoroutineDispatcher()
 
     /** Default scheduledExecutorService. **/
     public val scheduledExecutorService: ScheduledExecutorService =
-        Executors.newScheduledThreadPool(15, threadFactory.invoke("Repeater"))
+        Executors.newScheduledThreadPool(30, threadFactory.invoke("Repeater"))
 
     /** Default coroutineScope. **/
     public val coroutineScope: CoroutineScope = CoroutineScope(dispatcher)

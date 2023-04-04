@@ -23,7 +23,6 @@ import com.kotlindiscord.kord.extensions.usagelimits.DiscriminatingContext
 import com.kotlindiscord.kord.extensions.usagelimits.cooldowns.CooldownType
 import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.RateLimit
 import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.RateLimitType
-import com.kotlindiscord.kord.extensions.utils.permissionsForMember
 import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import com.kotlindiscord.kord.extensions.utils.translate
 import kotlinx.coroutines.Job
@@ -32,6 +31,7 @@ import kotlinx.coroutines.sync.Mutex
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.koin.core.component.inject
 import java.util.*
 import kotlin.time.Duration
@@ -162,15 +162,14 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
         }
 
         val guild = context.guild ?: return
-        val perms = (
-            context
-            .channel as GuildChannel
+        val guildChannel = context.channel as GuildChannel
+        val effectivePermissions = Permission.getPermissions(
+            PermissionUtil.getEffectivePermission(guildChannel, guild.selfMember)
         )
-            .permissionsForMember(guild.selfMember)
 
-        val missingPerms = requiredPerms.filter { !perms.contains(it) }
-
-        if (missingPerms.isEmpty()) {
+        // create copy and subtract the permissions we have
+        val missingPerms = requiredPerms.toMutableSet().subtract(effectivePermissions)
+        if (missingPerms.isNotEmpty()) {
             throw DiscordRelayedException(
                 context.translate(
                     "commands.error.missingBotPermissions",

@@ -8,13 +8,10 @@ package com.kotlindiscord.kord.extensions.utils
 
 import dev.minn.jda.ktx.coroutines.await
 import mu.KotlinLogging
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Icon
-import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Webhook
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
-import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel
 import java.util.*
 
@@ -54,34 +51,12 @@ public suspend fun ensureWebhook(
 }
 
 /**
- * Given a guild channel, attempt to calculate the effective permissions for the member corresponding with
- * the given ID, checking the parent channel if this one happens to be a thread.
- *
- * @param memberId Member ID to calculate for
- */
-public suspend fun GuildChannel.permissionsForMember(memberId: Long): EnumSet<Permission> = when (this) {
-    is StandardGuildMessageChannel -> permissionsForMember(memberId)
-    is ThreadChannel -> parentChannel.permissionsForMember(memberId)
-
-    else -> error("Unsupported channel type for channel: $this")
-}
-
-/**
- * Given a guild channel, attempt to calculate the effective permissions for given user, checking the
- * parent channel if this one happens to be a thread.
- *
- * @param member Member to calculate for
- */
-public suspend fun GuildChannel.permissionsForMember(member: Member): EnumSet<Permission> =
-    permissionsForMember(member.idLong)
-
-/**
  * Convenience function that returns the thread's parent message, if it was created from one.
  *
  * If it wasn't, or the parent channel can't be found, this function returns `null`.
  */
 public suspend fun ThreadChannel.getParentMessage(): Message? {
-    val parentChannel = parentMessageChannel ?: return null
+    val parentChannel = parentMessageChannel
 
     return parentChannel.retrieveMessageById(this.id).await()
 }

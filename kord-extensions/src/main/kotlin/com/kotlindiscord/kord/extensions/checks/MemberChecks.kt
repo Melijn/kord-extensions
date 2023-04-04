@@ -9,7 +9,6 @@
 package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
-import com.kotlindiscord.kord.extensions.utils.permissionsForMember
 import com.kotlindiscord.kord.extensions.utils.translate
 import mu.KotlinLogging
 import net.dv8tion.jda.api.Permission
@@ -42,7 +41,7 @@ public suspend fun CheckContext<*>.hasPermission(perm: Permission) {
 
         val result = when {
             memberObj.hasPermission(Permission.ADMINISTRATOR) -> true
-            channel != null -> channel.permissionsForMember(member).contains(perm)
+            channel != null -> member.hasPermission(channel, perm)
 
             else -> memberObj.hasPermission(perm)
         }
@@ -91,7 +90,7 @@ public suspend fun CheckContext<*>.notHasPermission(perm: Permission) {
 
         val result = when {
             memberObj.hasPermission(Permission.ADMINISTRATOR) -> true
-            channel != null -> channel.permissionsForMember(member.idLong).contains(perm)
+            channel != null -> member.hasPermission(channel, perm)
 
             else -> memberObj.hasPermission(perm)
         }

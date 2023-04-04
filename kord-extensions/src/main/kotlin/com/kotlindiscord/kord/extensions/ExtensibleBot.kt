@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import mu.KLogger
 import mu.KotlinLogging
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.Event
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent
@@ -33,7 +34,6 @@ import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInterac
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
-import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.session.SessionDisconnectEvent
 import net.dv8tion.jda.api.requests.GatewayIntent
@@ -107,7 +107,11 @@ public open class ExtensibleBot(
         settings.hooksBuilder.runBeforeStart(this)
 
         val shardManager = getKoin().get<ShardManager>()
-        shardManager.login()
+        shardManager.login() // before login no commands can be loaded due to a jda bug
+
+        loadInterspersedExtensions()
+
+        // at this point all extensions should be loaded, otherwise individual commands will be registered
         if (!initialized) registerListeners()
         shardManager.listener<Event> {
             send(it)
@@ -115,6 +119,23 @@ public open class ExtensibleBot(
 
         val (status, activity) = settings.presenceBuilder
         shardManager.setPresenceProvider(status, activity)
+    }
+
+    public open suspend fun loadInterspersedExtensions() {
+        @Suppress("TooGenericExceptionCaught")
+        settings.extensionsBuilder.extensions.forEach {
+            try {
+                addExtension(it)
+            } catch (e: Exception) {
+                logger.error(e) {
+                    "Failed to set up extension: $it"
+                }
+            }
+        }
+
+        if (settings.pluginBuilder.enabled) {
+            settings.startPlugins()
+        }
     }
 
     /**
@@ -162,12 +183,8 @@ public open class ExtensibleBot(
             }
         }
 
-        on<SessionDisconnectEvent> {
-            logger.warn { "Disconnected: $closeCode" }
-        }
-
-        on<GenericComponentInteractionCreateEvent> {
-//            getKoin().get<ComponentRegistry>().handle(this)
+        shardManager.listener<SessionDisconnectEvent> {
+            logger.warn { "Disconnected: ${it.closeCode}" }
         }
 
 //        on<SelectMenuInteractionCreateEvent> {
@@ -175,8 +192,8 @@ public open class ExtensibleBot(
 //        }
 
         if (settings.chatCommandsBuilder.enabled) {
-            on<MessageReceivedEvent> {
-                getKoin().get<ChatCommandRegistry>().handleEvent(this)
+            shardManager.listener<MessageReceivedEvent> {
+                getKoin().get<ChatCommandRegistry>().handleEvent(it)
             }
         } else {
             logger.debug {
@@ -186,23 +203,40 @@ public open class ExtensibleBot(
         }
 
         if (settings.applicationCommandsBuilder.enabled) {
-            on<SlashCommandInteractionEvent> {
-                getKoin().get<ApplicationCommandRegistry>().handle(this)
+            shardManager.listener<SlashCommandInteractionEvent> {
+                getKoin().get<ApplicationCommandRegistry>().handle(it)
             }
 
-            on<MessageContextInteractionEvent> {
-                getKoin().get<ApplicationCommandRegistry>().handle(this)
+            shardManager.listener<MessageContextInteractionEvent> {
+                getKoin().get<ApplicationCommandRegistry>().handle(it)
             }
 
-            on<UserContextInteractionEvent> {
-                getKoin().get<ApplicationCommandRegistry>().handle(this)
+            shardManager.listener<UserContextInteractionEvent> {
+                getKoin().get<ApplicationCommandRegistry>().handle(it)
             }
 
-            on<CommandAutoCompleteInteractionEvent> {
-                getKoin().get<ApplicationCommandRegistry>().handle(this)
+            shardManager.listener<CommandAutoCompleteInteractionEvent> {
+                getKoin().get<ApplicationCommandRegistry>().handle(it)
             }
 
-            getKoin().get<ApplicationCommandRegistry>().initialRegistration()
+            shardManager.listener<GuildReadyEvent> { event ->
+                val shardManager = event.jda.shardManager
+                val applicationCommandRegistry = getKoin().get<ApplicationCommandRegistry>()
+                val guilds = HashSet<Long>()
+
+                extensions.values.forEach { extension ->
+                    extension.slashCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
+                    extension.userCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
+                    extension.messageCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
+                }
+
+                if (guilds.all { id ->
+                        shardManager?.getGuildById(id) != null
+                    } || shardManager?.shards?.all { it.status == JDA.Status.CONNECTED } == true
+                ) {
+                    applicationCommandRegistry.initialRegistration()
+                }
+            }
         } else {
             logger.debug {
                 "Application command support is disabled - set `enabled` to `true` in the " +

@@ -106,7 +106,7 @@ public class UserConverter(
         OptionData(OptionType.USER, arg.displayName, arg.description, required)
 
     override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
-        val optionValue = if (option.type == OptionType.USER) option.asUser else null ?: return false
+        val optionValue = if (option.type == OptionType.USER) option.asUser else return false
         this.parsed = optionValue
         return true
     }

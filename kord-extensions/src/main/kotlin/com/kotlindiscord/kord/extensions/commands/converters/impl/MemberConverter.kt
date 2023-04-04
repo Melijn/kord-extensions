@@ -134,7 +134,7 @@ public class MemberConverter(
     }
 
     override suspend fun toSlashOption(arg: Argument<*>): OptionData =
-        OptionData(OptionType.STRING, arg.displayName, arg.description, required)
+        OptionData(OptionType.USER, arg.displayName, arg.description, required)
 
     override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
         val optionValue = if (option.type == OptionType.USER) option.asMember ?: return false else return false
