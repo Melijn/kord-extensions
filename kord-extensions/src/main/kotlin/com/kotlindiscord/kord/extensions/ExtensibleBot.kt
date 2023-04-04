@@ -91,7 +91,7 @@ public open class ExtensibleBot(
         val builder = settings.kordBuilder(token) {
             val intents = mutableListOf<GatewayIntent>()
             settings.intentsBuilder?.invoke(intents)
-//            settings.kordHooks.forEach { it() }
+            settings.kordHooks.forEach { it() }
             setEnabledIntents(intents)
         }
 
