@@ -8,17 +8,21 @@ package com.kotlindiscord.kord.extensions.pagination
 
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.events.listener
 import dev.minn.jda.ktx.messages.MessageEdit
 import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Class representing a button-based paginator that operates by editing the given ephemeral interaction response.
  *
  * @param interaction Interaction response behaviour to work with.
  */
-public class EphemeralResponsePaginator(
+public open class InteractionPaginator(
     pages: Pages,
     owner: Long? = null,
     timeoutSeconds: Long? = null,
@@ -26,7 +30,7 @@ public class EphemeralResponsePaginator(
     bundle: String? = null,
     locale: Locale? = null,
 
-    public val interaction: InteractionHook,
+    public var interaction: InteractionHook,
 ) : BaseButtonPaginator(pages, owner, timeoutSeconds, true, switchEmoji, bundle, locale) {
     /** Whether this paginator has been set up for the first time. **/
     public var isSetup: Boolean = false
@@ -40,15 +44,25 @@ public class EphemeralResponsePaginator(
             updateButtons()
         }
 
-        interaction.editOriginal(
+        message = interaction.editOriginal(
             MessageEdit {
-            embed { applyPage() }
+                embed { applyPage() }
 
-            with(this@EphemeralResponsePaginator.components) {
                 this@MessageEdit.applyToMessage()
             }
-        }
+        ).await()
+
+        println("Updated pagination message ${message!!.idLong}")
+
+        val oldListener = listener
+        listener = kord.listener<ButtonInteractionEvent>(
+            timeout = timeoutSeconds?.seconds,
+            consumer = {
+                interaction = it.interaction.hook
+                buttonClickHandler(this, it)
+            }
         )
+        oldListener?.cancel()
     }
 
     override suspend fun destroy() {
@@ -60,11 +74,11 @@ public class EphemeralResponsePaginator(
 
         interaction.editOriginal(
             MessageEdit {
-            embed { applyPage() }
+                embed { applyPage() }
 
-            this.builder.setComponents(mutableListOf())
-        }
-        )
+                this.builder.setComponents(mutableListOf())
+            }
+        ).await()
 
         super.destroy()
     }
@@ -72,10 +86,10 @@ public class EphemeralResponsePaginator(
 
 /** Convenience function for creating an interaction button paginator from a paginator builder. **/
 @Suppress("FunctionNaming")  // Factory function
-public fun EphemeralResponsePaginator(
+public fun InteractionPaginator(
     builder: PaginatorBuilder,
-    interaction: InteractionHook
-): EphemeralResponsePaginator = EphemeralResponsePaginator(
+    interaction: InteractionHook,
+): InteractionPaginator = InteractionPaginator(
     pages = builder.pages,
     owner = builder.owner,
     timeoutSeconds = builder.timeoutSeconds,

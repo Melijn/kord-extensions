@@ -9,11 +9,14 @@ package com.kotlindiscord.kord.extensions.pagination
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.events.listener
 import dev.minn.jda.ktx.messages.MessageCreate
 import dev.minn.jda.ktx.messages.MessageEdit
 import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Class representing a button-based paginator that operates by creating and editing a follow-up message for the
@@ -25,13 +28,12 @@ public class PublicFollowUpPaginator(
     pages: Pages,
     owner: Long? = null,
     timeoutSeconds: Long? = null,
-    keepEmbed: Boolean = true,
+    override val keepEmbed: Boolean = true,
     switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
     bundle: String? = null,
     locale: Locale? = null,
-
-    public val interaction: InteractionHook,
-) : BaseButtonPaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
+    interaction: InteractionHook,
+) : InteractionPaginator(pages, owner, timeoutSeconds, switchEmoji, bundle, locale, interaction) {
     /** Follow-up interaction to use for this paginator's embeds. Will be created by [send]. **/
     public var sent: Boolean = false
 
@@ -39,27 +41,34 @@ public class PublicFollowUpPaginator(
         if (!sent) {
             setup()
 
-            interaction.sendMessage(
+            message = interaction.sendMessage(
                 MessageCreate {
-                embed { applyPage() }
-                with(this@PublicFollowUpPaginator.components) {
+                    embed { applyPage() }
+
                     this@MessageCreate.applyToMessage()
                 }
-            }
             ).await()
+            sent = true
         } else {
             updateButtons()
 
-            interaction.editOriginal(
+            message = interaction.editOriginal(
                 MessageEdit {
-                embed { applyPage() }
+                    embed { applyPage() }
 
-                with(this@PublicFollowUpPaginator.components) {
                     this@MessageEdit.applyToMessage()
                 }
-            }
             ).await()
         }
+        val oldListener = listener
+        listener = kord.listener<ButtonInteractionEvent>(
+            timeout = timeoutSeconds?.seconds,
+            consumer = {
+                interaction = it.interaction.deferEdit().await()
+                buttonClickHandler(this, it)
+            }
+        )
+        oldListener?.cancel()
     }
 
     override suspend fun destroy() {
@@ -74,10 +83,10 @@ public class PublicFollowUpPaginator(
         } else {
             interaction.editOriginal(
                 MessageEdit {
-                embed { applyPage() }
+                    embed { applyPage() }
 
-                this.builder.setComponents(mutableListOf())
-            }
+                    this.builder.setComponents(mutableListOf())
+                }
             ).await()
         }
 
@@ -89,7 +98,7 @@ public class PublicFollowUpPaginator(
 @Suppress("FunctionNaming")  // Factory function
 public fun PublicFollowUpPaginator(
     builder: PaginatorBuilder,
-    interaction: InteractionHook
+    interaction: InteractionHook,
 ): PublicFollowUpPaginator = PublicFollowUpPaginator(
     pages = builder.pages,
     owner = builder.owner,

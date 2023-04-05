@@ -8,7 +8,6 @@ package com.kotlindiscord.kord.extensions.pagination
 
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
-import dev.minn.jda.ktx.messages.MessageEdit
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
@@ -22,54 +21,13 @@ public class PublicResponsePaginator(
     pages: Pages,
     owner: Long? = null,
     timeoutSeconds: Long? = null,
-    keepEmbed: Boolean = true,
+    override val keepEmbed: Boolean = true,
     switchEmoji: Emoji = if (pages.groups.size == 2) EXPAND_EMOJI else SWITCH_EMOJI,
     bundle: String? = null,
     locale: Locale? = null,
 
-    public val interaction: InteractionHook,
-) : BaseButtonPaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
-    /** Whether this paginator has been set up for the first time. **/
-    public var isSetup: Boolean = false
-
-    override suspend fun send() {
-        if (!isSetup) {
-            isSetup = true
-
-            setup()
-        } else {
-            updateButtons()
-        }
-
-        interaction.editOriginal(
-            MessageEdit {
-                embed { applyPage() }
-
-                with(this@PublicResponsePaginator.components) {
-                    this@MessageEdit.applyToMessage()
-                }
-            }
-        )
-    }
-
-    override suspend fun destroy() {
-        if (!active) {
-            return
-        }
-
-        active = false
-
-        interaction.editOriginal(
-            MessageEdit {
-                embed { applyPage() }
-
-                this.builder.setComponents(mutableListOf())
-            }
-        )
-
-        super.destroy()
-    }
-}
+    interaction: InteractionHook,
+) : InteractionPaginator(pages, owner, timeoutSeconds, switchEmoji, bundle, locale, interaction)
 
 /** Convenience function for creating an interaction button paginator from a paginator builder. **/
 @Suppress("FunctionNaming")  // Factory function

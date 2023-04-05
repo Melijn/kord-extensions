@@ -6,7 +6,7 @@
 
 package com.kotlindiscord.kord.extensions.types
 
-import com.kotlindiscord.kord.extensions.pagination.EphemeralResponsePaginator
+import com.kotlindiscord.kord.extensions.pagination.InteractionPaginator
 import com.kotlindiscord.kord.extensions.pagination.PublicFollowUpPaginator
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import dev.minn.jda.ktx.coroutines.await
@@ -54,12 +54,12 @@ public inline fun EphemeralInteractionContext.editingPaginator(
     defaultGroup: String = "",
     locale: Locale? = null,
     builder: (PaginatorBuilder).() -> Unit
-): EphemeralResponsePaginator {
+): InteractionPaginator {
     val pages = PaginatorBuilder(locale = locale, defaultGroup = defaultGroup)
 
     builder(pages)
 
-    return EphemeralResponsePaginator(pages, interactionResponse)
+    return InteractionPaginator(pages, interactionResponse)
 }
 
 /** Create a paginator that creates a follow-up message, and edits that. **/

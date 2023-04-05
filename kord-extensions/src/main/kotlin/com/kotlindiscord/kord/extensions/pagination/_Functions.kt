@@ -44,10 +44,10 @@ public inline fun InteractionHook.ephemeralEditingPaginator(
     defaultGroup: String = "",
     locale: Locale? = null,
     builder: (PaginatorBuilder).() -> Unit
-): EphemeralResponsePaginator {
+): InteractionPaginator {
     val pages = PaginatorBuilder(locale = locale, defaultGroup = defaultGroup)
 
     builder(pages)
 
-    return EphemeralResponsePaginator(pages, this)
+    return InteractionPaginator(pages, this)
 }

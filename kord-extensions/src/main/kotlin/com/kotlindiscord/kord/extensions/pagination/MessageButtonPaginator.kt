@@ -9,12 +9,16 @@ package com.kotlindiscord.kord.extensions.pagination
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.pagination.pages.Pages
 import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.events.listener
 import dev.minn.jda.ktx.messages.MessageCreate
 import dev.minn.jda.ktx.messages.MessageEdit
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 import java.util.*
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Class representing a button-based paginator that operates on standard messages.
@@ -36,6 +40,9 @@ public class MessageButtonPaginator(
     public val targetChannel: MessageChannel? = null,
     public val targetMessage: Message? = null,
 ) : BaseButtonPaginator(pages, owner, timeoutSeconds, keepEmbed, switchEmoji, bundle, locale) {
+
+    private var interaction: InteractionHook? = null
+
     init {
         if (targetChannel == null && targetMessage == null) {
             throw IllegalArgumentException("Must provide either a target channel or target message")
@@ -45,36 +52,41 @@ public class MessageButtonPaginator(
     /** Specific channel to send the paginator to. **/
     public val channel: MessageChannel = targetMessage?.channel ?: targetChannel!!
 
-    /** Message containing the paginator. **/
-    public var message: Message? = null
-
     override suspend fun send() {
         if (message == null) {
             setup()
 
             message = channel.sendMessage(
                 MessageCreate {
-                this.builder.mentionRepliedUser(pingInReply)
-                embed { applyPage() }
+                    this.builder.mentionRepliedUser(pingInReply)
+                    embed { applyPage() }
 
-                with(this@MessageButtonPaginator.components) {
                     this@MessageCreate.applyToMessage()
                 }
-            }
             ).setMessageReference(targetMessage?.id).await()
         } else {
             updateButtons()
 
-            message!!.editMessage(
-                MessageEdit {
+            val messageEdit = MessageEdit {
                 embed { applyPage() }
 
-                with(this@MessageButtonPaginator.components) {
-                    this@MessageEdit.applyToMessage()
-                }
+                this@MessageEdit.applyToMessage()
             }
-            )
+
+            if (interaction == null) {
+                message!!.editMessage(messageEdit).await()
+            } else {
+                interaction!!.editOriginal(messageEdit).await()
+            }
         }
+        listener?.cancel()
+        listener = kord.listener<ButtonInteractionEvent>(
+            timeout = timeoutSeconds?.seconds,
+            consumer = {
+                interaction = it.interaction.hook
+                buttonClickHandler(this, it)
+            }
+        )
     }
 
     override suspend fun destroy() {
@@ -85,14 +97,14 @@ public class MessageButtonPaginator(
         active = false
 
         if (!keepEmbed) {
-            message!!.delete()
+            message!!.delete().await()
         } else {
             message!!.editMessage(
                 MessageEdit {
-                embed { applyPage() }
+                    embed { applyPage() }
 
-                this.builder.setComponents(mutableListOf())
-            }
+                    this.builder.setComponents(mutableListOf())
+                }
             ).mentionRepliedUser(pingInReply).await()
         }
 
@@ -107,7 +119,7 @@ public fun MessageButtonPaginator(
     targetChannel: MessageChannel? = null,
     targetMessage: Message? = null,
 
-    builder: PaginatorBuilder
+    builder: PaginatorBuilder,
 ): MessageButtonPaginator =
     MessageButtonPaginator(
         pages = builder.pages,
