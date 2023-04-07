@@ -86,15 +86,24 @@ public abstract class SlashCommand<C : SlashCommandContext<*, A>, A : Arguments>
     }
 
     /**
-     * Does not support translations because discord doesn't support them either.
      * @param locale does not have effect here
+     *
      * @return the highest ancestor's name followed by its children's names.
+     *
+     * This does not support translations because discord currently doesn't support them either.
      */
     override fun getFullName(locale: Locale?): String {
         val parentCmd = parentCommand
         val parentGrp = parentGroup
-        if (parentCmd != null) return "${parentCmd.getFullName()} $name"
-        if (parentGrp != null) return "${parentGrp.parent.getFullName()} ${parentGrp.name} $name"
+
+        if (parentCmd != null) {
+            return "${parentCmd.getFullName()} $name"
+        }
+
+        if (parentGrp != null) {
+            return "${parentGrp.parent.getFullName()} ${parentGrp.name} $name"
+        }
+
         return name
     }
 

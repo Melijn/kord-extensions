@@ -83,17 +83,13 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
     /** Translation cache, so we don't have to look up translations every time. **/
     public open val nameTranslationCache: MutableMap<Locale, String> = mutableMapOf()
 
-    /**
-     * @suppress
-     */
-    public open val cooldownMap: MutableMap<CooldownType, suspend (context: DiscriminatingContext) -> Duration> =
-        HashMap()
+    /** Command specific cooldown lambdas, stored per [CooldownType], use [cooldown] to set these. **/
+    public open val cooldowns: MutableMap<CooldownType, suspend (context: DiscriminatingContext) -> Duration> =
+        mutableMapOf()
 
-    /**
-     * @suppress
-     */
-    public open val ratelimitMap: MutableMap<RateLimitType, suspend (context: DiscriminatingContext) -> RateLimit> =
-        HashMap()
+    /** Command specific ratelimit lambdas, stored per [RateLimitType], use [ratelimit] to set these. **/
+    public open val ratelimits: MutableMap<RateLimitType, suspend (context: DiscriminatingContext) -> RateLimit> =
+        mutableMapOf()
 
     // region: DSL functions
 
@@ -101,23 +97,23 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
      * Defines a cooldown for this command.
      *
      * @param cooldownType The type of cooldown.
-     * @param func Can be run when the cooldown gets updated.
+     * @param func Used for retrieving a context specific cooldown.
      */
     public open fun cooldown(cooldownType: CooldownType, func: suspend (context: DiscriminatingContext) -> Duration) {
-        cooldownMap[cooldownType] = func
+        cooldowns[cooldownType] = func
     }
 
     /**
      * Defines a rateLimit for this command.
      *
      * @param rateLimitType The type of rateLimit.
-     * @param func Can be run when the usageHistory gets updated.
+     * @param func Used for retrieving a context specific cooldown.
      */
     public open fun ratelimit(
         rateLimitType: RateLimitType,
         func: suspend (context: DiscriminatingContext) -> RateLimit,
     ) {
-        ratelimitMap[rateLimitType] = func
+        ratelimits[rateLimitType] = func
     }
 
     // endregion

@@ -99,6 +99,7 @@ public class PublicUserCommand(
             }
 
             handleError(context, t)
+            return
         }
 
         onSuccessUseLimitUpdate(context, invocationEvent, true)

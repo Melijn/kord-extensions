@@ -13,12 +13,17 @@ import com.kotlindiscord.kord.extensions.testbot.extensions.ArgumentTestExtensio
 import com.kotlindiscord.kord.extensions.testbot.extensions.I18nTestExtension
 import com.kotlindiscord.kord.extensions.testbot.extensions.PaginatorTestExtension
 import com.kotlindiscord.kord.extensions.testbot.utils.LogLevel
+import com.kotlindiscord.kord.extensions.usagelimits.CachedCommandLimitTypes
+import com.kotlindiscord.kord.extensions.usagelimits.cooldowns.DefaultCooldownHandler
+import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.DefaultRateLimiter
+import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.RateLimit
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import net.dv8tion.jda.api.interactions.DiscordLocale
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.requests.GatewayIntent.ALL_INTENTS
 import org.koin.core.logger.Level
+import kotlin.time.Duration.Companion.seconds
 
 public val TEST_SERVER_ID: Long = env("TEST_SERVER").toLong()
 
@@ -36,6 +41,20 @@ public suspend fun main() {
 
         applicationCommands {
             defaultGuild(TEST_SERVER_ID)
+
+            useLimiter {
+                // NOTE: You might want to use the same instances for these between chatCommands and
+                // application commands.
+                // If you use separate instances, the limits will not be shared between the two command types.
+                cooldownHandler = DefaultCooldownHandler()
+                rateLimiter = DefaultRateLimiter()
+
+                // Example cooldown, users can only run  command every 5 seconds, per-server
+                cooldown(CachedCommandLimitTypes.CommandUserGuild) { 5.seconds }
+
+                // Example ratelimit, there can only be 20 commands ran in a channel during the last 60 seconds.
+                ratelimit(CachedCommandLimitTypes.GlobalChannel) { RateLimit(true, 20, 60.seconds) }
+            }
         }
 
         intents {

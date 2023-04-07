@@ -7,165 +7,163 @@
 package com.kotlindiscord.kord.extensions.usagelimits.cooldowns
 
 import com.kotlindiscord.kord.extensions.commands.CommandContext
-import com.kotlindiscord.kord.extensions.usagelimits.CachedUsageLimitType
+import com.kotlindiscord.kord.extensions.usagelimits.CachedCommandLimitTypes
 import com.kotlindiscord.kord.extensions.usagelimits.DiscriminatingContext
-import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.RateLimitType
-import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.UsageHistory
-import dev.minn.jda.ktx.coroutines.await
-import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import com.kotlindiscord.kord.extensions.usagelimits.sendEphemeralMessage
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
 import net.dv8tion.jda.api.utils.TimeFormat
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-/** Default [CooldownHandler] implementation, serves as a usable example, it is however very opinionated, so you might
- * want to create your own implementation. **/
+/**
+ * Default [CooldownHandler] implementation, serves as a usable example, it is however very opinionated, so you might
+ * want to create your own implementation.
+ */
 public open class DefaultCooldownHandler : CooldownHandler {
 
     /** Cooldown settings provider, collects configured settings for cooldowns. **/
     public open var cooldownProvider: CooldownProvider = DefaultCooldownProvider()
 
-    /** Holds the message back-off duration, if the user triggered a cooldown within [backOffTime] ago and now,
-     * no message will be sent as the user is considered spamming and wasting our discord api uses. **/
-    public open var backOffTime: Duration = 10.seconds
+    /**
+     * Holds the message back-off duration, if the user triggered a cooldown within [backOffTimeSpan] ago and now,
+     * no message will be sent.
+     */
+    public open var backOffTimeSpan: Duration = 10.seconds
 
     /**
      * Checks if the command should not be run due to a cooldown.
-     * If it is on cooldown it saves the cooldown hit and responds with an info message if there was no cooldown hit
-     * in the last [backOffTime].
+     * Sends a message to the user if a cooldown is hit and [shouldSendMessage] returns true.
      *
-     * Mutates the associated [UsageHistory] of various [UsageLimitTypes][CachedUsageLimitType]
+     * Mutates the associated [CooldownHistory] of [previously used][DefaultCooldownProvider.getCooldownTypes]
+     * [cooldownTypes][CooldownType] to reflect the current system state.
      *
-     * @return true if the command is on cooldown, false if not on cooldown.
+     * @return true if the command is on cooldown, false otherwise.
      */
     override suspend fun checkCommandOnCooldown(context: DiscriminatingContext): Boolean {
-        val hitCooldowns = ArrayList<Triple<CooldownType, UsageHistory, Long>>()
-        val currentTime = System.currentTimeMillis()
-        val encapsulateStart = currentTime - backOffTime.inWholeMilliseconds
+        val cooldownTypes = cooldownProvider.getCooldownTypes(null, context)
+        val hitCooldowns = ArrayList<Triple<CooldownType, CooldownHistory, Instant>>()
+        val currentTime = Clock.System.now()
+        val encapsulateStart = currentTime - backOffTimeSpan
+
         var shouldSendMessage = true
 
-        for (type in CachedUsageLimitType.values()) {
+        for (type in cooldownTypes) {
             val until = type.getCooldown(context)
-            val usageHistory = type.getUsageHistory(context)
+            val cooldownHistory = type.getCooldownUsageHistory(context)
 
-            // keeps only the crossedCooldowns which are in the cooldowns range.
-            usageHistory.removeExpiredCrossedCooldowns(encapsulateStart)
+            // keeps only the cooldownHits which are in the cooldowns range.
+            cooldownHistory.removeExpiredCooldownHits(encapsulateStart)
 
             if (until > currentTime) {
-                if (!shouldSendMessage(until, usageHistory, type)) shouldSendMessage = false
-                usageHistory.addCrossedCooldown(currentTime)
+                if (!shouldSendMessage(until, cooldownHistory, type)) {
+                    shouldSendMessage = false
+                }
 
-                hitCooldowns.add(Triple(type, usageHistory, until))
+                cooldownHistory.addCooldownHit(currentTime)
+                hitCooldowns.add(Triple(type, cooldownHistory, until))
             }
 
-            type.setUsageHistory(context, usageHistory)
+            type.setCooldownUsageHistory(context, cooldownHistory)
         }
 
         if (shouldSendMessage) {
-            val (maxType, maxUsageHistory, maxUntil) = hitCooldowns.maxByOrNull {
-                it.third
-            } ?: return false
+            val (
+                maxType, maxUsageHistory, maxUntil,
+            ) = hitCooldowns.maxByOrNull { it.third } ?: return false
+
             sendCooldownMessage(context, maxType, maxUsageHistory, maxUntil)
         }
 
         return hitCooldowns.isNotEmpty()
     }
 
-    /**
-     * @return true if an "on cooldown" message should be sent, false otherwise.
-     */
+    /** @return true if there was no cooldown hit in the last [backOffTimeSpan], false otherwise. **/
+    @Suppress("UnnecessaryParentheses")
     override suspend fun shouldSendMessage(
-        cooldownUntil: Long,
-        usageHistory: UsageHistory,
-        type: RateLimitType,
+        cooldownUntil: Instant,
+        usageHistory: CooldownHistory,
+        type: CooldownType,
     ): Boolean =
-        @Suppress("UnnecessaryParentheses")
-        (usageHistory.crossedCooldowns.lastOrNull() ?: 0) < System.currentTimeMillis() - backOffTime.inWholeMilliseconds
+        (usageHistory.cooldownHits.lastOrNull() ?: Instant.DISTANT_PAST) < Clock.System.now() - backOffTimeSpan
 
     /**
-     * Sends a message in the discord channel where the command was used with information about what cooldown
-     * was hit and when the user can use the/a command again.
+     * Sends a cooldown message in the discord channel where the command was used.
      *
      * The message wil be ephemeral for application commands.
      *
-     * @param context the [DiscriminatingContext] that caused this ratelimit hit
-     * @param usageHistory the involved [UsageHistory]
-     * @param cooldownUntil the involved [epochMillis][Long] timestamp which indicated when the cooldown will end
+     * @param context the [DiscriminatingContext] that caused this cooldown
+     * @param type the [CooldownType] that was hit
+     * @param usageHistory the current [CooldownHistory] for this [type]
+     * @param cooldownUntil when the cooldown will be over
      */
     override suspend fun sendCooldownMessage(
         context: DiscriminatingContext,
         type: CooldownType,
-        usageHistory: UsageHistory,
-        cooldownUntil: Long,
+        usageHistory: CooldownHistory,
+        cooldownUntil: Instant,
     ) {
-        val discordTimeStamp = TimeFormat.RELATIVE.format(cooldownUntil)
-        val message = getMessage(context, discordTimeStamp, type)
+        val message = getMessage(context, cooldownUntil, type)
 
-        when (val discordEvent = context.event.event) {
-            is MessageReceivedEvent -> discordEvent.message.channel.sendMessage(message).await()
-            is GenericCommandInteractionEvent -> discordEvent.interaction.reply(message).setEphemeral(true).await()
-        }
+        context.event.event.sendEphemeralMessage(message)
     }
 
-    /** Returns a message with info about what cooldown has been hit. **/
+    /** @return Message about what cooldown has been hit. **/
     public open suspend fun getMessage(
         context: DiscriminatingContext,
-        discordTimeStamp: String,
+        cooldownUntil: Instant,
         type: CooldownType,
     ): String {
         val locale = context.locale()
         val translationsProvider = context.event.command.translationsProvider
         val commandName = context.event.command.getFullName(locale)
+        val discordTimeStamp = TimeFormat.RELATIVE.format(cooldownUntil.toJavaInstant())
+
         return when (type) {
-            CachedUsageLimitType.COMMAND_USER -> translationsProvider.translate(
+            CachedCommandLimitTypes.CommandUser -> translationsProvider.translate(
                 "cooldown.notifier.commandUser",
                 locale,
                 replacements = arrayOf(discordTimeStamp, commandName)
             )
 
-            CachedUsageLimitType.COMMAND_USER_CHANNEL -> translationsProvider.translate(
+            CachedCommandLimitTypes.CommandUserChannel -> translationsProvider.translate(
                 "cooldown.notifier.commandUserChannel",
                 locale,
                 replacements = arrayOf(discordTimeStamp, commandName, context.channel.asMention)
             )
 
-            CachedUsageLimitType.COMMAND_USER_GUILD -> translationsProvider.translate(
+            CachedCommandLimitTypes.CommandUserGuild -> translationsProvider.translate(
                 "cooldown.notifier.commandUserGuild",
                 locale,
                 replacements = arrayOf(discordTimeStamp, commandName)
             )
 
-            CachedUsageLimitType.GLOBAL_USER -> translationsProvider.translate(
+            CachedCommandLimitTypes.GlobalUser -> translationsProvider.translate(
                 "cooldown.notifier.globalUser",
                 locale,
                 replacements = arrayOf(discordTimeStamp)
             )
 
-            CachedUsageLimitType.GLOBAL_USER_CHANNEL -> translationsProvider.translate(
+            CachedCommandLimitTypes.GlobalUserChannel -> translationsProvider.translate(
                 "cooldown.notifier.globalUserChannel",
                 locale,
                 replacements = arrayOf(discordTimeStamp, context.channel.asMention)
             )
 
-            CachedUsageLimitType.GLOBAL_USER_GUILD -> translationsProvider.translate(
+            CachedCommandLimitTypes.GlobalUserGuild -> translationsProvider.translate(
                 "cooldown.notifier.globalUserGuild",
                 locale,
                 replacements = arrayOf(discordTimeStamp)
             )
 
-            CachedUsageLimitType.GLOBAL -> translationsProvider.translate(
-                "cooldown.notifier.global",
-                locale,
-                replacements = arrayOf(discordTimeStamp)
-            )
-
-            CachedUsageLimitType.GLOBAL_CHANNEL -> translationsProvider.translate(
+            CachedCommandLimitTypes.GlobalChannel -> translationsProvider.translate(
                 "cooldown.notifier.globalChannel",
                 locale,
                 replacements = arrayOf(discordTimeStamp, commandName)
             )
 
-            CachedUsageLimitType.GLOBAL_GUILD -> translationsProvider.translate(
+            CachedCommandLimitTypes.GlobalGuild -> translationsProvider.translate(
                 "cooldown.notifier.globalGuild",
                 locale,
                 replacements = arrayOf(discordTimeStamp)
@@ -179,22 +177,32 @@ public open class DefaultCooldownHandler : CooldownHandler {
         }
     }
 
+    /**
+     * Called after a command ran.
+     *
+     * Stores the longest cooldown for each [previously used][DefaultCooldownProvider.getCooldownTypes] [CooldownType].
+     *
+     * @param commandContext the [CommandContext] of the command that was executed
+     * @param context the [DiscriminatingContext] that caused this cooldown
+     * @param success true if the command was executed successfully, false otherwise
+     */
     override suspend fun onExecCooldownUpdate(
         commandContext: CommandContext,
         context: DiscriminatingContext,
         success: Boolean,
     ) {
-        if (!success) return
-        for (t in CachedUsageLimitType.values()) {
-            val u = commandContext.command.cooldownMap[t]
-            val commandDuration = u?.let { it(context) } ?: Duration.ZERO
-            val providedCooldown = cooldownProvider.getCooldown(context, t)
-            val progressiveCommandDuration = commandContext.cooldownCounters[t] ?: Duration.ZERO
+        if (!success) {
+            return
+        }
+        val cooldownTypes = cooldownProvider.getCooldownTypes(commandContext, context)
+        for (cooldownType in cooldownTypes) {
+            val longestCooldown = cooldownProvider.getCooldown(commandContext, context, cooldownType)
 
-            val cooldowns = arrayOf(commandDuration, providedCooldown, progressiveCommandDuration)
-            val longestDuration = cooldowns.max()
+            if (longestCooldown == Duration.ZERO) {
+                continue
+            }
 
-            t.setCooldown(context, System.currentTimeMillis() + longestDuration.inWholeMilliseconds)
+            cooldownType.setCooldown(context, Clock.System.now() + longestCooldown)
         }
     }
 }
