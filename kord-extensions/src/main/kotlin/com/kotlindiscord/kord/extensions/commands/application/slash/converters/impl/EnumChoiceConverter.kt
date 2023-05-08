@@ -30,7 +30,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
     types = [ConverterType.SINGLE, ConverterType.DEFAULTING, ConverterType.OPTIONAL, ConverterType.CHOICE],
     imports = [
-        "com.kotlindiscord.kord.extensions.commands.converters.impl.getEnum",
+        "com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.getEnum",
         "com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum"
     ],
 
