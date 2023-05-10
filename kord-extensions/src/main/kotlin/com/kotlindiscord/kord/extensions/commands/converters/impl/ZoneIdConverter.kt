@@ -17,27 +17,26 @@ import com.kotlindiscord.kord.extensions.parser.StringParser
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
 /**
- * Argument converter for zonedDateTime arguments.
+ * Argument converter for zoneId arguments.
  */
 @Converter(
-    "zonedDateTime",
+    "zoneId",
 
     types = [ConverterType.DEFAULTING, ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE]
 )
-public class ZonedDateTimeConverter(
-    override var validator: Validator<ZonedDateTime> = null
-) : SingleConverter<ZonedDateTime>() {
-    override val signatureTypeString: String = "converters.zonedDateTime.signatureType"
+public class ZoneIdConverter(
+    override var validator: Validator<ZoneId> = null,
+) : SingleConverter<ZoneId>() {
+    override val signatureTypeString: String = "converters.zoneId.signatureType"
 
     override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
         val arg: String = named ?: parser?.parseNext()?.data ?: return false
         this.parsed = parseFromString(arg) ?: throw DiscordRelayedException(
             context.translate(
-                "converters.zonedDateTime.error.invalid",
+                "converters.zoneId.error.invalid",
                 replacements = arrayOf(arg)
             )
         )
@@ -52,7 +51,7 @@ public class ZonedDateTimeConverter(
         val optionValue = if (option.type == OptionType.STRING) option.asString else return false
         this.parsed = parseFromString(optionValue) ?: throw DiscordRelayedException(
             context.translate(
-                "converters.zonedDateTime.error.invalid",
+                "converters.zoneId.error.invalid",
                 replacements = arrayOf(optionValue)
             )
         )
@@ -61,21 +60,10 @@ public class ZonedDateTimeConverter(
     }
 
     internal companion object {
-        internal fun parseFromString(string: String): ZonedDateTime? {
-            val parsers = listOf<DateTimeFormatter>(
-                DateTimeFormatter.ISO_INSTANT,
-                DateTimeFormatter.ISO_DATE_TIME,
-                DateTimeFormatter.RFC_1123_DATE_TIME
-            )
-            val parsed = parsers.firstNotNullOfOrNull {
-                try {
-                    val parse = it.parse(string)
-                    ZonedDateTime.from(parse)
-                } catch (e: Exception) {
-                    null
-                }
-            }
-            return parsed
+        internal fun parseFromString(string: String): ZoneId? = try {
+            ZoneId.of(string)
+        } catch (e: Exception) {
+            null
         }
     }
 }

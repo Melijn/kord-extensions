@@ -11,8 +11,6 @@ import kotlinx.datetime.Instant
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import java.time.ZoneId
-import java.time.ZoneOffset
 
 internal class TimestampConverterTest {
 
@@ -44,26 +42,5 @@ internal class TimestampConverterTest {
         val timestamp = "<t:1420070400:>"
         val parsed = TimestampConverter.parseFromString(timestamp)
         assertNull(parsed)
-    }
-
-    @Test
-    fun `zonedDateTime with offset and zone with daylightsaving`() {
-        val timestamp = "2011-12-03T10:15:30+01:00[Europe/Brussels]"
-        val parsed = ZonedDateTimeConverter.parseFromString(timestamp)
-        requireNotNull(parsed) {
-            "Failed to parse $timestamp"
-        }
-        assertEquals(parsed.zone, ZoneId.of("Europe/Brussels"))
-        assertEquals(parsed.year, 2011)
-        assertEquals(parsed.offset, ZoneOffset.ofHours(1))
-    }
-
-    @Test
-    fun `zonedDateTime with offset and incorrect zone with daylightsaving`() {
-        val timestamp = "2011-12-03T10:15:30+01:00[EuropeBrussels]"
-        val parsed = ZonedDateTimeConverter.parseFromString(timestamp)
-        require(parsed == null) {
-            "Parsed incorrect format"
-        }
     }
 }

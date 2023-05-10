@@ -17,27 +17,27 @@ import com.kotlindiscord.kord.extensions.parser.StringParser
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
-import java.time.ZonedDateTime
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
- * Argument converter for zonedDateTime arguments.
+ * Argument converter for dateTime arguments.
  */
 @Converter(
-    "zonedDateTime",
+    "dateTime",
 
     types = [ConverterType.DEFAULTING, ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE]
 )
-public class ZonedDateTimeConverter(
-    override var validator: Validator<ZonedDateTime> = null
-) : SingleConverter<ZonedDateTime>() {
-    override val signatureTypeString: String = "converters.zonedDateTime.signatureType"
+public class DateTimeConverter(
+    override var validator: Validator<LocalDateTime> = null
+) : SingleConverter<LocalDateTime>() {
+    override val signatureTypeString: String = "converters.dateTime.signatureType"
 
     override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
         val arg: String = named ?: parser?.parseNext()?.data ?: return false
         this.parsed = parseFromString(arg) ?: throw DiscordRelayedException(
             context.translate(
-                "converters.zonedDateTime.error.invalid",
+                "converters.dateTime.error.invalid",
                 replacements = arrayOf(arg)
             )
         )
@@ -52,7 +52,7 @@ public class ZonedDateTimeConverter(
         val optionValue = if (option.type == OptionType.STRING) option.asString else return false
         this.parsed = parseFromString(optionValue) ?: throw DiscordRelayedException(
             context.translate(
-                "converters.zonedDateTime.error.invalid",
+                "converters.dateTime.error.invalid",
                 replacements = arrayOf(optionValue)
             )
         )
@@ -61,8 +61,10 @@ public class ZonedDateTimeConverter(
     }
 
     internal companion object {
-        internal fun parseFromString(string: String): ZonedDateTime? {
+        internal fun parseFromString(string: String): LocalDateTime? {
             val parsers = listOf<DateTimeFormatter>(
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
                 DateTimeFormatter.ISO_INSTANT,
                 DateTimeFormatter.ISO_DATE_TIME,
                 DateTimeFormatter.RFC_1123_DATE_TIME
@@ -70,7 +72,7 @@ public class ZonedDateTimeConverter(
             val parsed = parsers.firstNotNullOfOrNull {
                 try {
                     val parse = it.parse(string)
-                    ZonedDateTime.from(parse)
+                    LocalDateTime.from(parse)
                 } catch (e: Exception) {
                     null
                 }
