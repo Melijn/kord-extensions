@@ -24,7 +24,7 @@ import java.time.format.DateTimeFormatter
  * Argument converter for instant arguments.
  */
 @Converter(
-    "instant",
+    "zonedDateTime",
 
     types = [ConverterType.DEFAULTING, ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE]
 )
