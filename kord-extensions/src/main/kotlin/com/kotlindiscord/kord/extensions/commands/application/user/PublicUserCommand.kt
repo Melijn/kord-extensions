@@ -67,8 +67,10 @@ public class PublicUserCommand(
 
         val response = if (initialResponseBuilder != null) {
             event.interaction.reply(MessageCreate { initialResponseBuilder!!(event) }).await()
-        } else {
+        } else if (this.deferByDefault) {
             event.interaction.deferReply().await()
+        } else {
+            event.interaction.hook
         }
 
         val context = PublicUserCommandContext(event, this, response, cache)

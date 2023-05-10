@@ -51,6 +51,9 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
     /** @suppress **/
     public open var guildId: Long? = settings.applicationCommandsBuilder.defaultGuild?.id
 
+    /** @suppress **/
+    public open var deferByDefault: Boolean = true
+
     /**
      * Whether to allow everyone to use this command by default.
      *
@@ -155,6 +158,11 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
     /** Registers this command as nsfw only, discord should then only show it in nsfw channels. **/
     public open fun nsfwOnly() {
         this.isNSFW = true
+    }
+
+    /** Disables automatically deferring the application command's interaction, you have 2 seconds to reply. **/
+    public open fun noDefer() {
+        this.deferByDefault = false
     }
 
     /** Specify a specific guild for this application command to be locked to. **/
