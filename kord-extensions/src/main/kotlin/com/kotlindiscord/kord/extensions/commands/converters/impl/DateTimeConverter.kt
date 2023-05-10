@@ -60,8 +60,11 @@ public class DateTimeConverter(
         return true
     }
 
-    internal companion object {
-        internal fun parseFromString(string: String): LocalDateTime? {
+    public companion object {
+        /**
+         * Parser for dateTime arguments.
+         */
+        public fun parseFromString(string: String): LocalDateTime? {
             val parsers = listOf<DateTimeFormatter>(
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
