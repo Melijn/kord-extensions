@@ -18,6 +18,7 @@ repositories {
 
 dependencies {
     detektPlugins(libs.detekt)
+    detektPlugins(libs.detekt.libraries)
 
     implementation(libs.jsoup)
 
