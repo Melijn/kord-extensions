@@ -15,14 +15,14 @@ import kotlinx.datetime.Instant
 public interface CooldownType {
 
     /** Gets the moment at which the cooldown will end or has ended. **/
-    public fun getCooldown(context: DiscriminatingContext): Instant
+    public suspend fun getCooldown(context: DiscriminatingContext): Instant
 
     /** Sets the future moment at which the cooldown will end. **/
-    public fun setCooldown(context: DiscriminatingContext, until: Instant)
+    public suspend fun setCooldown(context: DiscriminatingContext, until: Instant)
 
     /** Gets the cooldownHistory from this cooldownType using [DiscriminatingContext] properties. **/
-    public fun getCooldownUsageHistory(context: DiscriminatingContext): CooldownHistory
+    public suspend fun getCooldownUsageHistory(context: DiscriminatingContext): CooldownHistory
 
     /** Sets the cooldownHistory for this cooldownType using [DiscriminatingContext] properties. **/
-    public fun setCooldownUsageHistory(context: DiscriminatingContext, usageHistory: CooldownHistory)
+    public suspend fun setCooldownUsageHistory(context: DiscriminatingContext, usageHistory: CooldownHistory)
 }

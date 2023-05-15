@@ -17,8 +17,8 @@ public interface UsageHistory {
     public val usages: List<Instant>
 
     /** Usage moments before [cutoffTime] will be removed from the usageHistory. **/
-    public fun removeExpiredUsages(cutoffTime: Instant)
+    public suspend fun removeExpiredUsages(cutoffTime: Instant)
 
     /** Adds a usage moment to the usageHistory. **/
-    public fun addUsage(moment: Instant)
+    public suspend fun addUsage(moment: Instant)
 }

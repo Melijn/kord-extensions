@@ -50,30 +50,30 @@ public sealed class CachedCommandLimitTypes<Key> : CommandLimitType {
 
     public abstract fun idExtractor(context: DiscriminatingContext): Key?
 
-    override fun setCooldown(context: DiscriminatingContext, until: Instant) {
+    override suspend fun setCooldown(context: DiscriminatingContext, until: Instant) {
         val id = idExtractor(context) ?: return
         cooldowns[id] = until
     }
 
-    override fun getCooldown(context: DiscriminatingContext): Instant =
+    override suspend fun getCooldown(context: DiscriminatingContext): Instant =
         cooldowns[idExtractor(context)] ?: Instant.DISTANT_PAST
 
-    override fun setCooldownUsageHistory(context: DiscriminatingContext, usageHistory: CooldownHistory) {
+    override suspend fun setCooldownUsageHistory(context: DiscriminatingContext, usageHistory: CooldownHistory) {
         val id = idExtractor(context) ?: return
         commandHistory.setCooldownHistory(id, usageHistory)
     }
 
-    override fun getCooldownUsageHistory(context: DiscriminatingContext): CooldownHistory {
+    override suspend fun getCooldownUsageHistory(context: DiscriminatingContext): CooldownHistory {
         val id = idExtractor(context) ?: return DefaultCooldownHistory()
         return commandHistory.getCooldownHistory(id)
     }
 
-    override fun setRateLimitUsageHistory(context: DiscriminatingContext, rateLimitHistory: RateLimitHistory) {
+    override suspend fun setRateLimitUsageHistory(context: DiscriminatingContext, rateLimitHistory: RateLimitHistory) {
         val id = idExtractor(context) ?: return
         commandHistory.setRateLimitHistory(id, rateLimitHistory)
     }
 
-    override fun getRateLimitUsageHistory(context: DiscriminatingContext): RateLimitHistory {
+    override suspend fun getRateLimitUsageHistory(context: DiscriminatingContext): RateLimitHistory {
         val id = idExtractor(context) ?: return DefaultRateLimitHistory()
         return commandHistory.getRateLimitHistory(id)
     }

@@ -21,8 +21,8 @@ public interface RateLimitHistory : UsageHistory {
     public val rateLimitState: Boolean
 
     /** RateLimitHit moments before [cutoffTime] will be removed from the usageHistory. **/
-    public fun removeExpiredRateLimitHits(cutoffTime: Instant)
+    public suspend fun removeExpiredRateLimitHits(cutoffTime: Instant)
 
     /** Adds a rateLimitHit moment to the usageHistory. **/
-    public fun addRateLimitHit(moment: Instant)
+    public suspend fun addRateLimitHit(moment: Instant)
 }

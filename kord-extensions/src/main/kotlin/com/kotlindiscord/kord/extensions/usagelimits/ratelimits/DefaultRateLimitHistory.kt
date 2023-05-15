@@ -21,19 +21,19 @@ public class DefaultRateLimitHistory : RateLimitHistory {
     override var rateLimitState: Boolean = false
     override val rateLimitHits: LinkedList<Instant> = LinkedList()
 
-    override fun removeExpiredUsages(cutoffTime: Instant) {
+    override suspend fun removeExpiredUsages(cutoffTime: Instant) {
         usages.removeSmaller(cutoffTime)
     }
 
-    override fun removeExpiredRateLimitHits(cutoffTime: Instant) {
+    override suspend fun removeExpiredRateLimitHits(cutoffTime: Instant) {
         rateLimitHits.removeSmaller(cutoffTime)
     }
 
-    override fun addUsage(moment: Instant) {
+    override suspend fun addUsage(moment: Instant) {
         usages.add(moment)
     }
 
-    override fun addRateLimitHit(moment: Instant) {
+    override suspend fun addRateLimitHit(moment: Instant) {
         rateLimitHits.add(moment)
     }
 }

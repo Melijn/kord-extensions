@@ -14,8 +14,8 @@ import com.kotlindiscord.kord.extensions.usagelimits.DiscriminatingContext
 public interface RateLimitType {
 
     /** Gets the rateLimitHistory from this rateLimitType using [DiscriminatingContext] properties. **/
-    public fun getRateLimitUsageHistory(context: DiscriminatingContext): RateLimitHistory
+    public suspend fun getRateLimitUsageHistory(context: DiscriminatingContext): RateLimitHistory
 
     /** Sets the rateLimitHistory for this rateLimitType using [DiscriminatingContext] properties. **/
-    public fun setRateLimitUsageHistory(context: DiscriminatingContext, rateLimitHistory: RateLimitHistory)
+    public suspend fun setRateLimitUsageHistory(context: DiscriminatingContext, rateLimitHistory: RateLimitHistory)
 }
