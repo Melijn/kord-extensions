@@ -86,7 +86,7 @@ public class PublicSlashCommand<A : Arguments>(
             event.interaction.hook
         }
 
-        val context = PublicSlashCommandContext(event, this, response, cache)
+        val context = PublicSlashCommandContext(event, this, event.interaction, response, cache)
 
         firstSentryBreadcrumb(context, this)
 

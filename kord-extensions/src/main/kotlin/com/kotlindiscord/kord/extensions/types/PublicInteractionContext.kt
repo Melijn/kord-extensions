@@ -15,38 +15,52 @@ import dev.minn.jda.ktx.messages.MessageCreate
 import dev.minn.jda.ktx.messages.MessageEdit
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.interactions.InteractionHook
+import net.dv8tion.jda.api.interactions.commands.CommandInteraction
 import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import net.dv8tion.jda.api.utils.messages.MessageEditData
 import java.util.*
 
 /** Interface representing a public-only interaction action context. **/
 public interface PublicInteractionContext {
+    /** Original interaction */
+    public val interaction: CommandInteraction
+
     /** Response created by acknowledging the interaction publicly. **/
-    public val interactionResponse: InteractionHook
+    public var interactionResponse: InteractionHook
 }
 
 /** Respond to the current interaction with a public followup. **/
 public suspend inline fun PublicInteractionContext.respond(
-    builder: InlineMessage<MessageCreateData>.() -> Unit
-): Message = interactionResponse.sendMessage(MessageCreate { builder() }).await()
+    builder: InlineMessage<MessageCreateData>.() -> Unit,
+): Message {
+    if (!interaction.isAcknowledged) {
+        interactionResponse = interaction.deferReply().await()
+    }
+    return interactionResponse.sendMessage(MessageCreate { builder() }).await()
+}
 
 /** Respond to the current interaction with an ephemeral followup. **/
 public suspend inline fun PublicInteractionContext.respondEphemeral(
-    builder: InlineMessage<MessageCreateData>.() -> Unit
-): Message = interactionResponse.sendMessage(MessageCreate { builder() }).setEphemeral(true).await()
+    builder: InlineMessage<MessageCreateData>.() -> Unit,
+): Message {
+    if (!interaction.isAcknowledged) {
+        interactionResponse = interaction.deferReply(true).await()
+    }
+    return interactionResponse.sendMessage(MessageCreate { builder() }).setEphemeral(true).await()
+}
 
 /**
  * Edit the current interaction's response.
  */
 public suspend inline fun PublicInteractionContext.edit(
-    builder: InlineMessage<MessageEditData>.() -> Unit
+    builder: InlineMessage<MessageEditData>.() -> Unit,
 ): Message = interactionResponse.editOriginal(MessageEdit { builder() }).await()
 
 /** Create a paginator that edits the original interaction. **/
 public inline fun PublicInteractionContext.editingPaginator(
     defaultGroup: String = "",
     locale: Locale? = null,
-    builder: (PaginatorBuilder).() -> Unit
+    builder: (PaginatorBuilder).() -> Unit,
 ): PublicResponsePaginator {
     val pages = PaginatorBuilder(locale = locale, defaultGroup = defaultGroup)
 
@@ -56,14 +70,16 @@ public inline fun PublicInteractionContext.editingPaginator(
 }
 
 /** Create a paginator that creates a follow-up message, and edits that. **/
-public inline fun PublicInteractionContext.respondingPaginator(
+public suspend inline fun PublicInteractionContext.respondingPaginator(
     defaultGroup: String = "",
     locale: Locale? = null,
-    builder: (PaginatorBuilder).() -> Unit
+    builder: (PaginatorBuilder).() -> Unit,
 ): PublicFollowUpPaginator {
     val pages = PaginatorBuilder(locale = locale, defaultGroup = defaultGroup)
 
     builder(pages)
-
+    if (!interaction.isAcknowledged) {
+        interactionResponse = interaction.deferReply(false).await()
+    }
     return PublicFollowUpPaginator(pages, interactionResponse)
 }

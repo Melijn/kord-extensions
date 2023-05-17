@@ -72,7 +72,7 @@ public class PublicMessageCommand(
         } else {
             event.interaction.hook
         }
-        val context = PublicMessageCommandContext(event, this, response, cache)
+        val context = PublicMessageCommandContext(event, this, event.interaction, response, cache)
 
         firstSentryBreadcrumb(context)
 
