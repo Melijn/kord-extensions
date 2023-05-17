@@ -8,9 +8,9 @@ package com.kotlindiscord.kord.extensions.commands.application
 
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.types.CheckContextWithCache
 import com.kotlindiscord.kord.extensions.checks.types.CheckWithCache
+import com.kotlindiscord.kord.extensions.checks.userHasPermission
 import com.kotlindiscord.kord.extensions.commands.Command
 import com.kotlindiscord.kord.extensions.commands.application.slash.SlashCommand
 import com.kotlindiscord.kord.extensions.commands.events.CommandInvocationEvent
@@ -72,7 +72,7 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
     /**
      * Default EnumSet of [Permission]'s required to use the command on a guild.
      *
-     * **Not enforced, read [requirePermission] for more information**
+     * **Not enforced, read [requireDiscordPermission] for more information**
      */
     public open var defaultMemberPermissions: EnumSet<Permission>? = null
 
@@ -105,14 +105,15 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
 
     /**
      * This will register a requirement for [permissions] with Discord.
-     *
-     * **These permissions won't get enforced, as Discords UI allows server owners to change them, if you want to
-     * enforce them please also call [hasPermission]**
+     * And also check the permission at runtime using [userHasPermission].
      */
     public fun requirePermission(vararg permissions: Permission) {
         val enumSet = EnumSet.noneOf(Permission::class.java)
         enumSet.addAll(permissions)
         defaultMemberPermissions = defaultMemberPermissions?.apply { enumSet.addAll(this) }
+        check {
+            userHasPermission(*permissions)
+        }
     }
 
     /**

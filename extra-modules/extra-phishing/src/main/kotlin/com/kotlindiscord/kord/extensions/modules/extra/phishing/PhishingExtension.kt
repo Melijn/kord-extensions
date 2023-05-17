@@ -9,8 +9,8 @@
 package com.kotlindiscord.kord.extensions.modules.extra.phishing
 
 import com.kotlindiscord.kord.extensions.checks.anyGuild
-import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.isNotBot
+import com.kotlindiscord.kord.extensions.checks.userHasPermission
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -25,12 +25,8 @@ import dev.minn.jda.ktx.messages.MessageCreate
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.utils.io.jvm.javaio.*
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import net.dv8tion.jda.api.entities.Message
@@ -100,7 +96,7 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
             name = "Phishing Check"
 
             if (this@PhishingExtension.settings.requiredCommandPermission != null) {
-                check { hasPermission(this@PhishingExtension.settings.requiredCommandPermission!!) }
+                check { userHasPermission(this@PhishingExtension.settings.requiredCommandPermission!!) }
             }
 
             action {
@@ -123,7 +119,7 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
             description = "Check whether a given domain is a known phishing domain."
 
             if (this@PhishingExtension.settings.requiredCommandPermission != null) {
-                check { hasPermission(this@PhishingExtension.settings.requiredCommandPermission!!) }
+                check { userHasPermission(this@PhishingExtension.settings.requiredCommandPermission!!) }
             }
 
             action {

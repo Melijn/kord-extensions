@@ -21,9 +21,9 @@ import net.dv8tion.jda.api.events.Event
  * Only events that can reasonably be associated with a guild member are supported. Please raise
  * an issue if an event you expected to be supported, isn't.
  *
- * @param perm The permission to check for.
+ * @param perm The permission(s) to check for.
  */
-public suspend fun CheckContext<*>.hasPermission(perm: Permission) {
+public suspend fun CheckContext<*>.userHasPermission(vararg perm: Permission) {
     if (!passed) {
         return
     }
@@ -37,16 +37,15 @@ public suspend fun CheckContext<*>.hasPermission(perm: Permission) {
 
         fail()
     } else {
-        val memberObj = member
-
-        val result = when {
-            memberObj.hasPermission(Permission.ADMINISTRATOR) -> true
-            channel != null -> member.hasPermission(channel, perm)
-
-            else -> memberObj.hasPermission(perm)
+        val missing = perm.firstOrNull {
+            when {
+                member.hasPermission(Permission.ADMINISTRATOR) -> false
+                channel != null -> !member.hasPermission(channel, *perm)
+                else -> !member.hasPermission(*perm)
+            }
         }
 
-        if (result) {
+        if (missing == null) {
             logger.passed()
 
             pass()
@@ -56,7 +55,7 @@ public suspend fun CheckContext<*>.hasPermission(perm: Permission) {
             fail(
                 translate(
                     "checks.hasPermission.failed",
-                    replacements = arrayOf(perm.translate(locale))
+                    replacements = arrayOf(missing.translate(locale))
                 )
             )
         }
@@ -70,9 +69,9 @@ public suspend fun CheckContext<*>.hasPermission(perm: Permission) {
  * Only events that can reasonably be associated with a guild member are supported. Please raise
  * an issue if an event you expected to be supported, isn't.
  *
- * @param perm The permission to check for.
+ * @param perm The permission(s) to check for.
  */
-public suspend fun CheckContext<*>.notHasPermission(perm: Permission) {
+public suspend fun CheckContext<*>.userNoHasPermission(vararg perm: Permission) {
     if (!passed) {
         return
     }
@@ -86,28 +85,26 @@ public suspend fun CheckContext<*>.notHasPermission(perm: Permission) {
 
         pass()
     } else {
-        val memberObj = member
-
-        val result = when {
-            memberObj.hasPermission(Permission.ADMINISTRATOR) -> true
-            channel != null -> member.hasPermission(channel, perm)
-
-            else -> memberObj.hasPermission(perm)
+        val having = perm.firstOrNull {
+            when {
+                channel != null -> member.hasPermission(channel, *perm)
+                else -> member.hasPermission(*perm)
+            }
         }
 
-        if (result) {
+        if (having == null) {
+            logger.passed()
+
+            pass()
+        } else {
             logger.failed("Member $member has permission $perm")
 
             fail(
                 translate(
                     "checks.notHasPermission.failed",
-                    replacements = arrayOf(perm.translate(locale)),
+                    replacements = arrayOf(having.translate(locale)),
                 )
             )
-        } else {
-            logger.passed()
-
-            pass()
         }
     }
 }
