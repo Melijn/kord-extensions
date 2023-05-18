@@ -34,8 +34,7 @@ internal suspend fun Event.sendEphemeralMessage(message: String) {
         is GenericCommandInteractionEvent -> this.interaction.reply(
             MessageCreate {
             this.content = message
-        }
-        ).await()
+        }).setEphemeral(true).await()
 
         else -> error("Unknown event type: $this")
     }
