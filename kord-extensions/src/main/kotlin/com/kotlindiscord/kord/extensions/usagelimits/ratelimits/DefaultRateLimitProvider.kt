@@ -18,12 +18,12 @@ import com.kotlindiscord.kord.extensions.utils.getKoin
  *
  * Provides ratelimit info from commands and global settings.
  */
-public class DefaultRateLimitProvider : RateLimitProvider {
+public open class DefaultRateLimitProvider : RateLimitProvider {
 
     private val settings: ExtensibleBotBuilder by lazy { getKoin().get() }
 
     // This is used for collecting all types that were used during runtime and types that were configured.
-    private val usedRateLimitTypes = mutableSetOf<RateLimitType>()
+    public open val usedRateLimitTypes: MutableSet<RateLimitType> = mutableSetOf()
 
     /** @return rateLimit types from the contexts and global settings. **/
     override suspend fun getRateLimitTypes(

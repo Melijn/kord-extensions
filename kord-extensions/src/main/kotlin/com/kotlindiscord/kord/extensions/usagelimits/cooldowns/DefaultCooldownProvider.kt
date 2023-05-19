@@ -19,12 +19,12 @@ import kotlin.time.Duration
  *
  * Provides cooldown info from commands, global settings, from executed commands' contexts.
  */
-public class DefaultCooldownProvider : CooldownProvider {
+public open class DefaultCooldownProvider : CooldownProvider {
 
     private val settings: ExtensibleBotBuilder by lazy { getKoin().get() }
 
     // This is used for collecting all types that were used during runtime and types that were configured.
-    private val usedCooldownTypes = mutableSetOf<CooldownType>()
+    public open val usedCooldownTypes: MutableSet<CooldownType> = mutableSetOf()
 
     /** @return Union of the previous used-, context- and global setting cooldown types.  **/
     public override suspend fun getCooldownTypes(
