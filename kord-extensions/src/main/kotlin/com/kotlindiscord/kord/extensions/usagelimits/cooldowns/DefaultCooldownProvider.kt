@@ -31,8 +31,9 @@ public open class DefaultCooldownProvider : CooldownProvider {
         commandContext: CommandContext?,
         context: DiscriminatingContext,
     ): Set<CooldownType> {
+
         val typesFromContext =
-            commandContext?.command?.cooldowns?.keys.orEmpty() + commandContext?.cooldowns?.keys.orEmpty() +
+            context.event.command.cooldowns.keys + context.event.command.cooldowns.keys +
                 settings.applicationCommandsBuilder.useLimiterBuilder.cooldowns.keys +
                 settings.chatCommandsBuilder.useLimiterBuilder.cooldowns.keys
 

@@ -31,7 +31,7 @@ public open class DefaultRateLimitProvider : RateLimitProvider {
         context: DiscriminatingContext,
     ): Set<RateLimitType> {
         val typesFromContext =
-            command?.ratelimits?.keys.orEmpty() +
+            context.event.command.ratelimits.keys +
                 settings.applicationCommandsBuilder.useLimiterBuilder.rateLimits.keys +
                 settings.chatCommandsBuilder.useLimiterBuilder.rateLimits.keys
 
