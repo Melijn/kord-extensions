@@ -17,10 +17,12 @@ import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.parsers.DurationParser
 import com.kotlindiscord.kord.extensions.parsers.DurationParserException
 import com.kotlindiscord.kord.extensions.parsers.InvalidTimeUnitException
+import com.kotlindiscord.kord.extensions.utils.toDuration
 import kotlinx.datetime.*
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import kotlin.time.Duration
 
 /**
  * Argument converter for Kotlin [DateTimePeriod] arguments. You can apply these to an `Instant` using `plus` and a
@@ -43,8 +45,8 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData
 public class DurationConverter(
     public val longHelp: Boolean = true,
     public val positiveOnly: Boolean = true,
-    override var validator: Validator<DateTimePeriod> = null
-) : SingleConverter<DateTimePeriod>() {
+    override var validator: Validator<Duration> = null
+) : SingleConverter<Duration>() {
     override val signatureTypeString: String = "converters.duration.error.signatureType"
 
     override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
@@ -68,7 +70,7 @@ public class DurationConverter(
                 }
             }
 
-            parsed = result
+            parsed = result.toDuration(TimeZone.UTC)
         } catch (e: InvalidTimeUnitException) {
             val message: String = context.translate(
                 "converters.duration.error.invalidUnit",
@@ -101,7 +103,7 @@ public class DurationConverter(
                 }
             }
 
-            parsed = result
+            parsed = result.toDuration(TimeZone.UTC)
         } catch (e: InvalidTimeUnitException) {
             val message: String = context.translate(
                 "converters.duration.error.invalidUnit",
