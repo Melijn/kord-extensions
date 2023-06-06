@@ -15,7 +15,7 @@ junit = "5.9.3"
 koin = "3.4.0"
 konf = "1.1.2"
 
-jda-lib = "5.0.0-beta.6"
+jda-lib = "5.0.0-beta.10"
 jda-ktx = "9fc90f6"
 
 kotlinpoet = "1.13.0"

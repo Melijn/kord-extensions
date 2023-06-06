@@ -26,7 +26,8 @@ public fun Permission.toTranslationKey(): String? = when (this) {
     Permission.MESSAGE_EMBED_LINKS -> "permission.embedLinks"
     Permission.KICK_MEMBERS -> "permission.kickMembers"
     Permission.MANAGE_CHANNEL -> "permission.manageChannels"
-    Permission.MANAGE_EMOJIS_AND_STICKERS -> "permission.manageEmojisAndStickers"
+    Permission.MANAGE_EMOJIS_AND_STICKERS -> "permission.manageExpressions"
+    Permission.MANAGE_GUILD_EXPRESSIONS -> "permission.manageExpressions"
     Permission.MANAGE_EVENTS -> "permission.manageEvents"
     Permission.MANAGE_SERVER -> "permission.manageGuild"
     Permission.MANAGE_PERMISSIONS -> "permission.managePermissions"
@@ -61,6 +62,10 @@ public fun Permission.toTranslationKey(): String? = when (this) {
     Permission.VOICE_START_ACTIVITIES -> "permission.useEmbeddedActivities"
 
     Permission.UNKNOWN -> null
+    Permission.VIEW_CREATOR_MONETIZATION_ANALYTICS -> "permission.viewMonetization"
+    Permission.MESSAGE_ATTACH_VOICE_MESSAGE -> "permission.attachVoiceMessage"
+    Permission.VOICE_USE_SOUNDBOARD -> "permission.useSoundboard"
+    Permission.VOICE_USE_EXTERNAL_SOUNDS -> "permission.useExternalSounds"
 }
 
 /** Given a [CommandContext], translate the [Permission] to a human-readable string based on the context's locale. **/
