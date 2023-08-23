@@ -88,6 +88,7 @@ public suspend fun main() {
             add(::ArgumentTestExtension)
             add(::I18nTestExtension)
             add(::PaginatorTestExtension)
+            add(::NestingTestExtension)
         }
 
         plugins {
