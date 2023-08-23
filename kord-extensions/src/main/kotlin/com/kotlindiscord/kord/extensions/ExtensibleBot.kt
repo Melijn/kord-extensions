@@ -107,12 +107,17 @@ public open class ExtensibleBot(
         settings.hooksBuilder.runBeforeStart(this)
 
         val shardManager = getKoin().get<ShardManager>()
+        if (!initialized) try {
+            registerListeners()
+        } catch (t: NullPointerException) {
+            logger.error { "If this is a jda NPE, try setting maxShards and shardId" }
+            throw t
+        }
         shardManager.login() // before login no commands can be loaded due to a jda bug
 
         loadInterspersedExtensions()
 
         // at this point all extensions should be loaded, otherwise individual commands will be registered
-        if (!initialized) registerListeners()
         shardManager.listener<Event> {
             send(it)
         }

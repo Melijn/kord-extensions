@@ -11,6 +11,7 @@ import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.extPhishing
 import com.kotlindiscord.kord.extensions.testbot.extensions.ArgumentTestExtension
 import com.kotlindiscord.kord.extensions.testbot.extensions.I18nTestExtension
+import com.kotlindiscord.kord.extensions.testbot.extensions.NestingTestExtension
 import com.kotlindiscord.kord.extensions.testbot.extensions.PaginatorTestExtension
 import com.kotlindiscord.kord.extensions.testbot.utils.LogLevel
 import com.kotlindiscord.kord.extensions.usagelimits.CachedCommandLimitTypes
@@ -19,6 +20,7 @@ import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.DefaultRateLimit
 import com.kotlindiscord.kord.extensions.usagelimits.ratelimits.RateLimit
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.envOrNull
+import dev.minn.jda.ktx.jdabuilder.injectKTX
 import net.dv8tion.jda.api.interactions.DiscordLocale
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.requests.GatewayIntent.ALL_INTENTS
@@ -30,8 +32,14 @@ public val TEST_SERVER_ID: Long = env("TEST_SERVER").toLong()
 public suspend fun main() {
     LogLevel.enabledLevel = LogLevel.fromString(envOrNull("LOG_LEVEL") ?: "INFO") ?: LogLevel.INFO
 
-    val bot = ExtensibleBot(env("TOKEN")) {
+    ExtensibleBot(env("TOKEN")) {
         koinLogLevel = Level.DEBUG
+
+        kord {
+            injectKTX()
+            this.setShardsTotal(1)
+            this.setShards(0)
+        }
 
         chatCommands {
             enabled = true
@@ -40,6 +48,7 @@ public suspend fun main() {
         }
 
         applicationCommands {
+            enabled = true
             defaultGuild(TEST_SERVER_ID)
 
             useLimiter {
@@ -91,6 +100,12 @@ public suspend fun main() {
             add(::NestingTestExtension)
         }
 
+        hooks {
+            setup {
+                this.start()
+            }
+        }
+
         plugins {
             pluginPaths.clear()
 
@@ -98,6 +113,4 @@ public suspend fun main() {
             pluginPath("extra-modules/extra-mappings/build/generated/ksp/main/resources")
         }
     }
-
-    bot.start()
 }
