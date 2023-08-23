@@ -555,6 +555,11 @@ public open class ChatCommand<T : Arguments>(
         emitEventAsync(ChatCommandSucceededEvent(this, event))
     }
 
+    public suspend fun checkBotPerms(context: ChatCommandContext<*>) {
+        checkDiscordPerms(context)
+        settings.chatCommandsBuilder.permissionChecker.invoke(context)
+    }
+
     /** Override this to implement the useLimited logic for your subclass. **/
     public open suspend fun useLimited(invocationEvent: ChatCommandInvocationEvent): Boolean =
         isOnCooldown(invocationEvent) || isRateLimited(invocationEvent)

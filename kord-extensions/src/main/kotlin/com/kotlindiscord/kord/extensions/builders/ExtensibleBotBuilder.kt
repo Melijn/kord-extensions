@@ -10,8 +10,10 @@ import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.annotations.BotBuilderDSL
 import com.kotlindiscord.kord.extensions.checks.types.*
+import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.ApplicationCommandRegistry
 import com.kotlindiscord.kord.extensions.commands.application.DefaultApplicationCommandRegistry
+import com.kotlindiscord.kord.extensions.commands.chat.ChatCommandContext
 import com.kotlindiscord.kord.extensions.commands.chat.ChatCommandRegistry
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.i18n.ResourceBundleTranslations
@@ -1053,6 +1055,9 @@ public open class ExtensibleBotBuilder {
         public var registryBuilder: () -> ChatCommandRegistry = { ChatCommandRegistry() }
 
         /** @suppress Builder that shouldn't be set directly by the user. **/
+        public var permissionChecker: suspend (ChatCommandContext<*>) -> Unit = { }
+
+        /** @suppress Builder that shouldn't be set directly by the user. **/
         public var useLimiterBuilder: UseLimiterBuilder = UseLimiterBuilder()
 
         /**
@@ -1114,6 +1119,15 @@ public open class ExtensibleBotBuilder {
         public fun check(check: ChatCommandCheck) {
             checkList.add(check)
         }
+
+        /**
+         * Define a permission checking function, please throw an exception if a permission is missing.
+         *
+         * @param func Func that will be ran to test permissions.
+         */
+        public fun permissionChecker(func: suspend (ChatCommandContext<*>) -> Unit) {
+            this.permissionChecker = func
+        }
     }
 
     /** Builder used for configuring the bot's application command options. **/
@@ -1140,6 +1154,9 @@ public open class ExtensibleBotBuilder {
         /** @suppress Builder that shouldn't be set directly by the user. **/
         public var applicationCommandRegistryBuilder: () -> ApplicationCommandRegistry =
             { DefaultApplicationCommandRegistry() }
+
+        /** @suppress Builder that shouldn't be set directly by the user. **/
+        public var permissionChecker: suspend (ApplicationCommandContext) -> Unit = { }
 
         /**
          * List of message command checks.
@@ -1271,6 +1288,15 @@ public open class ExtensibleBotBuilder {
          */
         public fun userCommandCheck(check: UserCommandCheck) {
             userCommandChecks.add(check)
+        }
+
+        /**
+         * Define a permission checking function, please throw an exception if a permission is missing.
+         *
+         * @param func Func that will be ran to test permissions.
+         */
+        public fun permissionChecker(func: suspend (ApplicationCommandContext) -> Unit) {
+            this.permissionChecker = func
         }
     }
 

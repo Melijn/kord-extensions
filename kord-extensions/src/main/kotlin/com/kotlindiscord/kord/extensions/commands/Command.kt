@@ -152,7 +152,7 @@ public abstract class Command(public val extension: Extension) : Lockable, KordE
 
     /** Checks whether the bot has the specified required permissions, throwing if it doesn't. **/
     @Throws(DiscordRelayedException::class)
-    public open suspend fun checkBotPerms(context: CommandContext) {
+    public open suspend fun checkDiscordPerms(context: CommandContext) {
         if (requiredPerms.isEmpty()) {
             return  // Nothing to check, don't try to hit the cache
         }

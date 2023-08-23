@@ -243,6 +243,11 @@ public abstract class ApplicationCommand<E : GenericInteractionCreateEvent>(
         return true
     }
 
+    public suspend fun checkBotPerms(context: ApplicationCommandContext) {
+        checkDiscordPerms(context)
+        settings.applicationCommandsBuilder.permissionChecker.invoke(context)
+    }
+
     /** Override this in order to implement any subclass-specific checks. **/
     @Throws(DiscordRelayedException::class)
     public open suspend fun runChecks(event: E, cache: MutableStringKeyedMap<Any>): Boolean =
