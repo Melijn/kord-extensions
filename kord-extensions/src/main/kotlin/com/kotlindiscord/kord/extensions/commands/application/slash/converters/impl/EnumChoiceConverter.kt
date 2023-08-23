@@ -59,7 +59,6 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
     functionSuffixedWhere = "E : Enum<E>, E : ChoiceEnum"
 )
-
 public class EnumChoiceConverter<E>(
     typeName: String,
     private val getter: suspend (String) -> E?,

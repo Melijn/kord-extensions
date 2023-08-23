@@ -24,10 +24,8 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData
  */
 @Converter(
     "string",
-
     types = [ConverterType.CHOICE, ConverterType.DEFAULTING, ConverterType.OPTIONAL, ConverterType.SINGLE]
 )
-
 public class StringChoiceConverter(
     choices: Map<String, String>,
     override var validator: Validator<String> = null
