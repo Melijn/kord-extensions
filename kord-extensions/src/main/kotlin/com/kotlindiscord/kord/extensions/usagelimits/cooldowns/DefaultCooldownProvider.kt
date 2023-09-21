@@ -32,7 +32,7 @@ public open class DefaultCooldownProvider : CooldownProvider {
         context: DiscriminatingContext,
     ): Set<CooldownType> {
         val typesFromContext =
-            context.event.command.cooldowns.keys + context.event.command.cooldowns.keys +
+            context.event.command.cooldowns.keys +
                 settings.applicationCommandsBuilder.useLimiterBuilder.cooldowns.keys +
                 settings.chatCommandsBuilder.useLimiterBuilder.cooldowns.keys
 

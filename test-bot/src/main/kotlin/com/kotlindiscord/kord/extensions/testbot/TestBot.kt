@@ -110,7 +110,6 @@ public suspend fun main() {
             pluginPaths.clear()
 
             pluginPath("test-bot/build/generated/ksp/main/resources")
-            pluginPath("extra-modules/extra-mappings/build/generated/ksp/main/resources")
         }
     }
 }

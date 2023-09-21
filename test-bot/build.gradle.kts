@@ -52,7 +52,6 @@ repositories {
 dependencies {
     implementation(project(":kord-extensions"))
 
-    implementation(project(":extra-modules:extra-mappings"))
     implementation(project(":extra-modules:extra-phishing"))
 
     implementation(project(":modules:java-time"))
@@ -85,5 +84,5 @@ application {
 }
 
 detekt {
-    config = files("$projectDir/detekt.yml")
+    this.config.setFrom("$projectDir/detekt.yml")
 }

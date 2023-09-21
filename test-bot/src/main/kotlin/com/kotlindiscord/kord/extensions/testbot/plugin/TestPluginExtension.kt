@@ -12,7 +12,6 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.plugins.PluginManager
-import com.kotlindiscord.kord.extensions.plugins.extra.MappingsPlugin
 import com.kotlindiscord.kord.extensions.testbot.utils.assert
 import com.kotlindiscord.kord.extensions.types.respond
 import org.koin.core.component.inject
@@ -105,10 +104,6 @@ public class TestPluginExtension : Extension() {
 
                 assert(pluginIds.contains(TestPlugin.PLUGIN_ID)) {
                     "Test plugin (`${TestPlugin.PLUGIN_ID}`) should be loaded."
-                }
-
-                assert(pluginIds.contains(MappingsPlugin.PLUGIN_ID)) {
-                    "Test plugin (`${MappingsPlugin.PLUGIN_ID}`) should be loaded."
                 }
 
                 respond {

@@ -13,8 +13,6 @@ include("annotation-processor")
 
 include("kord-extensions")
 
-include("extra-modules:extra-mappings")
-include("extra-modules:extra-mappings")
 include("extra-modules:extra-phishing")
 
 include("modules:java-time")
