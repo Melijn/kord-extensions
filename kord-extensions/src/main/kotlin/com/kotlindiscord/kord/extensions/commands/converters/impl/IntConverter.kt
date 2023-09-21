@@ -43,7 +43,7 @@ public class IntConverter(
     public val maxValue: Int? = Int.MAX_VALUE,
     public val minValue: Int? = Int.MIN_VALUE,
 
-    override var validator: Validator<Int> = null
+    override var validator: Validator<Int> = null,
 ) : SingleConverter<Int>() {
     override val signatureTypeString: String = "converters.number.signatureType"
 
@@ -86,7 +86,9 @@ public class IntConverter(
     override suspend fun toSlashOption(arg: Argument<*>): OptionData =
         OptionData(OptionType.INTEGER, arg.displayName, arg.description, required).apply {
             this@IntConverter.maxValue?.toLong()?.let { this.setMaxValue(it) }
+                ?: run { this.setMaxValue(Int.MAX_VALUE.toLong()) }
             this@IntConverter.minValue?.toLong()?.let { this.setMinValue(it) }
+                ?: run { this.setMaxValue(Int.MIN_VALUE.toLong()) }
         }
 
     override suspend fun parseOption(context: CommandContext, option: OptionMapping): Boolean {
