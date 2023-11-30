@@ -1,7 +1,7 @@
 [versions]
 detekt = "1.23.1"  # Note: Plugin versions must be updated in buildSrc/build.gradle.kts
 dokka = "1.8.20"  # Note: Plugin versions must be updated in buildSrc/build.gradle.kts
-kotlin = "1.8.22"  # Note: Plugin versions must be updated in buildSrc/build.gradle.kts
+kotlin = "1.9.20"  # Note: Plugin versions must be updated in buildSrc/build.gradle.kts
 kx-cor = "1.7.3"
 
 commons-validator = "1.7"
@@ -19,7 +19,7 @@ jda-lib = "5.0.0-beta.12"
 jda-ktx = "9fc90f6"
 
 kotlinpoet = "1.13.0"
-ksp = "1.8.20-1.0.11"
+ksp = "1.9.20-1.0.14"
 ktor = "2.2.4"
 kx-ser = "1.5.0"
 kx-date = "0.4.0"

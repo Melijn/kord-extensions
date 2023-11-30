@@ -7,8 +7,6 @@ plugins {
 dependencies {
     implementation(libs.kotlin.stdlib)
 
-    detektPlugins(libs.detekt)
-    detektPlugins(libs.detekt.libraries)
 }
 
 dokkaModule {

@@ -13,8 +13,6 @@ dependencies {
 
     implementation(project(":annotations"))
 
-    detektPlugins(libs.detekt)
-    detektPlugins(libs.detekt.libraries)
 }
 
 dokkaModule {
@@ -22,12 +20,12 @@ dokkaModule {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 kotlin {
     jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of("17"))
+        languageVersion.set(JavaLanguageVersion.of("21"))
     }
 }

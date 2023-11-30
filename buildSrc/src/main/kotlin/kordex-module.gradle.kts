@@ -4,7 +4,6 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
 
-    id("io.gitlab.arturbosch.detekt")
     id("org.cadixdev.licenser")
 }
 
@@ -30,7 +29,7 @@ tasks {
         explicitApi()
 
         jvmToolchain {
-            languageVersion.set(JavaLanguageVersion.of("11"))
+            languageVersion.set(JavaLanguageVersion.of("21"))
         }
     }
 
@@ -42,24 +41,18 @@ tasks {
         rootProject.file("LICENSE").copyTo(rootProject.file("build/LICENSE-kordex"), true)
 
         tasks.withType<JavaCompile>().configureEach {
-            sourceCompatibility = "11"
-            targetCompatibility = "11"
+            sourceCompatibility = "21"
+            targetCompatibility = "21"
         }
 
         withType<KotlinCompile>().configureEach {
             kotlinOptions {
-                jvmTarget = "11"
+                jvmTarget = "21"
             }
         }
     }
 }
 
-detekt {
-    buildUponDefaultConfig = true
-    config = files("$rootDir/detekt.yml")
-
-    autoCorrect = true
-}
 
 license {
     setHeader(rootProject.file("LICENSE"))

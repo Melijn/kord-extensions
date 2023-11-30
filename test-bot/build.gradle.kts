@@ -58,8 +58,6 @@ dependencies {
     implementation(project(":modules:time4j"))
     implementation(project(":modules:unsafe"))
 
-    detektPlugins(libs.detekt)
-    detektPlugins(libs.detekt.libraries)
 
     implementation(libs.bundles.commons)
     implementation(libs.kotlin.stdlib)
@@ -83,6 +81,3 @@ application {
     this.mainClass.set("com.kotlindiscord.kord.extensions.testbot.TestBotKt")
 }
 
-detekt {
-    this.config.setFrom("$projectDir/detekt.yml")
-}
