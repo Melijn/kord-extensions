@@ -20,6 +20,7 @@ import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converte
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.translate
+import dev.minn.jda.ktx.generics.getChannel
 import kotlinx.coroutines.FlowPreview
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.channel.Channel
@@ -197,7 +198,7 @@ public inline fun <reified T : Channel> findChannel(arg: String, context: Comman
     val shardManager by getKoin().inject<ShardManager>()
     val channel: T? = if (arg.startsWith("<#") && arg.endsWith(">")) { // Channel mention
         val id = arg.substring(2, arg.length - 1)
-        shardManager.getChannelById(T::class.java, id.toLong())
+        shardManager.getChannel<T>(id.toLong())
     } else {
         val string: String = if (arg.startsWith("#")) arg.substring(1) else arg
         val potentialTargets = context.guild?.channels?.filter { it.name.startsWith(string, true) }

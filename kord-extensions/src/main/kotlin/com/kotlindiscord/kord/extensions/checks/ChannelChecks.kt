@@ -9,6 +9,7 @@
 package com.kotlindiscord.kord.extensions.checks
 
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
+import dev.minn.jda.ktx.generics.getChannel
 import mu.KotlinLogging
 import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.entities.channel.concrete.Category
@@ -358,7 +359,8 @@ public suspend fun <T : Event> CheckContext<T>.inChannel(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.inChannel")
-    val channel = event.jda.shardManager?.getChannelById(Channel::class.java, id)
+    val channel = event.jda.shardManager?.getGuildChannelById(id)
+        ?: event.jda.shardManager?.getPrivateChannelById(id)
 
     if (channel == null) {
         logger.noChannelId(id)
@@ -383,7 +385,7 @@ public suspend fun <T : Event> CheckContext<T>.notInChannel(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.notInChannel")
-    val channel = event.jda.shardManager?.getChannelById(Channel::class.java, id)
+    val channel = event.jda.shardManager?.getChannel(id)
 
     if (channel == null) {
         logger.noChannelId(id)
@@ -408,7 +410,7 @@ public suspend fun <T : Event> CheckContext<T>.inCategory(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.inCategory")
-    val category = event.jda.shardManager?.getChannelById(Category::class.java, id)
+    val category = event.jda.shardManager?.getCategoryById(id)
 
     if (category == null) {
         logger.noCategoryId(id)
@@ -433,7 +435,7 @@ public suspend fun <T : Event> CheckContext<T>.notInCategory(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.notInCategory")
-    val category = event.jda.shardManager?.getChannelById(Category::class.java, id)
+    val category = event.jda.shardManager?.getCategoryById(id)
 
     if (category == null) {
         logger.noCategoryId(id)
@@ -458,7 +460,7 @@ public suspend fun <T : Event> CheckContext<T>.channelHigher(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.channelHigher")
-    val channel = event.jda.shardManager?.getChannelById(GuildChannel::class.java, id)
+    val channel = event.jda.shardManager?.getGuildChannelById(id)
 
     if (channel == null) {
         logger.noChannelId(id)
@@ -483,7 +485,7 @@ public suspend fun <T : Event> CheckContext<T>.channelLower(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.channelLower")
-    val channel = event.jda.shardManager?.getChannelById(GuildChannel::class.java, id)
+    val channel = event.jda.shardManager?.getGuildChannelById(id)
 
     if (channel == null) {
         logger.noChannelId(id)
@@ -508,7 +510,7 @@ public suspend fun <T : Event> CheckContext<T>.channelHigherOrEqual(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.channelHigherOrEqual")
-    val channel = event.jda.shardManager?.getChannelById(GuildChannel::class.java, id)
+    val channel = event.jda.shardManager?.getGuildChannelById(id)
 
     if (channel == null) {
         logger.noChannelId(id)
@@ -533,7 +535,7 @@ public suspend fun <T : Event> CheckContext<T>.channelLowerOrEqual(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.channelLowerOrEqual")
-    val channel = event.jda.shardManager?.getChannelById(GuildChannel::class.java, id)
+    val channel = event.jda.shardManager?.getGuildChannelById(id)
 
     if (channel == null) {
         logger.noChannelId(id)

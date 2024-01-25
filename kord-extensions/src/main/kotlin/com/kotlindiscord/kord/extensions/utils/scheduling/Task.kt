@@ -20,38 +20,30 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import mu.KLogger
 import mu.KotlinLogging
+import org.jetbrains.annotations.BlockingExecutor
 import org.koin.core.component.inject
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.ForkJoinPool
-import java.util.concurrent.ScheduledExecutorService
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
-@Suppress("MagicNumber")
 /** Global configuration for [Task]. **/
 public object TaskConfig {
-    private val threadFactory = { name: String ->
-        var counter = 0
-        { r: Runnable ->
-            Thread(r, "[$name-Pool-%d]".replace("%d", "${counter++}"))
-        }
-    }
 
-    private val executorService: ExecutorService = ForkJoinPool(30)
+    private val executorService: ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
 
     /** Default dispatcher. **/
-    public val dispatcher: ExecutorCoroutineDispatcher = executorService.asCoroutineDispatcher()
-
-    /** Default scheduledExecutorService. **/
-    public val scheduledExecutorService: ScheduledExecutorService =
-        Executors.newScheduledThreadPool(30, threadFactory.invoke("Repeater"))
+    public val dispatcher: ExecutorCoroutineDispatcher = Dispatchers.LOOM
 
     /** Default coroutineScope. **/
-    public val coroutineScope: CoroutineScope = CoroutineScope(dispatcher)
+    public val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.LOOM)
 }
+
+public val Dispatchers.LOOM: @BlockingExecutor ExecutorCoroutineDispatcher
+    get() = Executors.newVirtualThreadPerTaskExecutor().asCoroutineDispatcher()
+
 
 /**
  * Simple class representing a polling-based delayed task. Coroutine-based.

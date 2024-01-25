@@ -66,6 +66,7 @@ public fun Permission.toTranslationKey(): String? = when (this) {
     Permission.MESSAGE_ATTACH_VOICE_MESSAGE -> "permission.attachVoiceMessage"
     Permission.VOICE_USE_SOUNDBOARD -> "permission.useSoundboard"
     Permission.VOICE_USE_EXTERNAL_SOUNDS -> "permission.useExternalSounds"
+    Permission.VOICE_SET_STATUS -> "permission.setVoiceChannelStatus"
 }
 
 /** Given a [CommandContext], translate the [Permission] to a human-readable string based on the context's locale. **/

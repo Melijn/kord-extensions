@@ -19,6 +19,7 @@ import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.types.Lockable
 import com.kotlindiscord.kord.extensions.types.Snowflake
 import com.kotlindiscord.kord.extensions.utils.loadModule
+import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import dev.minn.jda.ktx.events.listener
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -287,7 +288,7 @@ public open class ExtensibleBot(
      */
     public inline fun <reified T : Event> on(
         launch: Boolean = true,
-        scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
+        scope: CoroutineScope = TaskConfig.coroutineScope,
         noinline consumer: suspend T.() -> Unit,
     ): Job =
         events.buffer(Channel.UNLIMITED)

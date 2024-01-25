@@ -117,7 +117,7 @@ public suspend fun <T : Event> CheckContext<T>.inTopChannel(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.inChannel")
-    var channel = event.jda.shardManager?.getChannelById(Channel::class.java, id)
+    var channel = event.jda.shardManager?.getGuildChannelById(id)
 
     if (channel is ThreadChannel) {
         channel = channel.parentChannel
@@ -147,7 +147,7 @@ public suspend fun <T : Event> CheckContext<T>.notInTopChannel(id: Long) {
     }
 
     val logger = KotlinLogging.logger("com.kotlindiscord.kord.extensions.checks.notInChannel")
-    var channel = event.jda.shardManager?.getChannelById(Channel::class.java, id)
+    var channel = event.jda.shardManager?.getGuildChannelById(id)
 
     if (channel is ThreadChannel) {
         channel = channel.parentChannel

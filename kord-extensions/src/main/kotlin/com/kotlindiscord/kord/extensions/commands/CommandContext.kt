@@ -16,9 +16,11 @@ import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.sentry.SentryContext
 import com.kotlindiscord.kord.extensions.usagelimits.cooldowns.CooldownType
 import com.kotlindiscord.kord.extensions.utils.MutableStringKeyedMap
+import com.kotlindiscord.kord.extensions.utils.scheduling.LOOM
 import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
@@ -55,7 +57,7 @@ public abstract class CommandContext(
 
     /** Cached locale variable, stored and retrieved by [getLocale]. **/
     public val resolvedLocale: Deferred<Locale> =
-        TaskConfig.coroutineScope.async(TaskConfig.dispatcher, CoroutineStart.LAZY) {
+        TaskConfig.coroutineScope.async(Dispatchers.LOOM, CoroutineStart.LAZY) {
             getLocale()
         }
 

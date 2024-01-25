@@ -234,7 +234,7 @@ class PhishingExtension(private val settings: ExtPhishingBuilder) : Extension() 
 
                     name = "Author"
                     value = "${message.author.asMention} (" +
-                        "`${message.author.asTag}` / " +
+                        "`${message.author.effectiveName}` / " +
                         "`${message.author.id}`" +
                         ")"
                 }

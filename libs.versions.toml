@@ -15,8 +15,8 @@ junit = "5.9.3"
 koin = "3.4.0"
 konf = "1.1.2"
 
-jda-lib = "5.0.0-beta.12"
-jda-ktx = "9fc90f6"
+jda-lib = "5.0.0-beta.20"
+jda-ktx = "0.11.0-beta.20"
 
 kotlinpoet = "1.13.0"
 ksp = "1.9.20-1.0.14"
@@ -52,7 +52,7 @@ konf-toml = { module = "com.uchuhimo:konf-toml", version.ref = "konf" }
 
 # jda
 jda-lib = { module = "net.dv8tion:JDA", version.ref = "jda-lib" }
-jda-ktx = { module = "com.github.minndevelopment:jda-ktx", version.ref = "jda-ktx" }
+jda-ktx = { module = "club.minnced:jda-ktx", version.ref = "jda-ktx" }
 
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8" }
