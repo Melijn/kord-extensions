@@ -26,7 +26,15 @@ public abstract class ConverterBuilder<T> {
     public open var mutator: Mutator<T> = null
 
     /** Validator, used for argument validation. **/
-    protected open var validator: Validator<T> = null
+    protected open val validator: Validator<T> by lazy {
+        {
+            for (v in validators) {
+                if (v != null) { v() }
+            }
+        }
+    }
+
+    protected open var validators: MutableList<Validator<T>> = mutableListOf()
 
     /** Auto-complete callback. **/
     public open var autoCompleteCallback: AutoCompleteCallback = null
@@ -43,7 +51,12 @@ public abstract class ConverterBuilder<T> {
 
     /** Register the validator for this converter, allowing you to validate the final value. **/
     public open fun validate(body: Validator<T>) {
-        validator = body
+        validators.add(body)
+    }
+
+    /** Clears all validators from this converter. **/
+    public open fun clearValidators() {
+        validators.clear()
     }
 
     /** Using the data in this builder, create a converter and apply it to an [Arguments] object. **/

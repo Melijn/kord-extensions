@@ -6,12 +6,14 @@
 
 package com.kotlindiscord.kord.extensions.koin
 
+import okio.withLock
 import org.koin.core.Koin
 import org.koin.core.KoinApplication
 import org.koin.core.context.KoinContext
 import org.koin.core.error.KoinAppAlreadyStartedException
 import org.koin.core.module.Module
 import org.koin.dsl.KoinAppDeclaration
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * The [KoinContext] for bot instances.
@@ -28,6 +30,8 @@ public object KordExContext : KoinContext {
 
     /** The current [KoinApplication]. */
     private var koinApp: KoinApplication? = null
+
+    private val mutex: ReentrantLock = ReentrantLock()
 
     /**
      * Gets the [Koin] instance.
@@ -59,7 +63,7 @@ public object KordExContext : KoinContext {
     }
 
     /** Closes and removes the current [Koin] instance. */
-    override fun stopKoin(): Unit = synchronized(this) {
+    override fun stopKoin(): Unit = mutex.withLock {
         koin?.close()
         koin = null
     }
@@ -71,7 +75,7 @@ public object KordExContext : KoinContext {
      *
      * @throws KoinAppAlreadyStartedException The [KoinApplication] has already been instantiated.
      */
-    override fun startKoin(koinApplication: KoinApplication): KoinApplication = synchronized(this) {
+    override fun startKoin(koinApplication: KoinApplication): KoinApplication = mutex.withLock {
         register(koinApplication)
         koinApplication.createEagerInstances()
 
@@ -85,7 +89,7 @@ public object KordExContext : KoinContext {
      *
      * @throws KoinAppAlreadyStartedException The [KoinApplication] has already been instantiated.
      */
-    override fun startKoin(appDeclaration: KoinAppDeclaration): KoinApplication = synchronized(this) {
+    override fun startKoin(appDeclaration: KoinAppDeclaration): KoinApplication = mutex.withLock {
         val koinApplication = KoinApplication.init()
 
         register(koinApplication)
@@ -100,7 +104,7 @@ public object KordExContext : KoinContext {
      *
      * @param module The module to load.
      */
-    override fun loadKoinModules(module: Module): Unit = synchronized(this) {
+    override fun loadKoinModules(module: Module): Unit = mutex.withLock {
         get().loadModules(listOf(module))
     }
 
@@ -109,7 +113,7 @@ public object KordExContext : KoinContext {
      *
      * @param modules The modules to load.
      */
-    override fun loadKoinModules(modules: List<Module>): Unit = synchronized(this) {
+    override fun loadKoinModules(modules: List<Module>): Unit = mutex.withLock {
         get().loadModules(modules)
     }
 
@@ -118,7 +122,7 @@ public object KordExContext : KoinContext {
      *
      * @param module The module to unload.
      */
-    override fun unloadKoinModules(module: Module): Unit = synchronized(this) {
+    override fun unloadKoinModules(module: Module): Unit = mutex.withLock {
         get().unloadModules(listOf(module))
     }
 
@@ -127,7 +131,7 @@ public object KordExContext : KoinContext {
      *
      * @param modules The modules to unload.
      */
-    override fun unloadKoinModules(modules: List<Module>): Unit = synchronized(this) {
+    override fun unloadKoinModules(modules: List<Module>): Unit = mutex.withLock {
         get().unloadModules(modules)
     }
 }
