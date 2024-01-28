@@ -36,6 +36,10 @@ public open class DefaultCooldownProvider : CooldownProvider {
                 settings.applicationCommandsBuilder.useLimiterBuilder.cooldowns.keys +
                 settings.chatCommandsBuilder.useLimiterBuilder.cooldowns.keys
 
+        commandContext?.let { cmdContext ->
+            usedCooldownTypes.addAll(cmdContext.cooldowns.keys)
+        }
+
         usedCooldownTypes.addAll(typesFromContext)
         return usedCooldownTypes
     }
