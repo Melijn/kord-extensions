@@ -22,7 +22,7 @@ import java.util.*
 
 /** Interface representing a public-only interaction action context. **/
 public interface PublicInteractionContext {
-    /** Original interaction */
+    /** Original interaction. */
     public val interaction: CommandInteraction
 
     /** Response created by acknowledging the interaction publicly. **/

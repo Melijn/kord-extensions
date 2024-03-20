@@ -17,6 +17,9 @@ dependencies {
 
     ksp(project(":annotation-processor"))
 
+    detektPlugins(libs.detekt)
+    detektPlugins(libs.detekt.libraries)
+
     testImplementation(libs.groovy)  // For logback config
     testImplementation(libs.jansi)
     testImplementation(libs.junit)
@@ -29,5 +32,5 @@ compileKotlin.kotlinOptions {
     freeCompilerArgs = listOf("-Xcontext-receivers")
 }
 dokkaModule {
-    moduleName.set("Kord Extensions: Java Time")
+    moduleName.set("JDA Extensions: Java Time")
 }

@@ -44,7 +44,6 @@ public object TaskConfig {
 public val Dispatchers.LOOM: @BlockingExecutor ExecutorCoroutineDispatcher
     get() = Executors.newVirtualThreadPerTaskExecutor().asCoroutineDispatcher()
 
-
 /**
  * Simple class representing a polling-based delayed task. Coroutine-based.
  *

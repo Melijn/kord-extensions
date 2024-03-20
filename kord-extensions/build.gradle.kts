@@ -42,6 +42,8 @@ dependencies {
     api(project(":annotations"))
     api(project(":token-parser"))
 
+    detektPlugins(libs.detekt)
+    detektPlugins(libs.detekt.libraries)
 
     implementation(libs.bundles.commons)
     implementation(libs.kotlin.stdlib)

@@ -1,7 +1,6 @@
-import org.gradle.api.publish.maven.MavenPublication
-
 plugins {
     `maven-publish`
+    signing
 }
 
 val sourceJar: Task by tasks.getting
@@ -34,6 +33,30 @@ publishing {
 
             artifact(sourceJar)
             artifact(javadocJar)
+
+            pom {
+                name.set("JDA Extensions")
+                description.set("A fork of Kord Extensions to work with JDA")
+                packaging = "jar"
+
+                scm {
+                    connection.set("scm:git:https://github.com/Melijn/kord-extensions.git")
+                    developerConnection.set("scm:git:git@github.com:Melijn/kord-extensions.git")
+                    url.set("https://github.com/Melijn/kord-extensions.git")
+                }
+
+                licenses {
+                    license {
+                        name.set("Mozilla Public License Version 2.0")
+                        url.set("https://www.mozilla.org/en-US/MPL/2.0/")
+                    }
+                }
+            }
         }
+    }
+
+    signing {
+        useGpgCmd()
+        sign(publishing.publications["maven"])
     }
 }

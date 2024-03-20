@@ -11,6 +11,9 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(project(":kord-extensions"))
 
+    detektPlugins(libs.detekt)
+    detektPlugins(libs.detekt.libraries)
+
     testImplementation(libs.groovy)  // For logback config
     testImplementation(libs.junit)
     testImplementation(libs.logback)
@@ -25,5 +28,5 @@ compileKotlin.kotlinOptions {
 }
 
 dokkaModule {
-    moduleName.set("Kord Extensions: Unsafe")
+    moduleName.set("JDA Extensions: Unsafe")
 }

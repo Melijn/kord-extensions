@@ -32,7 +32,7 @@ class PhishingApi(internal val appName: String) {
     }
 
     internal suspend inline fun <reified T> get(url: String): T = client.get(url) {
-        header("X-Identity", "$appName (via Kord Extensions)")
+        header("X-Identity", "$appName (via JDA Extensions)")
     }.body()
 
     /** Get all known phishing domains from the API. **/

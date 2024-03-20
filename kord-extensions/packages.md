@@ -1,12 +1,12 @@
 # Module kord-extensions
 
-Kord Extensions is a command and plugin library for [Kord](https://kordlib.github.io/kord/). It provides a ton of useful
-tools for writing Discord bots with Kord, including an extensions framework, filterable event handling, and an
+JDA Extensions is a command and plugin library for [JDA](https://github.com/discord-jda/JDA). It provides a ton of useful
+tools for writing Discord bots with jda, including an extensions framework, filterable event handling, and an
 extensible commands system with advanced parsing features.
 
 # Package com.kotlindiscord.kord.extensions
 
-Base package for Kord Extensions, containing exceptions, the `Paginator`, and the `ExtensibleBot` itself.
+Base package for JDA Extensions, containing exceptions, the `Paginator`, and the `ExtensibleBot` itself.
 
 # Package com.kotlindiscord.kord.extensions.checks
 

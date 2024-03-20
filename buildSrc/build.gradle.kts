@@ -15,6 +15,8 @@ dependencies {
     implementation("com.github.jakemarsden", "git-hooks-gradle-plugin", "0.0.2")
     implementation("com.google.devtools.ksp", "com.google.devtools.ksp.gradle.plugin", "1.9.20-1.0.14")
     implementation("org.jetbrains.dokka", "dokka-gradle-plugin", "1.8.20")
+    implementation("io.gitlab.arturbosch.detekt", "detekt-gradle-plugin", "1.23.5")
+    implementation("dev.yumi", "yumi-gradle-licenser", "1.1.2")
 
     implementation(gradleApi())
     implementation(localGroovy())

@@ -11,7 +11,6 @@ package com.kotlindiscord.kord.extensions.modules.extra.phishing
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import io.ktor.client.*
-import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
@@ -86,7 +85,7 @@ class PhishingWebsocketWrapper(
     private suspend fun websocket() {
         client.webSocket(
             "wss://phish.sinking.yachts/feed",
-            { header("X-Identity", "$appName (via Kord Extensions)") }
+            { header("X-Identity", "$appName (via JDA Extensions)") }
         ) {
             logger.info { "Websocket connected." }
 

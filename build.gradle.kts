@@ -19,7 +19,7 @@ plugins {
 
 val projectVersion: String by project
 
-group = "com.kotlindiscord.kord.extensions"
+group = "me.melijn.kord.extensions"
 version = projectVersion
 
 val printVersion = task("printVersion") {
@@ -29,7 +29,7 @@ val printVersion = task("printVersion") {
 }
 
 gitHooks {
-    setHooks(mapOf("pre-commit" to "updateLicenses detekt"))
+    setHooks(mapOf("pre-commit" to "applyLicenses detekt"))
 }
 
 repositories {
@@ -52,7 +52,7 @@ repositories {
 }
 
 subprojects {
-    group = "com.kotlindiscord.kord.extensions"
+    group = "me.melijn.kord.extensions"
     version = projectVersion
 
     tasks.withType<KotlinCompile> {

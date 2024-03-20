@@ -13,10 +13,12 @@ dependencies {
 
     implementation(project(":annotations"))
 
+    detektPlugins(libs.detekt)
+    detektPlugins(libs.detekt.libraries)
 }
 
 dokkaModule {
-    moduleName.set("Kord Extensions: Annotation Processor")
+    moduleName.set("JDA Extensions: Annotation Processor")
 }
 
 java {

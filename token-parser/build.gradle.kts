@@ -9,6 +9,8 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.logging) // Basic logging setup
 
+    detektPlugins(libs.detekt)
+    detektPlugins(libs.detekt.libraries)
 
     testApi(libs.jda.lib)
     testImplementation(libs.kx.cor)
@@ -20,5 +22,5 @@ dependencies {
 }
 
 dokkaModule {
-    moduleName.set("Kord Extensions: Token Parser")
+    moduleName.set("JDA Extensions: Token Parser")
 }

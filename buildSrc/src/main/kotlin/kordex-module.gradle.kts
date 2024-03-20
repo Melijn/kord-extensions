@@ -4,7 +4,15 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
 
-    id("org.cadixdev.licenser")
+    id("io.gitlab.arturbosch.detekt")
+    id("dev.yumi.gradle.licenser")
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.from(rootProject.file("detekt.yml"))
+
+    autoCorrect = true
 }
 
 val sourceJar = task("sourceJar", Jar::class) {
@@ -53,8 +61,6 @@ tasks {
     }
 }
 
-
 license {
-    setHeader(rootProject.file("LICENSE"))
-    ignoreFailures(System.getenv()["CI"] == null)
+    rule(rootProject.file("codeformat/HEADER"))
 }

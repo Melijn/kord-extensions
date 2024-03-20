@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
@@ -31,15 +32,15 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
  */
 @ExtensionDSL
 public open class ChatCommandContext<T : Arguments>(
-    public val chatCommand: ChatCommand<out T>,
+    public open val chatCommand: ChatCommand<out T>,
     eventObj: MessageReceivedEvent,
     commandName: String,
     public open val parser: StringParser,
-    public val argString: String,
-    cache: MutableStringKeyedMap<Any>
+    public open val argString: String,
+    override val cache: MutableStringKeyedMap<Any>
 ) : CommandContext(chatCommand, eventObj, commandName, cache) {
     /** Event that triggered this command execution. **/
-    public val event: MessageReceivedEvent get() = eventObj as MessageReceivedEvent
+    public open val event: MessageReceivedEvent get() = eventObj as MessageReceivedEvent
 
     /** Message channel this command happened in, if any. **/
     public override val channel: MessageChannel = event.message.channel
@@ -107,4 +108,31 @@ public open class ChatCommandContext<T : Arguments>(
         replacements: Array<Any?> = arrayOf(),
         useReply: Boolean = true
     ): Message = respond(translate(key, command.resolvedBundle, replacements), useReply)
+}
+
+/**
+ * Command context object representing the context given to chat commands.
+ *
+ * @property chatCommand Chat command object
+ * @param parser String parser instance, if any - will be `null` if this isn't a chat command.
+ * @property argString String containing the command's unparsed arguments, raw, fresh from Discord itself.
+ */
+@ExtensionDSL
+public open class GuildChatCommandContext<T : Arguments>(
+    public override val chatCommand: ChatCommand<out T>,
+    eventObj: MessageReceivedEvent,
+    commandName: String,
+    public override val parser: StringParser,
+    public override val argString: String,
+    override val cache: MutableStringKeyedMap<Any>
+) : ChatCommandContext<T>(chatCommand, eventObj, commandName, parser, argString, cache) {
+
+    /** Message channel this command happened in, if any. **/
+    public override val channel: GuildMessageChannel = event.message.channel.asGuildMessageChannel()
+
+    /** Guild this command happened in, if any. **/
+    public override val guild: Guild = event.guild
+
+    /** Guild member responsible for executing this command, if any. **/
+    public override val member: Member = event.member!!
 }
