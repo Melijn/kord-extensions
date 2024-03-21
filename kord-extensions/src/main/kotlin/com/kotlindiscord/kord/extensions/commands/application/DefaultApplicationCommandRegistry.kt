@@ -131,7 +131,6 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
             ?: gwSessions.retrieveCommands().await()
 
         if (!bot.settings.applicationCommandsBuilder.register) {
-
             // Sync discord to local command storage.
             commands.forEach { commandObj ->
                 val existingCommand = registered.firstOrNull { discordCmd ->

@@ -118,7 +118,6 @@ public open class ExtensibleBot(
 
         loadInterspersedExtensions()
 
-
         // at this point all extensions should be loaded, otherwise individual commands will be registered
         shardManager.listener<Event> {
             send(it)
@@ -129,8 +128,8 @@ public open class ExtensibleBot(
     }
 
     /*
-    * Submits extensions to discord if all requirements are met.
-    */
+     * Submits extensions to discord if all requirements are met.
+     */
     public open suspend fun submitExtensions() {
         val applicationCommandRegistry = getKoin().get<ApplicationCommandRegistry>()
         val guilds = HashSet<Long>()
@@ -205,7 +204,6 @@ public open class ExtensibleBot(
     @Suppress("UnnecessaryParentheses")
     /** This function sets up all of the bot's default event listeners. **/
     public open suspend fun registerListeners() {
-
         shardManager.listener<SessionDisconnectEvent> {
             logger.warn { "Disconnected: ${it.closeCode}" }
         }
