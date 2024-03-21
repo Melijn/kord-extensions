@@ -131,8 +131,12 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
             ?: gwSessions.retrieveCommands().await()
 
         if (!bot.settings.applicationCommandsBuilder.register) {
+
+            // Sync discord to local command storage.
             commands.forEach { commandObj ->
-                val existingCommand = registered.firstOrNull { commandObj.matches(locale, it) }
+                val existingCommand = registered.firstOrNull { discordCmd ->
+                    commandObj.matches(locale, discordCmd)
+                }
 
                 if (existingCommand != null) {
                     when (commandObj) {
@@ -145,41 +149,6 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
 
             return  // We're only syncing them up, there's no other API work to do
         }
-
-//        // Extension commands that haven't been registered yet
-//        val toAdd = commands.filter { aC -> registered.all { dC -> !aC.matches(locale, dC) } }
-//
-//        // Extension commands that were previously registered
-//        val toUpdate = commands.filter { aC -> registered.any { dC -> aC.matches(locale, dC) } }
-//
-//        // Registered Discord commands that haven't been provided by extensions
-//        val toRemove = if (removeOthers) {
-//            registered.filter { dC -> commands.all { aC -> !aC.matches(locale, dC) } }
-//        } else {
-//            listOf()
-//        }
-//
-//        logger.info {
-//            buildString {
-//                if (guild == null) {
-//                    append(
-//                        "Global application commands: ${toAdd.size} to add / " +
-//                            "${toUpdate.size} to update / " +
-//                            "${toRemove.size} to remove"
-//                    )
-//                } else {
-//                    append(
-//                        "Application commands for guild ${guild.name}: ${toAdd.size} to add / " +
-//                            "${toUpdate.size} to update / " +
-//                            "${toRemove.size} to remove"
-//                    )
-//                }
-//
-//                if (!removeOthers) {
-//                    append("\nThe `removeOthers` parameter is `false`, so no commands will be removed.")
-//                }
-//            }
-//        }
 
         val builder: CommandListUpdateAction.() -> Unit = {
             for (cmd in commands) {
@@ -235,65 +204,7 @@ public open class DefaultApplicationCommandRegistry : ApplicationCommandRegistry
                 is UserCommand<*> -> userCommands[match.idLong] = appCmd
             }
         }
-//        val toCreate = toAdd + toUpdate
-//
-//        val builder: suspend MultiApplicationCommandBuilder.() -> Unit = {
-//            toCreate.forEach {
-//                val (name, nameLocalizations) = it.localizedName
-//
-//                logger.trace { "Adding/updating ${it.type.name} command: $name" }
-//
-//                when (it) {
-//                    is MessageCommand<*> -> message(name) {
-//                        this.nameLocalizations = nameLocalizations
-//                        this.register(locale, it)
-//                    }
-//                    is UserCommand<*> -> user(name) {
-//                        this.nameLocalizations = nameLocalizations
-//                        this.register(locale, it)
-//                    }
-//
-//                    is SlashCommand<*, *> -> {
-//                        val (description, descriptionLocalizations) = it.localizedDescription
-//                        input(name, description) {
-//                            this.nameLocalizations = nameLocalizations
-//                            this.descriptionLocalizations = descriptionLocalizations
-//                            this.register(locale, it)
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        @Suppress("IfThenToElvis")  // Ultimately, this is far more readable
-//        val response = if (guild == null) {
-//            // We're registering global commands here, if the guild is null
-//
-//            kord.createGlobalApplicationCommands { builder() }.toList()
-//        } else {
-//            // We're registering guild-specific commands here, if the guild is available
-//            guild.createApplicationCommands { builder() }.toList()
-//        }
-//
-//        // Next, we need to associate all the commands we just registered with the commands in our extensions
 
-//
-//        if (toAdd.isEmpty() && toUpdate.isEmpty()) {
-//            // Finally, we can remove anything that needs to be removed
-//            toRemove.forEach {
-//                logger.trace { "Removing ${it.type.name} command: ${it.name}" }
-//
-//                @Suppress("MagicNumber")  // not today, Detekt
-//                try {
-//                    it.delete()
-//                } catch (e: KtorRequestException) {
-//                    if (e.status.code != 404) {
-//                        throw e
-//                    }
-//                }
-//            }
-//        }
-//
         logger.info {
             if (guild == null) {
                 "Finished synchronising global application commands"

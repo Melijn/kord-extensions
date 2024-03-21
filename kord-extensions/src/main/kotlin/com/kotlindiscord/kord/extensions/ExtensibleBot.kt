@@ -17,7 +17,6 @@ import com.kotlindiscord.kord.extensions.extensions.impl.SentryExtension
 import com.kotlindiscord.kord.extensions.koin.KordExContext
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.types.Lockable
-import com.kotlindiscord.kord.extensions.types.Snowflake
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import com.kotlindiscord.kord.extensions.utils.scheduling.TaskConfig
 import dev.minn.jda.ktx.events.listener
@@ -30,7 +29,6 @@ import mu.KotlinLogging
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.Event
 import net.dv8tion.jda.api.events.GenericEvent
-import net.dv8tion.jda.api.events.guild.GuildReadyEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -110,15 +108,16 @@ public open class ExtensibleBot(
         val shardManager = getKoin().get<ShardManager>()
         if (!initialized) {
             try {
-            registerListeners()
-        } catch (t: NullPointerException) {
-            logger.error { "If this is a jda NPE, try setting maxShards and shardId" }
-            throw t
-        }
+                registerListeners()
+            } catch (t: NullPointerException) {
+                logger.error { "If this is a jda NPE, try setting maxShards and shardId" }
+                throw t
+            }
         }
         shardManager.login() // before login no commands can be loaded due to a jda bug
 
         loadInterspersedExtensions()
+
 
         // at this point all extensions should be loaded, otherwise individual commands will be registered
         shardManager.listener<Event> {
@@ -127,6 +126,33 @@ public open class ExtensibleBot(
 
         val (status, activity) = settings.presenceBuilder
         shardManager.setPresenceProvider(status, activity)
+    }
+
+    /*
+    * Submits extensions to discord if all requirements are met.
+    */
+    public open suspend fun submitExtensions() {
+        val applicationCommandRegistry = getKoin().get<ApplicationCommandRegistry>()
+        val guilds = HashSet<Long>()
+
+        // Collect all guildIds from guild specific commands.
+        // TODO: This system also doesn't work for sharded multiprocess bots at all
+        extensions.values.forEach { extension ->
+            extension.slashCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
+            extension.userCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
+            extension.messageCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
+            // TODO: Add chatCommands ?
+        }
+
+        while (true) {
+            val allRequiredGuildsLoaded = guilds.all { id -> shardManager.getGuildById(id) != null }
+            val allShardsLoaded = shardManager.shards.all { it.status == JDA.Status.CONNECTED }
+            if (guilds.isEmpty() || allRequiredGuildsLoaded || allShardsLoaded) {
+                applicationCommandRegistry.initialRegistration()
+                break
+            }
+            delay(500)
+        }
     }
 
     public open suspend fun loadInterspersedExtensions() {
@@ -144,6 +170,8 @@ public open class ExtensibleBot(
         if (settings.pluginBuilder.enabled) {
             settings.startPlugins()
         }
+
+        submitExtensions()
     }
 
     /**
@@ -177,19 +205,6 @@ public open class ExtensibleBot(
     @Suppress("UnnecessaryParentheses")
     /** This function sets up all of the bot's default event listeners. **/
     public open suspend fun registerListeners() {
-        shardManager.listener<GuildReadyEvent> {
-            withLock {  // If configured, this won't be concurrent, saving larger bots from spammy rate limits
-                val guild = it.guild
-                if (
-                    (settings.membersBuilder.guildsToFill == null) ||
-                    settings.membersBuilder.guildsToFill!!.contains(Snowflake(guild.idLong))
-                ) {
-                    logger.debug { "Requesting members for guild: ${guild.name}" }
-
-                    guild.loadMembers()
-                }
-            }
-        }
 
         shardManager.listener<SessionDisconnectEvent> {
             logger.warn { "Disconnected: ${it.closeCode}" }
@@ -225,25 +240,6 @@ public open class ExtensibleBot(
 
             shardManager.listener<CommandAutoCompleteInteractionEvent> {
                 getKoin().get<ApplicationCommandRegistry>().handle(it)
-            }
-
-            shardManager.listener<GuildReadyEvent> { event ->
-                val shardManager = event.jda.shardManager
-                val applicationCommandRegistry = getKoin().get<ApplicationCommandRegistry>()
-                val guilds = HashSet<Long>()
-
-                extensions.values.forEach { extension ->
-                    extension.slashCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
-                    extension.userCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
-                    extension.messageCommands.forEach { it.guildId?.let { it1 -> guilds.add(it1) } }
-                }
-
-                if (guilds.all { id ->
-                        shardManager?.getGuildById(id) != null
-                    } || shardManager?.shards?.all { it.status == JDA.Status.CONNECTED } == true
-                ) {
-                    applicationCommandRegistry.initialRegistration()
-                }
             }
         } else {
             logger.debug {
